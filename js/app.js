@@ -692,28 +692,17 @@ class App {
 
     const filterLinks = filters.map(filter => {
       const scope = filter.scope || {};
-      const isAdvanced = scope.mode === 'advanced';
-      
-      let itemCount;
-      if (isAdvanced) {
-        // For advanced filters, just show "Boolean" badge
-        itemCount = null;
-      } else {
-        itemCount = (scope.personIds?.length || 0) + 
-                    (scope.organizationIds?.length || 0) + 
-                    (scope.factionIds?.length || 0) + 
-                    (scope.locationIds?.length || 0) + 
-                    (scope.eventIds?.length || 0) + 
-                    (scope.keywords?.length || 0);
-      }
-      
+      const itemCount = (scope.personIds?.length || 0) +
+        (scope.organizationIds?.length || 0) +
+        (scope.factionIds?.length || 0) +
+        (scope.locationIds?.length || 0) +
+        (scope.eventIds?.length || 0) +
+        (scope.keywords?.length || 0);
       return `
-        <div class="filter-dropdown-item ${isAdvanced ? 'filter-advanced' : ''}" data-filter-id="${filter.id}">
+        <div class="filter-dropdown-item" data-filter-id="${filter.id}">
           <div class="filter-dropdown-info">
             <span class="filter-dropdown-name">${this.escapeHtml(filter.name)}</span>
-            ${isAdvanced 
-              ? '<span class="filter-dropdown-badge">Boolean</span>' 
-              : `<span class="filter-dropdown-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>`}
+            <span class="filter-dropdown-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
           </div>
         </div>
       `;

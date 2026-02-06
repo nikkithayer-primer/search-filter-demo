@@ -702,26 +702,19 @@ class DataStore {
 
   createMonitor(monitor) {
     const scope = monitor.scope || {};
-    
     return this.createEntity('monitors', 'monitor', {
       name: monitor.name,
       description: monitor.description || '',
-      scope: scope.mode === 'advanced'
-        ? {
-            mode: 'advanced',
-            booleanExpression: scope.booleanExpression,
-            entityMap: scope.entityMap
-          }
-        : {
-            mode: 'simple',
-            personIds: scope.personIds || [],
-            organizationIds: scope.organizationIds || [],
-            factionIds: scope.factionIds || [],
-            locationIds: scope.locationIds || [],
-            eventIds: scope.eventIds || [],
-            keywords: scope.keywords || [],
-            logic: scope.logic || 'OR'
-          },
+      scope: {
+        mode: 'simple',
+        personIds: scope.personIds || [],
+        organizationIds: scope.organizationIds || [],
+        factionIds: scope.factionIds || [],
+        locationIds: scope.locationIds || [],
+        eventIds: scope.eventIds || [],
+        keywords: scope.keywords || [],
+        logic: scope.logic || 'OR'
+      },
       options: {
         includeSubEvents: monitor.options?.includeSubEvents ?? true,
         includeThemes: monitor.options?.includeThemes ?? true,
@@ -1361,25 +1354,18 @@ class DataStore {
 
   createSearchFilter(filter) {
     const scope = filter.scope || {};
-    
     return this.createEntity('searchFilters', 'filter', {
       name: filter.name,
       description: filter.description || '',
-      scope: scope.mode === 'advanced' 
-        ? {
-            mode: 'advanced',
-            booleanExpression: scope.booleanExpression,
-            entityMap: scope.entityMap
-          }
-        : {
-            mode: 'simple',
-            personIds: scope.personIds || [],
-            organizationIds: scope.organizationIds || [],
-            factionIds: scope.factionIds || [],
-            locationIds: scope.locationIds || [],
-            eventIds: scope.eventIds || [],
-            keywords: scope.keywords || []
-          }
+      scope: {
+        mode: 'simple',
+        personIds: scope.personIds || [],
+        organizationIds: scope.organizationIds || [],
+        factionIds: scope.factionIds || [],
+        locationIds: scope.locationIds || [],
+        eventIds: scope.eventIds || [],
+        keywords: scope.keywords || []
+      }
     });
   }
 

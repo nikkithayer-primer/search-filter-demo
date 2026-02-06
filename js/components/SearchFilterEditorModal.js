@@ -197,13 +197,11 @@ export class SearchFilterEditorModal extends BaseModal {
     // Get scope from ScopeSelector
     const scope = this.scopeSelector?.getScope() || {};
     
-    // Check if filter has content - either entities/keywords (simple) or booleanExpression (advanced)
     const hasEntities = Object.keys(scope)
+      .filter(k => k !== 'mode')
       .some(k => Array.isArray(scope[k]) && scope[k].length > 0);
-    const hasBoolean = scope.mode === 'advanced' && scope.booleanExpression?.trim();
-    
-    if (!hasEntities && !hasBoolean) {
-      alert('Please select at least one entity or keyword, or enter a boolean expression');
+    if (!hasEntities) {
+      alert('Please select at least one entity or keyword.');
       return;
     }
     
