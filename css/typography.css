@@ -1,0 +1,95 @@
+/* Typography - Font Definitions
+   Neue Haas Grotesk font family for Primer Dashboard */
+
+/* Local Font Definitions - Neue Haas Grotesk Display */
+@font-face {
+  font-family: 'Neue Haas Grotesk Display';
+  src: url('../fonts/NeueHaasGroteskDisplay(RoundDots)-45Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Display';
+  src: url('../fonts/NeueHaasGroteskDisplay(RoundDots)-55Roman.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Display';
+  src: url('../fonts/NeueHaasGroteskDisplay(RoundDots)-56Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Display';
+  src: url('../fonts/NeueHaasGroteskDisplay(RoundDots)-65Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Display';
+  src: url('../fonts/NeueHaasGroteskDisplay(RoundDots)-66MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Display';
+  src: url('../fonts/NeueHaasGroteskDisplay(RoundDots)-75Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Display';
+  src: url('../fonts/NeueHaasGroteskDisplay(RoundDots)-76BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* Local Font Definitions - Neue Haas Grotesk Text */
+@font-face {
+  font-family: 'Neue Haas Grotesk Text';
+  src: url('../fonts/NeueHaasGroteskText(RoundDots)-55Roman.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Text';
+  src: url('../fonts/NeueHaasGroteskText(RoundDots)-56Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Text';
+  src: url('../fonts/NeueHaasGroteskText(RoundDots)-65Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Text';
+  src: url('../fonts/NeueHaasGroteskText(RoundDots)-66MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Text';
+  src: url('../fonts/NeueHaasGroteskText(RoundDots)-75Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Neue Haas Grotesk Text';
+  src: url('../fonts/NeueHaasGroteskText(RoundDots)-76BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+}

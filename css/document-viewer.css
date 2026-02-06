@@ -1,0 +1,867 @@
+/**
+ * Document Viewer Styles
+ * Split-view document viewer layout and content styles
+ */
+
+/* ============================================
+   Document Viewer Mode
+   ============================================ */
+
+/* Title button in table (replaces link when viewer mode enabled) */
+.doc-title-btn {
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+
+.doc-title-btn:hover {
+  color: var(--accent-primary);
+}
+
+/* Viewer container - split layout */
+.document-viewer-container {
+  display: flex;
+  gap: 0;
+  min-height: 500px;
+  max-height: 80vh;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+/* Sidebar with document list */
+.document-viewer-sidebar {
+  width: 320px;
+  min-width: 280px;
+  max-width: 360px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border-color);
+  transition: transform 0.25s ease, margin 0.25s ease;
+}
+
+/* Slide sidebar out when details panel is open */
+.document-viewer-sidebar.hidden {
+  transform: translateX(-100%);
+  margin-right: -320px;
+}
+
+.document-viewer-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.document-viewer-sidebar-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Document viewer close button - use .btn-icon class */
+
+/* Sidebar filter bar */
+.document-viewer-sidebar-filters {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.document-viewer-search {
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.document-viewer-search::placeholder {
+  color: var(--text-muted);
+}
+
+.document-viewer-search:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+/* Document list in sidebar */
+.document-viewer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.document-viewer-list-item {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.document-viewer-list-item:hover {
+  background: var(--bg-hover);
+}
+
+.document-viewer-list-item.active {
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: calc(var(--space-md) - 3px);
+}
+
+.document-viewer-list-item-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.document-viewer-list-item-type {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.document-viewer-list-item-type svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Type-specific colors */
+.document-viewer-list-item-type-social-post {
+  background: rgba(176, 122, 161, 0.15);
+  color: #B07AA1;
+}
+
+.document-viewer-list-item-type-tiktok {
+  background: rgba(0, 242, 234, 0.15);
+  color: #00C4BD;
+}
+
+.document-viewer-list-item-type-news-article {
+  background: rgba(78, 121, 167, 0.15);
+  color: #4E79A7;
+}
+
+.document-viewer-list-item-type-internal {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.document-viewer-list-item-title {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.document-viewer-list-item.active .document-viewer-list-item-title {
+  font-weight: 500;
+}
+
+.document-viewer-list-item-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.document-viewer-list-item-publisher {
+  color: var(--text-secondary);
+}
+
+.document-viewer-list-item-date {
+  color: var(--text-muted);
+}
+
+.document-viewer-list-count {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Main content wrapper (includes content + sliding details panel) */
+.document-viewer-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Sliding Details Panel */
+.document-viewer-details-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 50%;
+  height: 100%;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-color);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.document-viewer-details-panel.open {
+  transform: translateX(0);
+}
+
+.details-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.details-panel-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.details-panel-close {
+  color: var(--text-muted);
+}
+
+.details-panel-close:hover {
+  color: var(--text-primary);
+}
+
+.details-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+/* Adjust details grid for panel context */
+.details-panel-content .document-details-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.details-panel-content .document-details-card {
+  break-inside: avoid;
+}
+
+/* Header action buttons row */
+.viewer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.viewer-header-actions .btn {
+  font-size: var(--text-xs);
+}
+
+.viewer-header-actions .btn svg {
+  flex-shrink: 0;
+}
+
+.viewer-header-actions .btn.active {
+  background: var(--accent-muted);
+  border-color: var(--accent-secondary);
+  color: var(--text-primary);
+}
+
+/* Main content area */
+.document-viewer-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.document-viewer-content:focus {
+  outline: none;
+}
+
+/* Full width mode for details view */
+.document-viewer-content-fullwidth {
+  overflow-y: auto;
+}
+
+.document-viewer-content-fullwidth .document-details-grid {
+  max-width: none;
+}
+
+.document-viewer-content-header {
+  padding: var(--space-xl) var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.document-viewer-content-header > * {
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.document-viewer-content-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--text-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.document-viewer-content-publisher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.document-viewer-content-publisher .doc-publisher-indicator {
+  width: 8px;
+  height: 8px;
+}
+
+.document-viewer-content-date {
+  color: var(--text-muted);
+}
+
+.document-viewer-content-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.document-viewer-source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-xs);
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.document-viewer-source-link:hover {
+  color: var(--accent-secondary);
+  text-decoration: underline;
+}
+
+.document-viewer-source-link svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Document body with constrained width - newspaper style */
+.document-viewer-content-body {
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.document-viewer-content-body > * {
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Ensure content blocks respect max-width */
+.document-viewer-content-body .news-article,
+.document-viewer-content-body .social-post,
+.document-viewer-content-body .tiktok-post,
+.document-viewer-content-body .internal-document {
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.document-viewer-content-body .news-article-content,
+.document-viewer-content-body .internal-document-content {
+  max-width: 920px;
+}
+
+/* Newspaper-style typography for document content */
+.document-viewer-content-body .news-article-paragraph,
+.document-viewer-content-body .internal-document-paragraph,
+.document-viewer-content-body .content-block-text {
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+
+.document-viewer-content-body .news-article-heading {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
+}
+
+.document-viewer-content-body .news-article-quote {
+  font-size: 18px;
+  font-style: italic;
+  line-height: 1.6;
+  border-left: 3px solid var(--border-color);
+  padding-left: var(--space-lg);
+  margin: var(--space-lg) 0;
+  color: var(--text-secondary);
+}
+
+.document-viewer-content-body .news-article-inline-image {
+  margin: var(--space-xl) 0;
+}
+
+.document-viewer-content-body .news-article-image-caption {
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Responsive: Stack on narrow screens */
+@media (max-width: 800px) {
+  .document-viewer-container {
+    flex-direction: column;
+    max-height: none;
+  }
+
+  .document-viewer-sidebar {
+    width: 100%;
+    max-width: none;
+    max-height: 250px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .document-viewer-content-body {
+    padding: var(--space-md);
+  }
+}
+
+/* ============================================
+   Document Viewer Type-Specific Headers
+   ============================================ */
+
+/* Standardized Header Toolbar - All Document Types */
+.viewer-header-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.viewer-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.viewer-toolbar-repo {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.viewer-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.viewer-toolbar-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+}
+
+.viewer-toolbar-stat svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+/* Portion Mark Styling */
+.viewer-portion-mark {
+  display: inline-block;
+  padding: 2px 6px;
+  margin-right: var(--space-sm);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.viewer-portion-mark.portion-mark-u {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.viewer-portion-mark.portion-mark-cui {
+  background: rgba(147, 112, 219, 0.15);
+  color: #9370DB;
+}
+
+.viewer-portion-mark.portion-mark-c {
+  background: rgba(70, 130, 180, 0.15);
+  color: #4682B4;
+}
+
+.viewer-portion-mark.portion-mark-s {
+  background: rgba(205, 92, 92, 0.15);
+  color: #CD5C5C;
+}
+
+.viewer-portion-mark.portion-mark-ts {
+  background: rgba(255, 140, 0, 0.15);
+  color: #FF8C00;
+}
+
+/* External Link Styling */
+.viewer-external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.viewer-external-link:hover {
+  color: var(--accent-secondary);
+  text-decoration: underline;
+}
+
+.viewer-external-link svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Standard Header - News, Internal, Structured Data */
+.document-viewer-header-standard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.viewer-standard-headline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.viewer-standard-title {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.viewer-standard-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.viewer-standard-publisher {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.viewer-standard-author {
+  color: var(--text-secondary);
+}
+
+.viewer-standard-date {
+  color: var(--text-muted);
+}
+
+/* Social Post Header */
+.document-viewer-header-social {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.viewer-social-author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.viewer-social-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.viewer-social-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.viewer-social-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viewer-social-displayname {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.viewer-social-username {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.viewer-social-headline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.viewer-social-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.viewer-social-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--text-sm);
+}
+
+.viewer-social-publisher {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.viewer-social-date {
+  color: var(--text-muted);
+}
+
+/* Header Image (Social/TikTok) */
+.viewer-header-image {
+  position: relative;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.viewer-header-image img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.viewer-header-image-caption {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+}
+
+/* TikTok Thumbnail specific */
+.viewer-tiktok-thumbnail {
+  max-width: 200px;
+}
+
+.viewer-tiktok-duration-badge {
+  position: absolute;
+  bottom: var(--space-sm);
+  right: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: var(--border-radius);
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.viewer-tiktok-duration-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Social Footer - Engagement + External Link */
+.viewer-social-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.viewer-social-engagement {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.viewer-social-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.viewer-social-stat svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.viewer-social-stat span {
+  font-weight: 500;
+}
+
+/* Legacy styles kept for compatibility */
+.document-viewer-header-tiktok {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.viewer-tiktok-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 10px;
+  background: #00000015;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.viewer-tiktok-badge svg {
+  color: #00F2EA;
+}
+
+/* Type-specific content area backgrounds */
+.document-viewer-type-social-post .document-viewer-content-header {
+  border-bottom: none;
+  padding-bottom: var(--space-md);
+}
+
+.document-viewer-type-tiktok .document-viewer-content-header {
+  border-bottom: none;
+  padding-bottom: var(--space-md);
+}
+
+.document-viewer-type-internal .document-viewer-content-header {
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+/* Document Details View (Details Tab) */
+.document-viewer-content-fullwidth .content-area {
+  padding: 0;
+}
+
+.document-viewer-content-fullwidth .content-grid {
+  padding: var(--space-lg);
+}
+
+.document-viewer-content-fullwidth .content-grid .card-body {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.document-viewer-content-fullwidth #doc-details-map {
+  height: 250px;
+  max-height: 250px;
+  overflow: hidden;
+}
+
+.document-details-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.document-details-empty svg {
+  margin-bottom: var(--space-md);
+  opacity: 0.5;
+}
+
+.document-details-empty p {
+  font-size: var(--text-sm);
+  margin: 0;
+}

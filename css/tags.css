@@ -1,0 +1,649 @@
+/**
+ * Tag Styles
+ * Tag chips, tag picker, tag groups, and tag editor
+ */
+
+/* ============================================
+   Tag Components
+   ============================================ */
+
+/* Tag Chips Container */
+.tag-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.tag-chips-readonly {
+  pointer-events: auto;
+}
+
+/* Individual Tag Chip */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: color-mix(in srgb, var(--tag-color, #6b7280) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-color, #6b7280) 30%, transparent);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tag-chip:hover {
+  background: color-mix(in srgb, var(--tag-color, #6b7280) 22%, transparent);
+  border-color: color-mix(in srgb, var(--tag-color, #6b7280) 40%, transparent);
+}
+
+.tag-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tag-chip-name {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.tag-chip-name:hover {
+  text-decoration: underline;
+}
+
+.tag-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  margin-left: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tag-chip-remove:hover {
+  background: color-mix(in srgb, var(--tag-color, #6b7280) 30%, transparent);
+  color: var(--text-primary);
+}
+
+/* Add Tag Button */
+.tag-chip-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tag-chip-add:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+/* ============================================
+   Tag Picker Modal
+   ============================================ */
+
+.tag-picker-body {
+  padding: 0 !important;
+}
+
+.tag-picker-search {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-picker-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tag-picker-empty {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.tag-picker-empty p {
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.tag-picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.tag-picker-row:hover {
+  background: var(--bg-hover);
+}
+
+.tag-picker-row.selected {
+  background: var(--bg-selected);
+}
+
+.tag-picker-checkbox {
+  flex-shrink: 0;
+}
+
+.tag-picker-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.tag-picker-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.tag-picker-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tag-picker-create {
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Tag Picker Groups */
+.tag-picker-group {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-picker-group:last-child {
+  border-bottom: none;
+}
+
+.tag-picker-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-picker-group-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.tag-picker-group-exclusive {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tag-picker-group-tags {
+  padding: var(--space-xs) 0;
+}
+
+/* Tag Selector (inline form component) */
+.tag-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.tag-selector-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: all 0.15s ease;
+}
+
+.tag-selector-item:hover {
+  border-color: var(--border-default);
+  background: var(--bg-hover);
+}
+
+.tag-selector-item.selected {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.tag-selector-checkbox {
+  display: none;
+}
+
+.tag-selector-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tag-selector-name {
+  color: var(--text-primary);
+}
+
+.tag-selector-item.selected .tag-selector-name {
+  color: var(--accent-dark);
+}
+
+/* ============================================
+   Tags List View (Accordion)
+   ============================================ */
+
+.tags-list {
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Tag Group Sections (for TagsView) */
+.tag-group-section {
+  border-bottom: 1px solid var(--border-default);
+}
+
+.tag-group-section:last-child {
+  border-bottom: none;
+}
+
+.tag-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-group-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tag-group-name {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.tag-group-badge {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tag-group-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.tag-group-description {
+  font-size: 12px;
+  margin-left: var(--space-sm);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tag-group-content {
+  /* Tags within the group */
+}
+
+/* Tag Accordion */
+.tag-accordion {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-accordion-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.tag-accordion-header:hover {
+  background: var(--bg-hover);
+}
+
+.tag-accordion-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.tag-accordion-toggle:hover {
+  color: var(--text-primary);
+}
+
+.tag-accordion-arrow {
+  transition: transform 0.2s ease;
+}
+
+.tag-accordion.expanded .tag-accordion-arrow {
+  transform: rotate(90deg);
+}
+
+/* Tag display in accordion header - styled like tag-chip */
+.tag-accordion-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--tag-color, #6b7280) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-color, #6b7280) 25%, transparent);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.tag-accordion-chip:hover {
+  background: color-mix(in srgb, var(--tag-color, #6b7280) 22%, transparent);
+  border-color: color-mix(in srgb, var(--tag-color, #6b7280) 40%, transparent);
+}
+
+.tag-accordion-chip .tag-list-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tag-accordion-name {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+/* Legacy standalone styles */
+.tag-list-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tag-list-description {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.tag-list-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.tag-list-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: var(--space-sm);
+}
+
+/* Accordion Content */
+.tag-accordion-content {
+  padding: 0 var(--space-lg) var(--space-md) calc(var(--space-lg) + 32px);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.tag-entities-empty {
+  padding: var(--space-md) 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Entity Sections */
+.tag-entity-section {
+  padding: var(--space-sm) 0;
+}
+
+.tag-entity-section:not(:last-child) {
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-sm);
+}
+
+.tag-entity-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  margin-bottom: var(--space-xs);
+}
+
+.tag-entity-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.tag-entity-section-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* Entity list within accordion sections */
+.tag-entity-section .entity-list {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.tag-entity-section .entity-list-item {
+  padding: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-entity-section .entity-list-item:last-child {
+  border-bottom: none;
+}
+
+.tag-entity-section .entity-list-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s ease;
+}
+
+.tag-entity-section .entity-list-link:hover {
+  background: var(--bg-hover);
+}
+
+.entity-list-more {
+  padding: var(--space-sm) var(--space-md);
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.entity-list-more a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.entity-list-more a:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* Legacy support for tag-list-name (used in other contexts) */
+.tag-list-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.tag-list-name:hover {
+  text-decoration: underline;
+}
+
+/* Tag Editor Panel */
+.tag-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.tag-editor-overlay.hidden {
+  display: none;
+}
+
+.tag-editor-panel {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+}
+
+.tag-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tag-editor-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.tag-editor-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+}
+
+.tag-editor-close:hover {
+  color: var(--text-primary);
+}
+
+.tag-editor-body {
+  padding: var(--space-lg);
+}
+
+.tag-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Tag Color Picker */
+.tag-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tag-color-option {
+  display: block;
+  cursor: pointer;
+}
+
+.tag-color-option input {
+  display: none;
+}
+
+.tag-color-swatch {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.tag-color-option:hover .tag-color-swatch {
+  transform: scale(1.1);
+}
+
+.tag-color-option.selected .tag-color-swatch {
+  border-color: var(--text-primary);
+}
+
+/* Tag Detail View now uses entity-list pattern from components.css */

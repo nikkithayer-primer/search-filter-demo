@@ -1,0 +1,133 @@
+---
+description: Data model schema reference for creating/modifying entity types in the Primer Intelligence Dashboard
+globs:
+  - js/data/**
+  - js/views/**
+  - tests/**
+alwaysApply: false
+---
+
+# Data Schema Reference
+
+When working with data entities in this project, reference the schema documentation at `js/data/DATA_SCHEMA.md` for complete field definitions, relationships, and type information.
+
+## Quick Reference: Entity ID Prefixes
+
+Always use the correct prefix when creating entity IDs:
+
+| Entity | Prefix |
+|--------|--------|
+| Mission | `mission-` |
+| Narrative | `narr-` |
+| Theme | `sub-` |
+| Faction | `faction-` |
+| Location | `loc-` |
+| Event | `event-` |
+| Person | `person-` |
+| Organization | `org-` |
+| Topic | `topic-` |
+| Document | `doc-` |
+| Repository | `repo-` |
+| Monitor | `monitor-` |
+| SearchFilter | `filter-` |
+| Workspace | `workspace-` |
+| Project | `project-` |
+| Publisher | `pub-` |
+| Alert | `alert-` |
+| User | `user-` |
+| Tag | `tag-` |
+
+## Key Relationships
+
+### Foreign Keys (One-to-Many)
+- `narrative.missionId` → Mission
+- `theme.parentNarrativeId` → Narrative
+- `event.parentEventId` → Event (for sub-events)
+- `project.parentProjectId` → Project (for nested projects)
+- `event.locationId` → Location
+- `document.repositoryId` → Repository
+- `document.publisherId` → Publisher
+- `alert.monitorId` → Monitor
+
+### Many-to-Many (Array Fields)
+Most entities use array fields for relationships:
+- `personIds`, `organizationIds`, `locationIds`, `eventIds`, `documentIds`, `topicIds`
+- `affiliatedFactionIds` (on Person/Organization)
+- `themeIds` (on Narrative, auto-managed)
+- `tagIds` (on most entities for flexible tagging)
+
+### Document Scoping (Monitors, Workspaces & Projects)
+Three document collection types with different scoping models:
+- **Monitors**: Automatic - `scope` for dynamic matching + `includedDocIds`/`excludedDocIds` for overrides
+- **Workspaces**: Search-driven - `scope` for dynamic matching OR legacy `documentIds` + manual overrides
+- **Projects**: Manual - Only `documentIds` (no scope, purely curated). Projects can be nested via `parentProjectId`/`subProjectIds`
+
+Scope fields: `personIds`, `orgIds`, `factionIds`, `locationIds`, `eventIds`, `keywords`, `logic: 'AND'|'OR'`
+
+## Common Field Patterns
+
+### Sentiment
+Always a number from -1.0 (negative) to 1.0 (positive):
+```javascript
+sentiment: -0.52,
+factionSentiment: { 'faction-001': 0.67, 'faction-002': -0.78 }
+```
+
+### Volume Over Time
+Time series data for tracking engagement:
+```javascript
+volumeOverTime: [
+  { date: '2026-01-20', factionVolumes: { 'faction-001': 180 }, publisherVolumes: { 'pub-x': 145 } }
+]
+```
+
+### Timestamps
+- `createdAt`, `updatedAt`: ISO 8601 datetime (auto-managed by DataStore)
+- `date`, `publishedDate`: ISO 8601 datetime
+- `startDate`, `endDate`: ISO 8601 date string 'YYYY-MM-DD'
+
+## Type Enums
+
+### Person Types
+`politician`, `executive`, `government_official`, `judge`, `analyst`, `journalist`, `activist`, `labor_leader`, `civilian`, `employee`, `legal_professional`, `general`
+
+### Organization Types
+`corporation`, `government`, `political`, `judicial`, `nonprofit`, `union`, `media`, `research`, `religious`, `financial`, `law_enforcement`, `military`, `general`
+
+### Location Types
+`country`, `region`, `city`, `facility`, `headquarters`, `landmark`, `virtual`, `general`
+
+### Document Types
+`news_article`, `social_media`, `internal_report`, `intelligence_report`, `memo`, `transcript`
+
+### Alert Types
+`volume_spike`, `new_event`, `new_narrative`, `sentiment_shift`, `faction_engagement`
+
+## DataStore Usage
+
+```javascript
+import { dataStore } from './js/data/DataStore.js';
+
+// Create entities
+const id = dataStore.createPerson({ name: 'John Doe', type: 'politician' });
+
+// Update entities
+dataStore.updatePerson(id, { affiliatedFactionIds: ['faction-001'] });
+
+// Delete entities (handles relationship cleanup)
+dataStore.deletePerson(id);
+
+// Query
+const person = dataStore.findEntity('persons', id);
+```
+
+## Dataset Files
+
+Sample data is organized in `js/data/datasets/{dataset-name}/`:
+- `entities.js` - Persons and Organizations
+- `narratives.js`, `themes.js`, `factions.js`, `locations.js`, `events.js`
+- `documents.js`, `publishers.js`, `repositories.js`, `monitors.js`, `missions.js`, `topics.js`, `users.js`, `searchFilters.js`, `tags.js`
+
+---
+
+For complete schema documentation including all fields and their types, see: **js/data/DATA_SCHEMA.md**

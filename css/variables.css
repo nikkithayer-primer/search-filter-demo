@@ -1,0 +1,167 @@
+/* CSS Custom Properties
+   Design tokens for Primer Intelligence Dashboard */
+
+:root {
+  /* Light mode palette */
+  --bg-primary: #F8F9FA;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #F0F2F5;
+  --bg-hover: #E8EAED;
+  
+  --border-color: #B6BFC9;
+  --border-subtle: #D8DDE3;
+  
+  --text-strong: #212636;
+  --text-primary: #3B485C;
+  --text-secondary: #506078;
+  --text-muted: #66778C;
+  --chart-label: #66778C;
+  --chart-axis: #B6BFC9;
+  
+  --accent-primary: #3169ED;
+  --accent-secondary: #2855C5;
+  --accent-hover: #1E4AC0;
+  --accent-muted: #E8EEFF;
+  --accent-success: #16a34a;
+  --accent-danger: #dc2626;
+  --accent-warning: #d97706;
+  
+  /* Sentiment colors (softened for readability) */
+  --sentiment-positive: #66BB6A;
+  --sentiment-negative: #E57373;
+  
+  --status-high: #dc2626;
+  --status-medium: #d97706;
+  --status-low: #16a34a;
+  --status-neutral: #506078;
+  
+  /* Compact spacing scale */
+  --space-xs: 2px;
+  --space-sm: 4px;
+  --space-md: 8px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+  --space-2xl: 24px;
+  
+  /* Typography */
+  --font-sans: 'Neue Haas Grotesk Text', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Neue Haas Grotesk Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'SF Mono', Consolas, monospace;
+  
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 16px;
+  
+  --line-height: 1.4;
+  
+  /* Layout */
+  --navbar-height: 48px;
+  --header-height: 32px;
+  
+  /* Border radius scale */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --radius-full: 9999px;
+  --border-radius: var(--radius-sm);  /* Default/legacy alias */
+  
+  /* Neutral gray for sliders/controls */
+  --color-neutral: #9ca3af;
+  
+  /* Common UI colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  
+  /* Badge/tag colors (semantic) */
+  --badge-green: #22c55e;
+  --badge-purple: #7c3aed;
+  --badge-blue: #3b82f6;
+  --badge-red: #ef4444;
+  --badge-orange: #f97316;
+  --badge-amber: #f59e0b;
+  --badge-teal: #10b981;
+  
+  /* Workflow status colors */
+  --status-new-color: #64b4ff;
+  --status-in-progress-color: #ffb464;
+  --status-investigating-color: #b464ff;
+  --status-resolved-color: #64c896;
+  
+  /* Shadow scale */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.2);
+  
+  /* Alias variables for backward compatibility */
+  --color-red: var(--accent-danger);
+  --border-default: var(--border-color);
+  --bg-selected: var(--accent-muted);
+}
+
+/* Dark mode palette */
+[data-theme="dark"] {
+  --bg-primary: #0D1117;
+  --bg-secondary: #161B22;
+  --bg-tertiary: #21262D;
+  --bg-hover: #30363D;
+  
+  --border-color: #30363D;
+  --border-subtle: #21262D;
+  
+  --text-strong: #F0F6FC;
+  --text-primary: #C9D1D9;
+  --text-secondary: #8B949E;
+  --text-muted: #6E7681;
+  --chart-label: #8B949E;
+  --chart-axis: #30363D;
+  
+  --accent-primary: #58A6FF;
+  --accent-secondary: #388BFD;
+  --accent-hover: #2D7BE0;
+  --accent-muted: #1F3D5C;
+  --accent-success: #3FB950;
+  --accent-danger: #F85149;
+  --accent-warning: #D29922;
+  
+  /* Sentiment colors (adjusted for dark mode) */
+  --sentiment-positive: #3FB950;
+  --sentiment-negative: #F85149;
+  
+  --status-high: #F85149;
+  --status-medium: #D29922;
+  --status-low: #3FB950;
+  --status-neutral: #8B949E;
+  
+  /* Neutral gray for sliders/controls (adjusted for dark mode) */
+  --color-neutral: #6b7280;
+  
+  /* Badge/tag colors (adjusted for dark mode) */
+  --badge-green: #4ade80;
+  --badge-purple: #a78bfa;
+  --badge-blue: #60a5fa;
+  --badge-red: #f87171;
+  --badge-orange: #fb923c;
+  --badge-amber: #fbbf24;
+  --badge-teal: #34d399;
+  
+  /* Workflow status colors (same in dark mode - already vibrant) */
+  --status-new-color: #64b4ff;
+  --status-in-progress-color: #ffb464;
+  --status-investigating-color: #b464ff;
+  --status-resolved-color: #64c896;
+  
+  /* Shadow scale (adjusted for dark mode) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5);
+  
+  /* Alias variables (same as light mode) */
+  --color-red: var(--accent-danger);
+  --border-default: var(--border-color);
+  --bg-selected: var(--accent-muted);
+}

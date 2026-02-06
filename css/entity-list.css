@@ -1,0 +1,121 @@
+/**
+ * Entity List Styles
+ * People, organizations, and other entity list patterns
+ */
+
+/* Entity List (People & Orgs, etc.) */
+.entity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entity-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.entity-list-item:last-child {
+  border-bottom: none;
+}
+
+.entity-list-item:hover {
+  background: var(--bg-hover);
+}
+
+/* Entity list link (makes entire row clickable) */
+.entity-list-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+}
+
+.entity-list-link:hover {
+  text-decoration: none;
+}
+
+/* When using link inside list item, remove item padding */
+.entity-list-item:has(.entity-list-link) {
+  padding: 0;
+}
+
+.entity-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+.entity-avatar.person {
+  background: rgba(100, 180, 255, 0.15);
+}
+
+.entity-avatar.organization {
+  background: rgba(180, 100, 255, 0.15);
+}
+
+/* Entity avatar with image */
+.entity-avatar.has-image {
+  background: transparent;
+  overflow: hidden;
+}
+
+.entity-avatar .entity-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.entity-avatar .entity-icon-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.entity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.entity-name {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entity-type {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.entity-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 2px;
+}
+
+.entity-subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

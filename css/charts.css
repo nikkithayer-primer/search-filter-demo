@@ -1,0 +1,107 @@
+/**
+ * Chart Styles
+ * Chart containers, legends, tooltips, and D3 visualizations
+ */
+
+/* Charts Container */
+.chart-container {
+  position: relative;
+  height: 200px;
+}
+
+/* Chart Legend */
+.legend-item {
+  cursor: default;
+}
+
+.legend-label {
+  display: inline-block;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chart Tooltip */
+.chart-tooltip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-sm);
+  font-size: var(--text-xs);
+  min-width: 160px;
+  max-width: 200px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  margin: calc(-1 * var(--space-sm)) calc(-1 * var(--space-sm)) var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.tooltip-date {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.tooltip-total {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.tooltip-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  background: var(--bg-tertiary);
+  padding: var(--space-xs) var(--space-sm);
+  margin: 0 calc(-1 * var(--space-sm)) calc(-1 * var(--space-sm));
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.tooltip-color {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.tooltip-faction {
+  flex: 1;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tooltip-value {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.tooltip-percent {
+  color: var(--text-muted);
+  font-size: 12px;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* Chart overlay cursor */
+.chart-overlay {
+  cursor: crosshair;
+}
