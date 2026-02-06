@@ -2,7 +2,7 @@
  * DocumentContentRenderer.js
  * Renders document content based on document type
  * Supports: social_post, news_article, internal, and structured data types
- * Includes highlight and comment annotations
+ * Comments and highlights functionality removed.
  */
 
 import { BaseComponent } from './BaseComponent.js';
@@ -95,8 +95,9 @@ export class DocumentContentRenderer extends BaseComponent {
 
     const doc = this.data.document;
     const docType = doc.documentType || 'news_article';
-    const highlights = this.data.highlights || [];
-    const comments = this.data.comments || [];
+    // Comments and highlights disabled
+    const highlights = [];
+    const comments = [];
 
     switch (docType) {
       case DOCUMENT_TYPES.SOCIAL_POST:
@@ -118,38 +119,6 @@ export class DocumentContentRenderer extends BaseComponent {
         this.renderNewsArticle(doc, highlights, comments);
     }
 
-    // Bind event listeners for annotations
-    this.bindAnnotationEvents();
-  }
-
-  bindAnnotationEvents() {
-    // Bind highlight hover events
-    const highlightElements = this.container.querySelectorAll('.user-highlight');
-    highlightElements.forEach(el => {
-      el.addEventListener('mouseenter', (e) => this.showHighlightTooltip(e));
-      el.addEventListener('mouseleave', (e) => this.hideHighlightTooltip(e));
-    });
-
-    // Bind comment marker click events
-    const commentMarkers = this.container.querySelectorAll('.comment-marker');
-    commentMarkers.forEach(marker => {
-      marker.addEventListener('click', (e) => this.toggleCommentThread(e, marker));
-    });
-
-    // Remove any existing document click handler before adding a new one
-    if (this._documentClickHandler) {
-      document.removeEventListener('click', this._documentClickHandler);
-    }
-
-    // Close comment thread when clicking outside
-    this._documentClickHandler = (e) => {
-      if (this.activeCommentThread && 
-          !e.target.closest('.comment-thread-popover') && 
-          !e.target.closest('.comment-marker')) {
-        this.closeCommentThread();
-      }
-    };
-    document.addEventListener('click', this._documentClickHandler);
   }
 
   /**

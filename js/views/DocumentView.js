@@ -277,7 +277,7 @@ export class DocumentView extends BaseView {
 
   renderDocumentHeader(doc, publisher) {
     const breadcrumbsHtml = PageHeader.renderBreadcrumbs([
-      { label: 'Common Operating Picture', href: '#/cop' },
+      { label: 'Monitors', href: '#/monitors' },
       'Document'
     ]);
 

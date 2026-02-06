@@ -97,7 +97,7 @@ export class BaseView {
     parts.push(...entityIds.filter(Boolean));
     
     if (parts.length === 0) {
-      return '#/cop/';
+      return '#/monitors';
     }
     
     return `#/${parts.join('/')}/`;
@@ -126,10 +126,10 @@ export class BaseView {
         breadcrumbs.push({ label: 'Projects', href: '#/projects' });
         breadcrumbs.push({ label: ctx.getName(), href: `#/${ctx.id}/` });
       } else {
-        breadcrumbs.push({ label: 'Common Operating Picture', href: '#/cop/' });
+        breadcrumbs.push({ label: 'Monitors', href: '#/monitors' });
       }
     } else {
-      breadcrumbs.push({ label: 'Common Operating Picture', href: '#/cop/' });
+      breadcrumbs.push({ label: 'Monitors', href: '#/monitors' });
     }
     
     // Add remaining items

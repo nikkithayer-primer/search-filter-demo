@@ -43,12 +43,12 @@ export class ListView extends BaseView {
       // Build breadcrumbs array
       const breadcrumbs = this.options.statusFilter
         ? [
-            { label: 'Common Operating Picture', href: '#/cop' },
+            { label: 'Monitors', href: '#/monitors' },
             { label: 'Narratives', href: '#/narratives' },
             config.title
           ]
         : [
-            { label: 'Common Operating Picture', href: '#/cop' },
+            { label: 'Monitors', href: '#/monitors' },
             config.title
           ];
 
@@ -111,12 +111,12 @@ export class ListView extends BaseView {
       // Build breadcrumbs array
       const breadcrumbs = this.options.statusFilter
         ? [
-            { label: 'Common Operating Picture', href: '#/cop' },
+            { label: 'Monitors', href: '#/monitors' },
             { label: 'Events', href: '#/events' },
             config.title
           ]
         : [
-            { label: 'Common Operating Picture', href: '#/cop' },
+            { label: 'Monitors', href: '#/monitors' },
             config.title
           ];
 
@@ -189,12 +189,12 @@ export class ListView extends BaseView {
     // Build breadcrumbs array
     const breadcrumbs = this.options.statusFilter
       ? [
-          { label: 'Common Operating Picture', href: '#/cop' },
+          { label: 'Monitors', href: '#/monitors' },
           { label: config.title, href: `#/${this.entityType}` },
           config.title
         ]
       : [
-          { label: 'Common Operating Picture', href: '#/cop' },
+          { label: 'Monitors', href: '#/monitors' },
           config.title
         ];
 

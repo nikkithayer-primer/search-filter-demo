@@ -8,11 +8,7 @@ import { DataService } from './data/DataService.js';
 import { validateDataset } from './data/SchemaValidator.js';
 import { getMonitorEditor } from './components/MonitorEditorModal.js';
 import { getSearchFilterEditor } from './components/SearchFilterEditorModal.js';
-import { getTagEditor } from './components/TagEditorModal.js';
-import { mockData as americanPoliticsData, datasetId as americanPoliticsId, datasetName as americanPoliticsName, defaultSettings as americanPoliticsSettings } from './data/datasets/american-politics/index.js';
-import { mockData as chinaSemiconductorData, datasetId as chinaSemiconductorId, datasetName as chinaSemiconductorName, defaultSettings as chinaSemiconductorSettings } from './data/datasets/china-semiconductor/index.js';
 import { mockData as walmartBrandData, datasetId as walmartBrandId, datasetName as walmartBrandName, defaultSettings as walmartBrandSettings } from './data/datasets/walmart-brand/index.js';
-import { mockData as singaporeMcoData, datasetId as singaporeMcoId, datasetName as singaporeMcoName, defaultSettings as singaporeMcoSettings } from './data/datasets/singapore-mco/index.js';
 import { Router } from './router.js';
 import { getSourceViewer } from './components/SourceViewerModal.js';
 import { getEntityCardModal } from './components/EntityCardModal.js';
@@ -20,31 +16,13 @@ import { getTextSelectionPopover } from './components/TextSelectionPopover.js';
 import { escapeHtml } from './utils/htmlUtils.js';
 import { ChatService } from './services/ChatService.js';
 
-// Dataset registry
+// Dataset registry (Walmart only)
 const DATASETS = {
-  [americanPoliticsId]: { 
-    id: americanPoliticsId,
-    name: americanPoliticsName, 
-    data: americanPoliticsData,
-    defaultSettings: americanPoliticsSettings
-  },
-  [chinaSemiconductorId]: { 
-    id: chinaSemiconductorId,
-    name: chinaSemiconductorName, 
-    data: chinaSemiconductorData,
-    defaultSettings: chinaSemiconductorSettings
-  },
-  [walmartBrandId]: { 
+  [walmartBrandId]: {
     id: walmartBrandId,
-    name: walmartBrandName, 
+    name: walmartBrandName,
     data: walmartBrandData,
     defaultSettings: walmartBrandSettings
-  },
-  [singaporeMcoId]: { 
-    id: singaporeMcoId,
-    name: singaporeMcoName, 
-    data: singaporeMcoData,
-    defaultSettings: singaporeMcoSettings
   }
 };
 
@@ -67,9 +45,6 @@ class App {
     
     // Initialize with the currently selected dataset
     this.initializeDataset();
-    
-    // Initialize dataset switcher
-    this.initDatasetSwitcher();
 
     // Initialize router
     this.router = new Router('app');
@@ -87,9 +62,6 @@ class App {
     // Populate filters dropdown
     this.populateFiltersDropdown();
     
-    // Populate tags dropdown
-    this.populateTagsDropdown();
-    
     // Initialize settings modal
     this.initSettingsModal();
     
@@ -102,9 +74,6 @@ class App {
     // Initialize text selection popover for saving snippets to projects
     getTextSelectionPopover();
     
-    // Update navigation based on settings
-    this.updateNavigationForSettings();
-
     // Update chat summary on route changes
     window.addEventListener('hashchange', () => this.updatePageSummary());
     
@@ -121,11 +90,8 @@ class App {
         }
       }
       // Update navigation when settings change
-      this.updateNavigationForSettings();
       // Refresh filters dropdown
       this.populateFiltersDropdown();
-      // Refresh tags dropdown
-      this.populateTagsDropdown();
     });
   }
 
@@ -134,7 +100,7 @@ class App {
    */
   initializeDataset() {
     const currentDatasetId = this.dataStore.getCurrentDataset();
-    const dataset = DATASETS[currentDatasetId] || DATASETS['singapore-mco'];
+    const dataset = DATASETS[currentDatasetId] || DATASETS[walmartBrandId];
     
     // Load the dataset with its default settings
     this.dataStore.switchDataset(dataset.id, dataset.data, dataset.name, dataset.defaultSettings);
@@ -154,91 +120,6 @@ class App {
     if (results.summary.errors > 0) {
       console.warn(`Dataset '${datasetName}' has ${results.summary.errors} validation errors`);
     }
-  }
-
-  /**
-   * Switch to a different dataset
-   * @param {string} datasetId - The dataset identifier to switch to
-   */
-  switchDataset(datasetId) {
-    const dataset = DATASETS[datasetId];
-    if (!dataset) {
-      console.error(`Unknown dataset: ${datasetId}`);
-      return;
-    }
-
-    // Switch the dataset in the store (including the name and default settings)
-    this.dataStore.switchDataset(datasetId, dataset.data, dataset.name, dataset.defaultSettings);
-    
-    // Validate dataset in development mode
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      this.validateCurrentDataset(dataset.name);
-    }
-    
-    // Update UI indicators
-    this.updateDatasetIndicators(datasetId);
-    
-    // Reset the mission filter state in router
-    if (this.router) {
-      this.router.filters.missionId = 'all';
-    }
-    
-    // Navigate to the dataset's default start page
-    const settings = this.dataStore.getSettings();
-    let defaultPage = settings.defaultStartPage || 'monitors';
-    
-    // If COP is disabled and was set as start page, fall back to monitors
-    if (!settings.copEnabled && (defaultPage === 'cop' || defaultPage === 'dashboard')) {
-      defaultPage = 'monitors';
-    }
-    
-    // Navigate to the default page for this dataset
-    window.location.hash = `#/${defaultPage}`;
-    
-    // Update page summary in chat
-    this.updatePageSummary();
-    
-    // Show success notification
-    this.showToast(`Switched to ${dataset.name} dataset`, 'success');
-  }
-
-  /**
-   * Initialize dataset switcher UI and event handlers
-   */
-  initDatasetSwitcher() {
-    const datasetOptions = document.querySelectorAll('.dataset-option');
-    
-    datasetOptions.forEach(option => {
-      option.addEventListener('click', (e) => {
-        e.preventDefault();
-        const datasetId = option.dataset.dataset;
-        if (datasetId && datasetId !== this.dataStore.getCurrentDataset()) {
-          this.switchDataset(datasetId);
-        }
-        
-        // Close the dropdown
-        const dropdown = option.closest('.nav-dropdown');
-        if (dropdown) {
-          dropdown.classList.remove('open');
-        }
-      });
-    });
-    
-    // Set initial active state
-    this.updateDatasetIndicators(this.dataStore.getCurrentDataset());
-  }
-
-  /**
-   * Update dataset indicator UI elements
-   * @param {string} activeDatasetId - The currently active dataset ID
-   */
-  updateDatasetIndicators(activeDatasetId) {
-    const datasetOptions = document.querySelectorAll('.dataset-option');
-    
-    datasetOptions.forEach(option => {
-      const isActive = option.dataset.dataset === activeDatasetId;
-      option.classList.toggle('active', isActive);
-    });
   }
 
   /**
@@ -368,25 +249,13 @@ class App {
         <div class="settings-section">
           <h3 class="settings-section-title">Navigation</h3>
           
-          <div class="settings-row">
-            <div class="settings-label">
-              <span class="settings-label-text">Enable Common Operating Picture</span>
-              <span class="settings-label-description">Show COP in navigation and enable it as a start page option.</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="setting-cop-enabled" ${settings.copEnabled ? 'checked' : ''}>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          
           <div class="settings-row" id="start-page-row">
             <div class="settings-label">
               <span class="settings-label-text">Default Start Page</span>
               <span class="settings-label-description">Page to show when opening the app</span>
             </div>
             <select id="setting-start-page" class="settings-select">
-              <option value="cop" ${settings.defaultStartPage === 'cop' ? 'selected' : ''} ${!settings.copEnabled ? 'disabled' : ''}>Common Operating Picture</option>
-              <option value="monitors" ${settings.defaultStartPage === 'monitors' ? 'selected' : ''}>Monitors</option>
+              <option value="monitors" ${(settings.defaultStartPage || 'monitors') === 'monitors' ? 'selected' : ''}>Monitors</option>
               <option value="search" ${settings.defaultStartPage === 'search' ? 'selected' : ''}>Search</option>
             </select>
           </div>
@@ -499,21 +368,6 @@ class App {
       </div>
     `);
     
-    // Handle COP toggle enabling/disabling COP as start page option
-    const copToggle = document.getElementById('setting-cop-enabled');
-    const startPageSelect = document.getElementById('setting-start-page');
-    const copOption = startPageSelect?.querySelector('option[value="cop"]');
-    
-    copToggle?.addEventListener('change', () => {
-      if (copOption) {
-        copOption.disabled = !copToggle.checked;
-      }
-      // If COP was selected but is now disabled, switch to monitors
-      if (!copToggle.checked && startPageSelect?.value === 'cop') {
-        startPageSelect.value = 'monitors';
-      }
-    });
-    
     // Handle API key visibility toggle
     const apiKeyInput = document.getElementById('setting-openai-key');
     const toggleKeyBtn = document.getElementById('toggle-key-visibility');
@@ -545,20 +399,13 @@ class App {
    * Save settings from the modal
    */
   saveSettings() {
-    const copEnabled = document.getElementById('setting-cop-enabled')?.checked ?? true;
-    let defaultStartPage = document.getElementById('setting-start-page')?.value || 'cop';
+    const defaultStartPage = document.getElementById('setting-start-page')?.value || 'monitors';
     const defaultViewTab = document.getElementById('setting-default-tab')?.value || 'dashboard';
     const showClassification = document.getElementById('setting-show-classification')?.checked ?? true;
     const autoSummary = document.getElementById('setting-auto-summary')?.checked ?? false;
     const suggestedQuestions = document.getElementById('setting-suggested-questions')?.checked ?? true;
     
-    // If COP is disabled and was selected as start page, fall back to monitors
-    if (!copEnabled && defaultStartPage === 'cop') {
-      defaultStartPage = 'monitors';
-    }
-    
     this.dataStore.updateSettings({
-      copEnabled,
       defaultStartPage,
       defaultViewTab,
       showClassification,
@@ -589,22 +436,6 @@ class App {
     
     this.closeModal();
     this.showToast('Settings saved.' + apiKeyMessage, 'success');
-  }
-
-  /**
-   * Update navigation based on settings
-   */
-  updateNavigationForSettings() {
-    const settings = this.dataStore.getSettings();
-    const copLink = document.querySelector('.nav-link[href="#/cop/"]');
-    
-    if (copLink) {
-      if (settings.copEnabled) {
-        copLink.classList.remove('hidden');
-      } else {
-        copLink.classList.add('hidden');
-      }
-    }
   }
 
   /**
@@ -948,105 +779,6 @@ class App {
     
     if (filter) {
       editor.openEdit(filter, callback);
-    } else {
-      editor.openCreate(callback);
-    }
-  }
-
-  /**
-   * Populate the tags dropdown with all tags
-   */
-  populateTagsDropdown() {
-    const menu = document.getElementById('tags-dropdown-menu');
-    if (!menu) return;
-
-    const tags = DataService.getTags();
-    const tagCounts = DataService.getTagCounts();
-    
-    // Always show the "New Tag" button at the top
-    const newTagBtn = `
-      <button class="dropdown-action-btn tag-dropdown-new">
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M8 3v10M3 8h10"/>
-        </svg>
-        New Tag
-      </button>
-    `;
-    
-    if (tags.length === 0) {
-      menu.innerHTML = `
-        ${newTagBtn}
-        <div class="dropdown-divider"></div>
-        <div class="dropdown-empty-state">
-          <span class="text-muted">No tags</span>
-        </div>
-      `;
-      this.attachTagDropdownListeners(menu, []);
-      return;
-    }
-
-    const tagLinks = tags.map(tag => {
-      const count = tagCounts[tag.id] || 0;
-      return `
-        <div class="tag-dropdown-item" data-tag-id="${tag.id}">
-          <div class="tag-dropdown-info">
-            <span class="tag-dropdown-color" style="background-color: ${tag.color || '#6b7280'}"></span>
-            <span class="tag-dropdown-name">${this.escapeHtml(tag.name)}</span>
-            <span class="tag-dropdown-count">${count}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    menu.innerHTML = `
-      ${newTagBtn}
-      <div class="dropdown-divider"></div>
-      ${tagLinks}
-    `;
-
-    this.attachTagDropdownListeners(menu, tags);
-  }
-
-  /**
-   * Attach event listeners for the tags dropdown
-   */
-  attachTagDropdownListeners(menu, tags) {
-    // New tag button
-    const newBtn = menu.querySelector('.tag-dropdown-new');
-    if (newBtn) {
-      newBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.openTagEditor(null);
-        this.closeDropdown(menu);
-      });
-    }
-    
-    // Tag item clicks - navigate to tag detail
-    menu.querySelectorAll('.tag-dropdown-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        const tagId = item.dataset.tagId;
-        if (tagId) {
-          window.location.hash = `#/tag/${tagId}`;
-        }
-        this.closeDropdown(menu);
-      });
-    });
-  }
-
-  /**
-   * Open the tag editor modal
-   */
-  openTagEditor(tag) {
-    const editor = getTagEditor();
-    const callback = () => {
-      this.populateTagsDropdown();
-      if (this.router) {
-        this.router.handleRoute();
-      }
-    };
-    
-    if (tag) {
-      editor.openEdit(tag, callback);
     } else {
       editor.openCreate(callback);
     }

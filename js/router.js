@@ -14,7 +14,6 @@
  * See docs/ROUTING.md for full specification
  */
 
-import { DashboardView } from './views/DashboardView.js';
 import { NarrativeView } from './views/NarrativeView.js';
 import { escapeHtml } from './utils/htmlUtils.js';
 import { ThemeView } from './views/ThemeView.js';
@@ -34,8 +33,6 @@ import { SearchView } from './views/SearchView.js';
 import { ProjectsView } from './views/ProjectsView.js';
 import { ProjectView } from './views/ProjectView.js';
 import { TopicView } from './views/TopicView.js';
-import { TagsView } from './views/TagsView.js';
-import { TagDetailView } from './views/TagDetailView.js';
 import { ActivityFeedView } from './views/ActivityFeedView.js';
 import { initStickyHeader, destroyStickyHeader } from './utils/stickyHeader.js';
 import { TimeRangeFilter } from './components/TimeRangeFilter.js';
@@ -60,14 +57,13 @@ const ENTITY_VIEW_MAP = {
   'organization': { view: OrganizationView, listType: 'entities' },
   'document': { view: DocumentView, listType: 'documents' },
   'topic': { view: TopicView, listType: 'topics' },
-  'tag': { view: TagDetailView, listType: 'tags' },
   'monitor': { view: MonitorView, listType: 'monitors' },
   'workspace': { view: WorkspaceView, listType: 'workspaces' },
   'project': { view: ProjectView, listType: 'projects' }
 };
 
 // Top-level routes that don't follow the ID-based pattern
-const TOP_LEVEL_ROUTES = ['workspaces', 'monitors', 'search', 'projects', 'activity', 'documents', 'settings', 'data-model', 'component-demos', 'status', 'cop'];
+const TOP_LEVEL_ROUTES = ['workspaces', 'monitors', 'search', 'projects', 'activity', 'documents', 'settings', 'status'];
 
 export class Router {
   constructor(containerId) {
@@ -153,7 +149,7 @@ export class Router {
         <div class="content-area">
           <div class="card">
             <div class="card-body" style="padding: var(--space-2xl); text-align: center;">
-              <p>Try <a href="#/cop/">returning to the Common Operating Picture</a> or refreshing the page.</p>
+              <p>Try <a href="#/monitors">returning to Monitors</a> or refreshing the page.</p>
             </div>
           </div>
         </div>
@@ -176,11 +172,7 @@ export class Router {
       // Get default page from settings
       const settings = dataStore.getSettings();
       let defaultPage = settings.defaultStartPage || 'monitors';
-      
-      // If COP is disabled and was set as start page, fall back to monitors
-      if (!settings.copEnabled && (defaultPage === 'cop' || defaultPage === 'dashboard')) {
-        defaultPage = 'monitors';
-      }
+      if (defaultPage === 'cop') defaultPage = 'monitors';
       
       // Navigate to current hash or default based on settings
       if (!window.location.hash || window.location.hash === '#/') {
@@ -535,10 +527,10 @@ export class Router {
   resolveContextScope(contextId, projectChain = []) {
     if (!contextId) {
       return { 
-        type: 'cop', 
+        type: 'monitors', 
         id: null, 
         documentIds: null,
-        getName: () => 'Common Operating Picture'
+        getName: () => 'Monitors'
       };
     }
     
@@ -632,7 +624,7 @@ export class Router {
     parts.push(...entityIds.filter(Boolean));
     
     if (parts.length === 0) {
-      return '#/cop/';
+      return '#/monitors';
     }
     
     return `#/${parts.join('/')}/`;
@@ -649,9 +641,7 @@ export class Router {
     // No hash or empty path: redirect to dataset's default start page
     if (!rawHash || rawHash === '/') {
       let defaultPage = settings.defaultStartPage || 'monitors';
-      if (!settings.copEnabled && defaultPage === 'cop') {
-        defaultPage = 'monitors';
-      }
+      if (defaultPage === 'cop') defaultPage = 'monitors';
       window.location.hash = `#/${defaultPage}`;
       return;
     }
@@ -666,15 +656,14 @@ export class Router {
     // Parse the route using ID-based parser
     const parsed = this.parseIdBasedRoute(hash);
 
-    // Check for COP disabled with COP-scoped route
-    if (parsed.contextType === 'cop' && !parsed.topLevelRoute && !settings.copEnabled) {
-      // COP is disabled and route requires COP - show 404 or redirect
+    // COP removed: redirect COP-scoped routes to monitors
+    if (parsed.contextType === 'cop' && !parsed.topLevelRoute) {
       window.location.hash = '#/monitors';
       return;
     }
 
     // Determine the primary route for nav link highlighting
-    this.currentRoute = parsed.topLevelRoute || parsed.contextType || 'cop';
+    this.currentRoute = parsed.topLevelRoute || parsed.contextType || 'monitors';
     this.currentContext = this.resolveContextScope(parsed.contextId, parsed.projectChain || []);
 
     // Destroy current view and clean up sticky header
@@ -735,9 +724,7 @@ export class Router {
     } else {
       // No recognized route - redirect to default
       let defaultPage = settings.defaultStartPage || 'monitors';
-      if (!settings.copEnabled && defaultPage === 'cop') {
-        defaultPage = 'monitors';
-      }
+      if (defaultPage === 'cop') defaultPage = 'monitors';
       window.location.hash = `#/${defaultPage}`;
       return;
     }
@@ -809,25 +796,14 @@ export class Router {
         this.currentView = new DocumentsView(this.container, filterOptions);
         break;
         
-      case 'data-model':
-        window.location.href = 'data-model.html';
-        return;
-        
-      case 'component-demos':
-        window.location.href = 'component-demos.html';
-        return;
-        
       case 'status':
-        // Redirect to COP
-        window.location.hash = '#/cop/';
+        window.location.hash = '#/monitors';
         return;
         
       default:
         // Unknown top-level route - redirect to default
         let defaultPage = settings.defaultStartPage || 'monitors';
-        if (!settings.copEnabled && defaultPage === 'cop') {
-          defaultPage = 'monitors';
-        }
+        if (defaultPage === 'cop') defaultPage = 'monitors';
         window.location.hash = `#/${defaultPage}`;
     }
   }
@@ -839,13 +815,9 @@ export class Router {
   _handleIdBasedRoute(parsed, filterOptions, settings) {
     const { contextId, contextType, entityId, entityType, isCopHome, isContextHome } = parsed;
     
-    // COP home
+    // COP removed: redirect COP home to monitors
     if (isCopHome) {
-      if (!settings.copEnabled) {
-        window.location.hash = '#/monitors';
-        return;
-      }
-      this.currentView = new DashboardView(this.container, filterOptions);
+      window.location.hash = '#/monitors';
       return;
     }
     
@@ -867,6 +839,11 @@ export class Router {
     
     // Entity detail view
     if (entityId && entityType) {
+      // Tags removed: redirect tag routes to monitors
+      if (entityType === 'tag') {
+        window.location.hash = '#/monitors';
+        return;
+      }
       // Documents require a context - redirect context-less document routes to documents view
       if (entityType === 'document' && !contextId) {
         window.location.hash = `#/documents?doc=${entityId}`;
@@ -898,8 +875,6 @@ export class Router {
       // Check if this link matches the current route/context
       const matches = 
         linkRoute === route ||
-        linkRoute === 'cop' && route === 'cop' ||
-        linkRoute === 'cop/' && route === 'cop' ||
         linkRoute === 'monitors' && (route === 'monitors' || route === 'monitor') ||
         linkRoute === 'workspaces' && (route === 'workspaces' || route === 'workspace') ||
         linkRoute === 'projects' && (route === 'projects' || route === 'project');
@@ -934,7 +909,7 @@ export class Router {
    * @returns {Object} Parsed route with context, entityType, entityId, etc.
    */
   getCurrentRoute() {
-    const fullHash = window.location.hash.slice(2) || 'cop';
+    const fullHash = window.location.hash.slice(2) || 'monitors';
     const queryIndex = fullHash.indexOf('?');
     const hash = queryIndex === -1 ? fullHash : fullHash.slice(0, queryIndex);
     const queryParams = this.parseQueryParams(fullHash);
@@ -963,7 +938,7 @@ export class Router {
    * @returns {string} The full hash URL
    */
   buildUrl(params = {}) {
-    const fullHash = window.location.hash.slice(2) || 'cop';
+    const fullHash = window.location.hash.slice(2) || 'monitors';
     const queryIndex = fullHash.indexOf('?');
     const basePath = queryIndex === -1 ? `#/${fullHash}` : `#/${fullHash.slice(0, queryIndex)}`;
     

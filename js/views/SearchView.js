@@ -74,7 +74,7 @@ export class SearchView extends BaseView {
 
     const headerHtml = PageHeader.render({
       breadcrumbs: [
-        { label: 'Common Operating Picture', href: '#/cop' },
+        { label: 'Monitors', href: '#/monitors' },
         'Search'
       ],
       title: 'Search',

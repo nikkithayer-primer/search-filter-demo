@@ -75,21 +75,12 @@
 
   <nav class="top-navbar">
     <div class="navbar-left">
-      <a href="#/cop/" class="logo">
+      <a href="#/monitors" class="logo">
         <img src="img/logo.png" alt="Primer" class="logo-img">
       </a>
       
       <div class="navbar-links">
         <!-- Direct Links -->
-        <a href="#/cop/" class="nav-link" data-view="cop">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="var(--text-secondary)" stroke-width="1">
-            <rect x="1" y="1" width="6" height="6" rx="1"/>
-            <rect x="9" y="1" width="6" height="6" rx="1"/>
-            <rect x="1" y="9" width="6" height="6" rx="1"/>
-            <rect x="9" y="9" width="6" height="6" rx="1"/>
-          </svg>
-          <span>Common Operating Picture</span>
-        </a>
         <a href="#/search" class="nav-link" data-view="search">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="var(--text-secondary)" stroke-width="1">
             <circle cx="7" cy="7" r="4.5"/>
@@ -139,20 +130,6 @@
         </div>
       </div>
       
-      <!-- Tags Dropdown -->
-      <div class="nav-dropdown tags-dropdown" id="tags-dropdown">
-        <button class="nav-dropdown-trigger">
-          <span>Tags</span>
-          <svg class="dropdown-arrow" viewBox="0 0 16 16" fill="none" stroke="var(--text-secondary)" stroke-width="1">
-            <path d="M4 6l4 4 4-4"/>
-          </svg>
-        </button>
-        <div class="nav-dropdown-menu" id="tags-dropdown-menu">
-          <!-- Populated dynamically by app.js -->
-          <div class="dropdown-empty-state">No tags</div>
-        </div>
-      </div>
-      
       <div class="nav-dropdown avatar-dropdown">
         <button class="avatar-trigger">
           <span class="avatar-initials">JD</span>
@@ -163,43 +140,6 @@
             <span class="avatar-email">jane.doe@primer.ai</span>
           </div>
           <div class="avatar-menu-divider"></div>
-          <div class="avatar-menu-section">
-            <span class="avatar-menu-label">Sample Dataset</span>
-            <button class="dataset-option" data-dataset="american-politics">
-              <span class="dataset-indicator"></span>
-              <span>American Politics</span>
-            </button>
-            <button class="dataset-option" data-dataset="china-semiconductor">
-              <span class="dataset-indicator"></span>
-              <span>China Semiconductor</span>
-            </button>
-            <button class="dataset-option" data-dataset="walmart-brand">
-              <span class="dataset-indicator"></span>
-              <span>Walmart Brand</span>
-            </button>
-            <button class="dataset-option" data-dataset="singapore-mco">
-              <span class="dataset-indicator"></span>
-              <span>Singapore MCO</span>
-            </button>
-          </div>
-          <div class="avatar-menu-divider"></div>
-          <a href="#/data-model" class="nav-link" data-view="data-model">
-            <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="var(--text-secondary)" stroke-width="1">
-              <ellipse cx="8" cy="4" rx="5" ry="2"/>
-              <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4"/>
-              <path d="M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-            </svg>
-            <span>Data Model</span>
-          </a>
-          <a href="#/component-demos" class="nav-link" data-view="component-demos">
-            <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="var(--text-secondary)" stroke-width="1">
-              <rect x="1" y="1" width="5" height="5" rx="1"/>
-              <rect x="10" y="1" width="5" height="5" rx="1"/>
-              <rect x="1" y="10" width="5" height="5" rx="1"/>
-              <rect x="10" y="10" width="5" height="5" rx="1"/>
-            </svg>
-            <span>Component Demos</span>
-          </a>
           <div class="avatar-menu-divider"></div>
           <button class="avatar-menu-item" id="open-settings">
             <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="var(--text-secondary)" stroke-width="1">

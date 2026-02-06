@@ -114,7 +114,7 @@ export class TagDetailView extends BaseView {
 
     const headerHtml = PageHeader.render({
       breadcrumbs: [
-        { label: 'COP', href: '#/cop/' },
+        { label: 'Monitors', href: '#/monitors' },
         { label: 'Tags', href: '#/tags' },
         tag.name
       ],

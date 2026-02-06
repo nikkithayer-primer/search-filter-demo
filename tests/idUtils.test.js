@@ -133,10 +133,10 @@ describe('idUtils', () => {
       expect(buildIdRoute(null, 'narr-001', 'person-002')).toBe('#/narr-001/person-002/');
     });
 
-    it('returns COP home for empty routes', () => {
-      expect(buildIdRoute(null)).toBe('#/cop/');
-      expect(buildIdRoute(null, null)).toBe('#/cop/');
-      expect(buildIdRoute(null, '')).toBe('#/cop/');
+    it('returns default home (monitors) for empty routes', () => {
+      expect(buildIdRoute(null)).toBe('#/monitors');
+      expect(buildIdRoute(null, null)).toBe('#/monitors');
+      expect(buildIdRoute(null, '')).toBe('#/monitors');
     });
 
     it('filters out falsy entity IDs', () => {
