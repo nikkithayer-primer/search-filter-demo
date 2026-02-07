@@ -1641,7 +1641,8 @@ class DataStore {
       projects: [],
       searchFilters: [],
       tagGroups: [],
-      tags: []
+      tags: [],
+      filterCatalog: []
     };
   }
 }

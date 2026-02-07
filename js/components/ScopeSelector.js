@@ -34,7 +34,8 @@ export class ScopeSelector {
       keywords: [],
       documentTypes: [],
       publisherIds: [],
-      authors: []
+      authors: [],
+      metadataFilters: {}  // { dimensionId: [selectedValues] }
     };
     
     this.filterText = '';
@@ -58,7 +59,7 @@ export class ScopeSelector {
    */
   setScope(scope) {
     if (scope?.mode === 'advanced') {
-      this.scope = { personIds: [], organizationIds: [], factionIds: [], locationIds: [], keywords: [], documentTypes: [], publisherIds: [], authors: [] };
+      this.scope = { personIds: [], organizationIds: [], factionIds: [], locationIds: [], keywords: [], documentTypes: [], publisherIds: [], authors: [], metadataFilters: {} };
     } else {
       this.scope = {
         personIds: [...(scope?.personIds || [])],
@@ -68,7 +69,8 @@ export class ScopeSelector {
         keywords: [...(scope?.keywords || [])],
         documentTypes: [...(scope?.documentTypes || [])],
         publisherIds: [...(scope?.publisherIds || [])],
-        authors: [...(scope?.authors || [])]
+        authors: [...(scope?.authors || [])],
+        metadataFilters: scope?.metadataFilters ? JSON.parse(JSON.stringify(scope.metadataFilters)) : {}
       };
     }
     
@@ -81,6 +83,10 @@ export class ScopeSelector {
     if (this.scope.documentTypes.length > 0) this.expandedSections.add('documentTypes');
     if (this.scope.publisherIds.length > 0) this.expandedSections.add('publishers');
     if (this.scope.authors.length > 0) this.expandedSections.add('authors');
+    // Expand catalog sections that have selections
+    for (const [dimId, vals] of Object.entries(this.scope.metadataFilters)) {
+      if (vals?.length > 0) this.expandedSections.add('catalog_' + dimId);
+    }
     
     this.render();
   }
@@ -144,6 +150,19 @@ export class ScopeSelector {
       }
     });
     
+    // Merge metadata filters from saved filter
+    const filterMetadataFilters = filterScope.metadataFilters || {};
+    for (const [dimId, vals] of Object.entries(filterMetadataFilters)) {
+      if (!this.scope.metadataFilters[dimId]) {
+        this.scope.metadataFilters[dimId] = [];
+      }
+      (vals || []).forEach(v => {
+        if (!this.scope.metadataFilters[dimId].includes(v)) {
+          this.scope.metadataFilters[dimId].push(v);
+        }
+      });
+    }
+    
     // Update expanded sections
     if (this.scope.personIds.length > 0) this.expandedSections.add('persons');
     if (this.scope.organizationIds.length > 0) this.expandedSections.add('organizations');
@@ -152,6 +171,9 @@ export class ScopeSelector {
     if (this.scope.documentTypes.length > 0) this.expandedSections.add('documentTypes');
     if (this.scope.publisherIds.length > 0) this.expandedSections.add('publishers');
     if (this.scope.authors.length > 0) this.expandedSections.add('authors');
+    for (const [dimId, vals] of Object.entries(this.scope.metadataFilters)) {
+      if (vals?.length > 0) this.expandedSections.add('catalog_' + dimId);
+    }
     
     this.render();
     this.notifyChange();
@@ -169,7 +191,8 @@ export class ScopeSelector {
       keywords: [],
       documentTypes: [],
       publisherIds: [],
-      authors: []
+      authors: [],
+      metadataFilters: {}
     };
     this.expandedSections = new Set();
     this.render();
@@ -181,7 +204,12 @@ export class ScopeSelector {
    */
   hasScope() {
     return Object.keys(this.scope)
-      .some(k => Array.isArray(this.scope[k]) && this.scope[k].length > 0);
+      .some(k => {
+        if (k === 'metadataFilters') {
+          return Object.values(this.scope.metadataFilters || {}).some(v => v?.length > 0);
+        }
+        return Array.isArray(this.scope[k]) && this.scope[k].length > 0;
+      });
   }
 
   /**
@@ -385,6 +413,26 @@ export class ScopeSelector {
           <button class="chip-remove" aria-label="Remove">&times;</button>
         </span>
       `);
+    }
+    
+    // Render filter catalog chips (metadataFilters)
+    const catalog = DataService.getFilterCatalog();
+    for (const [dimId, selectedValues] of Object.entries(this.scope.metadataFilters || {})) {
+      const dimension = catalog.find(d => d.id === dimId);
+      const dimName = dimension?.name || dimId;
+      for (const val of selectedValues) {
+        chips.push(`
+          <span class="scope-chip scope-chip-catalog" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}">
+            <span class="scope-chip-icon">
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
+              </svg>
+            </span>
+            <span class="scope-chip-label">${this.escapeHtml(dimName)}: ${this.escapeHtml(val)}</span>
+            <button class="chip-remove" aria-label="Remove">&times;</button>
+          </span>
+        `);
+      }
     }
     
     if (chips.length === 0) {
@@ -611,6 +659,7 @@ export class ScopeSelector {
     return html;
   }
 
+
   /**
    * Check if a filter matches the current search text
    */
@@ -638,16 +687,34 @@ export class ScopeSelector {
   }
 
   /**
-   * Render the Search Filters accordion
+   * Categorize a search filter into one of three subsections.
+   * Returns 'search' (entity-based), 'extractions', or 'metadata'.
    */
-  renderSearchFiltersAccordion() {
-    const allFilters = dataStore.data.searchFilters || [];
-    const isExpanded = this.expandedSections.has('searchFilters');
-    
-    // Filter search filters by search text
-    const filters = allFilters.filter(filter => this.filterMatchesSearch(filter, this.filterText));
-    
-    const filtersContent = filters.length > 0 
+  categorizeFilter(filter) {
+    const scope = filter.scope || {};
+    const mfKeys = Object.keys(scope.metadataFilters || {});
+
+    // If it has metadata filters, classify by dimension name
+    if (mfKeys.length > 0) {
+      const hasExtracted = mfKeys.some(k => k.startsWith('extracted'));
+      return hasExtracted ? 'extractions' : 'metadata';
+    }
+
+    // Otherwise it's entity-based
+    return 'search';
+  }
+
+  /**
+   * Render a single filter-group accordion section.
+   * @param {string} sectionKey  - expandedSections key (e.g. 'searchFilters')
+   * @param {string} label       - display label
+   * @param {Array}  allFilters  - unfiltered list for this section
+   * @param {Array}  filters     - search-filtered list for this section
+   */
+  renderFilterSection(sectionKey, label, allFilters, filters) {
+    const isExpanded = this.expandedSections.has(sectionKey);
+
+    const filtersContent = filters.length > 0
       ? filters.map(filter => {
           const itemCount = this.getFilterItemCount(filter);
           const tooltipHtml = this.getFilterTooltipHtml(filter);
@@ -670,22 +737,21 @@ export class ScopeSelector {
             </div>
           `;
         }).join('')
-      : (allFilters.length > 0 
+      : (allFilters.length > 0
           ? `<div class="scope-entity-group-empty">No matching filters</div>`
           : `<div class="scope-entity-group-empty">No saved filters yet</div>`);
-    
-    // Show match count when filtering
-    const countText = this.filterText 
+
+    const countText = this.filterText
       ? `${filters.length} match${filters.length !== 1 ? 'es' : ''}`
       : `${allFilters.length} saved`;
-    
+
     return `
-      <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="searchFilters">
-        <button class="scope-entity-group-header" data-type="searchFilters">
+      <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="${sectionKey}">
+        <button class="scope-entity-group-header" data-type="${sectionKey}">
           <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 6l4 4 4-4"/>
           </svg>
-          <span class="scope-group-label">Search Filters</span>
+          <span class="scope-group-label">${label}</span>
           <span class="scope-group-count">${countText}</span>
         </button>
         <div class="scope-entity-group-items">
@@ -696,11 +762,48 @@ export class ScopeSelector {
   }
 
   /**
+   * Render the Search Filters accordion — three subsections:
+   *   1. Search Filters  (entity-based)
+   *   2. Extractions     (extracted dimensions)
+   *   3. Metadata        (other catalog dimensions)
+   */
+  renderSearchFiltersAccordion() {
+    const allFilters = dataStore.data.searchFilters || [];
+
+    // Split into three buckets
+    const buckets = { search: [], extractions: [], metadata: [] };
+    for (const f of allFilters) {
+      buckets[this.categorizeFilter(f)].push(f);
+    }
+
+    // Apply the current search text to each bucket
+    const filtered = {
+      search:      buckets.search.filter(f => this.filterMatchesSearch(f, this.filterText)),
+      extractions: buckets.extractions.filter(f => this.filterMatchesSearch(f, this.filterText)),
+      metadata:    buckets.metadata.filter(f => this.filterMatchesSearch(f, this.filterText))
+    };
+
+    let html = '';
+
+    if (buckets.search.length > 0) {
+      html += this.renderFilterSection('searchFilters', 'Search Filters', buckets.search, filtered.search);
+    }
+    if (buckets.extractions.length > 0) {
+      html += this.renderFilterSection('extractionFilters', 'Extractions', buckets.extractions, filtered.extractions);
+    }
+    if (buckets.metadata.length > 0) {
+      html += this.renderFilterSection('metadataFilters', 'Metadata', buckets.metadata, filtered.metadata);
+    }
+
+    return html;
+  }
+
+  /**
    * Get the total item count for a filter
    */
   getFilterItemCount(filter) {
     const scope = filter.scope || {};
-    return (scope.personIds?.length || 0) +
+    let count = (scope.personIds?.length || 0) +
            (scope.organizationIds?.length || 0) +
            (scope.factionIds?.length || 0) +
            (scope.locationIds?.length || 0) +
@@ -708,6 +811,10 @@ export class ScopeSelector {
            (scope.documentTypes?.length || 0) +
            (scope.publisherIds?.length || 0) +
            (scope.authors?.length || 0);
+    for (const vals of Object.values(scope.metadataFilters || {})) {
+      count += (vals?.length || 0);
+    }
+    return count;
   }
 
   /**
@@ -754,6 +861,19 @@ export class ScopeSelector {
         label: 'Keywords',
         items: keywords.map(k => `"${k}"`)
       });
+    }
+
+    // Add metadata filter dimensions
+    const catalog = DataService.getFilterCatalog();
+    for (const [dimId, vals] of Object.entries(scope.metadataFilters || {})) {
+      if (vals && vals.length > 0) {
+        const dimension = catalog.find(d => d.id === dimId);
+        const dimName = dimension?.name || dimId;
+        contents.push({
+          label: dimName,
+          items: [...vals]
+        });
+      }
     }
     
     return contents;
@@ -836,7 +956,7 @@ export class ScopeSelector {
    * Get the total item count in current scope
    */
   getScopeItemCount() {
-    return (this.scope.personIds?.length || 0) +
+    let count = (this.scope.personIds?.length || 0) +
            (this.scope.organizationIds?.length || 0) +
            (this.scope.factionIds?.length || 0) +
            (this.scope.locationIds?.length || 0) +
@@ -844,6 +964,11 @@ export class ScopeSelector {
            (this.scope.documentTypes?.length || 0) +
            (this.scope.publisherIds?.length || 0) +
            (this.scope.authors?.length || 0);
+    // Count metadata filter selections
+    for (const vals of Object.values(this.scope.metadataFilters || {})) {
+      count += (vals?.length || 0);
+    }
+    return count;
   }
 
   /**
@@ -939,7 +1064,8 @@ export class ScopeSelector {
         keywords: [...this.scope.keywords],
         documentTypes: [...(this.scope.documentTypes || [])],
         publisherIds: [...(this.scope.publisherIds || [])],
-        authors: [...(this.scope.authors || [])]
+        authors: [...(this.scope.authors || [])],
+        metadataFilters: JSON.parse(JSON.stringify(this.scope.metadataFilters || {}))
       }
     });
     
@@ -989,6 +1115,16 @@ export class ScopeSelector {
         if (chip) {
           if (chip.dataset.keyword !== undefined) {
             this.scope.keywords = this.scope.keywords.filter(k => k !== chip.dataset.keyword);
+          } else if (chip.dataset.dimensionId !== undefined) {
+            // Catalog filter chip removal
+            const dimId = chip.dataset.dimensionId;
+            const val = chip.dataset.value;
+            if (this.scope.metadataFilters[dimId]) {
+              this.scope.metadataFilters[dimId] = this.scope.metadataFilters[dimId].filter(v => v !== val);
+              if (this.scope.metadataFilters[dimId].length === 0) {
+                delete this.scope.metadataFilters[dimId];
+              }
+            }
           } else if (chip.dataset.id && chip.dataset.scopeKey) {
             const scopeKey = chip.dataset.scopeKey;
             // Handle authors specially since they store the actual value, not an ID
@@ -1077,8 +1213,28 @@ export class ScopeSelector {
         return;
       }
       
-      // Handle entity item click (not filter items)
-      const item = e.target.closest('.scope-entity-item:not(.scope-filter-item)');
+      // Handle catalog filter item click
+      const catalogItem = e.target.closest('.scope-catalog-item');
+      if (catalogItem) {
+        e.preventDefault();
+        const dimId = catalogItem.dataset.dimensionId;
+        const val = catalogItem.dataset.value;
+        if (dimId && val) {
+          if (!this.scope.metadataFilters[dimId]) {
+            this.scope.metadataFilters[dimId] = [];
+          }
+          if (!this.scope.metadataFilters[dimId].includes(val)) {
+            this.scope.metadataFilters[dimId].push(val);
+            this.refreshChips();
+            this.refreshEntityList();
+            this.notifyChange();
+          }
+        }
+        return;
+      }
+      
+      // Handle entity item click (not filter items, not catalog items)
+      const item = e.target.closest('.scope-entity-item:not(.scope-filter-item):not(.scope-catalog-item)');
       if (item) {
         e.preventDefault();
         const { id, scopeKey } = item.dataset;

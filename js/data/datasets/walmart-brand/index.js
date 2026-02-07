@@ -19,6 +19,7 @@ import { topics } from './topics.js';
 import { searchFilters } from './searchFilters.js';
 import { tagGroups } from './tagGroups.js';
 import { tags } from './tags.js';
+import { filterCatalog } from './filterCatalog.js';
 
 // Workspaces - saved search results with document collections
 export const workspaces = [
@@ -120,7 +121,8 @@ export const mockData = {
   projects,
   searchFilters,
   tagGroups,
-  tags
+  tags,
+  filterCatalog
 };
 
 export default mockData;

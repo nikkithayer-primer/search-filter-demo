@@ -231,6 +231,40 @@ const matchDocumentToScope = (doc, scope) => {
     matchResults.push(match);
   }
   
+  // Check metadata filter matches (from filter catalog)
+  if (scope.metadataFilters && typeof scope.metadataFilters === 'object') {
+    const catalog = dataStore.data?.filterCatalog || [];
+    for (const [dimensionId, selectedValues] of Object.entries(scope.metadataFilters)) {
+      if (!selectedValues || selectedValues.length === 0) continue;
+      
+      // Find the catalog entry for this dimension
+      const dimension = catalog.find(d => d.id === dimensionId);
+      if (!dimension) continue;
+      
+      let match = false;
+      
+      if (dimension.type === 'mapped' && dimension.docMapping) {
+        // Catalog-only dimension: check if this doc is in any selected value's mapping
+        match = selectedValues.some(val => {
+          const mappedDocs = dimension.docMapping[val];
+          return mappedDocs && mappedDocs.includes(doc.id);
+        });
+      } else if (dimension.metadataKey) {
+        // Metadata-based dimension: check doc.metadata
+        const docValue = doc.metadata?.[dimension.metadataKey];
+        if (Array.isArray(docValue)) {
+          // Multi-value: doc has ['value1', 'value2', ...], user selected ['value1']
+          match = selectedValues.some(v => docValue.includes(v));
+        } else if (docValue !== undefined && docValue !== null) {
+          // Single-value: doc has 'value', user selected ['value']
+          match = selectedValues.includes(String(docValue));
+        }
+      }
+      
+      matchResults.push(match);
+    }
+  }
+  
   // If no criteria set, no match
   if (matchResults.length === 0) return false;
   
@@ -291,7 +325,8 @@ const getDocumentsForScope = (scope, options = {}) => {
     scope.keywords?.length > 0 ||
     scope.documentTypes?.length > 0 ||
     scope.publisherIds?.length > 0 ||
-    scope.authors?.length > 0
+    scope.authors?.length > 0 ||
+    (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => v?.length > 0))
   );
   
   // If we have scope criteria, match documents against it
@@ -631,6 +666,10 @@ export const DataService = {
   getSearchFilters: () => dataStore.data?.searchFilters ?? [],
   getSearchFilter: (id) => findById('searchFilters', id),
   getSearchFilterById(id) { return this.getSearchFilter(id); },  // Alias for getSearchFilter
+
+  // Filter Catalog
+  getFilterCatalog: () => dataStore.data?.filterCatalog ?? [],
+  getFilterCatalogDimension: (id) => (dataStore.data?.filterCatalog ?? []).find(d => d.id === id),
 
   // Topics - supports document scope filtering
   getTopics: (scopeDocIds = null) => {
@@ -3497,7 +3536,8 @@ export const DataService = {
       (scope.keywords?.length > 0) ||
       (scope.documentTypes?.length > 0) ||
       (scope.publisherIds?.length > 0) ||
-      (scope.authors?.length > 0)
+      (scope.authors?.length > 0) ||
+      (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => v?.length > 0))
     );
     
     if (!hasQuery && !hasScope) {
