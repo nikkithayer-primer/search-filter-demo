@@ -19,8 +19,6 @@ import { ColumnFilter } from './ColumnFilter.js';
 import { MapView } from './MapView.js';
 import { TimelineVolumeComposite } from './TimelineVolumeComposite.js';
 import { StackedAreaChart } from './StackedAreaChart.js';
-import { SentimentChart } from './SentimentChart.js';
-import { VennDiagram } from './VennDiagram.js';
 import { renderVerticalTimeline } from '../utils/verticalTimeline.js';
 
 // Standard column configuration for document tables
@@ -38,7 +36,6 @@ const DOCUMENT_AVAILABLE_COLUMNS = {
   locations: 'Locations',
   persons: 'People',
   organizations: 'Organizations',
-  factions: 'Factions',
   topics: 'Topics'
 };
 
@@ -806,114 +803,6 @@ export class MapCard extends BaseCardComponent {
 }
 
 /**
- * Sentiment Chart Card Component
- */
-export class SentimentChartCard extends BaseCardComponent {
-  constructor(view, containerId, options = {}) {
-    super(view, containerId);
-    this.options = options;
-    this.factions = options.factions || [];
-    this.title = options.title || 'Sentiment';
-    this.halfWidth = options.halfWidth || false;
-    this.clickRoute = options.clickRoute || 'faction';
-  }
-
-  hasData() {
-    return this.factions.length > 0;
-  }
-
-  getCardHtml() {
-    if (!this.hasData()) return '';
-    return CardBuilder.create(this.title, this.containerId, {
-      halfWidth: this.halfWidth
-    });
-  }
-
-  initialize() {
-    if (!this.hasData()) return null;
-
-    this.component = new SentimentChart(this.containerId, {
-      height: Math.max(150, this.factions.length * 50),
-      onFactionClick: (f) => {
-        this.navigateTo(f.id);
-      }
-    });
-    this.component.update({ factions: this.factions });
-    
-    if (this.options.enableAutoResize !== false) {
-      this.component.enableAutoResize();
-    }
-
-    return this.component;
-  }
-}
-
-/**
- * Venn Diagram Card Component
- */
-export class VennDiagramCard extends BaseCardComponent {
-  constructor(view, containerId, options = {}) {
-    super(view, containerId);
-    this.options = options;
-    this.factions = options.factions || [];
-    this.overlaps = options.overlaps || [];
-    this.title = options.title || 'Faction Overlaps';
-    this.height = options.height || 300;
-    this.halfWidth = options.halfWidth || false;
-    this.excludeId = options.excludeId || null;
-  }
-
-  hasData() {
-    // Ensure we have at least one valid faction with id and name
-    return this.factions.some(f => f && f.id && f.name);
-  }
-
-  getCardHtml() {
-    if (!this.hasData()) return '';
-    return CardBuilder.create(this.title, this.containerId, {
-      halfWidth: this.halfWidth
-    });
-  }
-
-  initialize() {
-    if (!this.hasData()) return null;
-
-    this.component = new VennDiagram(this.containerId, {
-      height: this.height,
-      onFactionClick: (f) => {
-        if (this.excludeId && f.id === this.excludeId) return;
-        this.navigateTo(f.id);
-      }
-    });
-    
-    // Filter out any undefined/null factions and ensure valid data
-    const validFactions = this.factions.filter(f => f && f.id && f.name);
-    const validFactionIds = new Set(validFactions.map(f => f.id));
-    
-    // Only include overlaps where all faction IDs exist in our valid factions
-    const validOverlaps = (this.overlaps || []).filter(o => 
-      o && o.factionIds && o.factionIds.every(fid => validFactionIds.has(fid))
-    );
-    
-    this.component.update({
-      sets: validFactions.map(f => ({
-        id: f.id,
-        name: f.name,
-        size: f.memberCount || 1000,
-        color: f.color
-      })),
-      overlaps: validOverlaps
-    });
-    
-    if (this.options.enableAutoResize !== false) {
-      this.component.enableAutoResize();
-    }
-
-    return this.component;
-  }
-}
-
-/**
  * Theme List Card Component
  */
 export class ThemeListCard extends BaseCardComponent {
@@ -1131,9 +1020,6 @@ export class TimelineVolumeCompositeCard extends BaseCardComponent {
       onEventClick: (e) => {
         this.navigateTo(e.id);
       },
-      onFactionClick: (f) => {
-        this.navigateTo(f.id);
-      },
       onNarrativeClick: (n) => {
         this.navigateTo(n.id);
       }
@@ -1191,7 +1077,7 @@ export class StackedAreaChartCard extends BaseCardComponent {
   constructor(view, containerId, options = {}) {
     super(view, containerId);
     this.options = options;
-    this.chartData = options.chartData || null; // { dates, series, factions }
+    this.chartData = options.chartData || null; // { dates, series, publishers }
     this.title = options.title || 'Volume Over Time';
     this.height = options.height || 250;
     this.showLegend = options.showLegend !== false;
@@ -1221,10 +1107,7 @@ export class StackedAreaChartCard extends BaseCardComponent {
 
     this.component = new StackedAreaChart(this.containerId, {
       height: this.height,
-      showLegend: this.showLegend,
-      onFactionClick: (f) => {
-        this.navigateTo(f.id);
-      }
+      showLegend: this.showLegend
     });
     this.component.update(this.chartData);
     
@@ -1604,8 +1487,6 @@ export default {
   MapCard,
   TimelineVolumeCompositeCard,
   StackedAreaChartCard,
-  SentimentChartCard,
-  VennDiagramCard,
   BulletPointsCard,
   QuotesTableCard,
   ActivitiesTableCard,

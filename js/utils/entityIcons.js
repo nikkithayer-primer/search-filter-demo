@@ -5,7 +5,7 @@
 
 /**
  * Get SVG icon for an entity type
- * @param {string} type - Entity type (narratives, factions, locations, events, etc.)
+ * @param {string} type - Entity type (narratives, locations, events, etc.)
  * @param {number} size - Icon size in pixels (default 16)
  * @returns {string} SVG HTML string
  */
@@ -26,18 +26,6 @@ export function getEntityIcon(type, size = 16) {
     theme: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.25">
       <path d="M3 3h10v10H3z" rx="1"/>
       <path d="M5 6h6M5 9h4"/>
-    </svg>`,
-    factions: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.25">
-      <circle cx="8" cy="5" r="2.5"/>
-      <circle cx="4" cy="11" r="2"/>
-      <circle cx="12" cy="11" r="2"/>
-      <path d="M6 6.5L4.5 9M10 6.5l1.5 2.5"/>
-    </svg>`,
-    faction: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.25">
-      <circle cx="8" cy="5" r="2.5"/>
-      <circle cx="4" cy="11" r="2"/>
-      <circle cx="12" cy="11" r="2"/>
-      <path d="M6 6.5L4.5 9M10 6.5l1.5 2.5"/>
     </svg>`,
     locations: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.25">
       <path d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z"/>
@@ -136,8 +124,6 @@ export const ENTITY_TYPE_CONFIG = {
   narrative: { label: 'Narratives', singular: 'Narrative', route: 'narrative', titleField: 'text' },
   themes: { label: 'Themes', singular: 'Theme', route: 'theme', titleField: 'text' },
   theme: { label: 'Themes', singular: 'Theme', route: 'theme', titleField: 'text' },
-  factions: { label: 'Factions', singular: 'Faction', route: 'faction', titleField: 'name' },
-  faction: { label: 'Factions', singular: 'Faction', route: 'faction', titleField: 'name' },
   locations: { label: 'Locations', singular: 'Location', route: 'location', titleField: 'name' },
   location: { label: 'Locations', singular: 'Location', route: 'location', titleField: 'name' },
   events: { label: 'Events', singular: 'Event', route: 'event', titleField: 'text' },

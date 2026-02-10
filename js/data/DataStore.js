@@ -401,7 +401,7 @@ class DataStore {
       organizationIds: narrative.organizationIds || [],
       locationIds: narrative.locationIds || [],
       eventIds: narrative.eventIds || [],
-      documentIds: narrative.documentIds || [],  // Source of truth for volume/factions
+      documentIds: narrative.documentIds || [],
       createdAt: new Date().toISOString()
     });
     this.save();
@@ -442,7 +442,7 @@ class DataStore {
       organizationIds: theme.organizationIds || [],
       locationIds: theme.locationIds || [],
       eventIds: theme.eventIds || [],
-      documentIds: theme.documentIds || [],  // Source of truth for volume/factions
+      documentIds: theme.documentIds || [],
       createdAt: new Date().toISOString()
     });
 
@@ -480,40 +480,6 @@ class DataStore {
     }
     this.data.themes = this.data.themes.filter(s => s.id !== id);
     this.save();
-  }
-
-  // ============================================
-  // Faction CRUD
-  // ============================================
-
-  createFaction(faction) {
-    return this.createEntity('factions', 'faction', {
-      name: faction.name,
-      color: faction.color || this.generateColor(),
-      relatedFactionIds: faction.relatedFactionIds || [],
-      memberCount: faction.memberCount || 0,
-      affiliatedPersonIds: faction.affiliatedPersonIds || [],
-      affiliatedOrganizationIds: faction.affiliatedOrganizationIds || []
-    });
-  }
-
-  updateFaction(id, updates) {
-    this.updateEntity('factions', id, updates);
-  }
-
-  deleteFaction(id) {
-    this.deleteEntity('factions', id, () => {
-      // Clean up references
-      this.removeKeyFromObjectField('narratives', 'factionMentions', id);
-      this.removeKeyFromObjectField('themes', 'factionMentions', id);
-      this.data.factionOverlaps = this.data.factionOverlaps.filter(
-        o => !o.factionIds.includes(id)
-      );
-      this.removeIdFromArrayField('persons', 'affiliatedFactionIds', id);
-      this.removeKeyFromObjectField('persons', 'factionSentiment', id);
-      this.removeIdFromArrayField('organizations', 'affiliatedFactionIds', id);
-      this.removeKeyFromObjectField('organizations', 'factionSentiment', id);
-    });
   }
 
   // ============================================
@@ -624,10 +590,8 @@ class DataStore {
       name: person.name,
       type: person.type || 'general',
       imageUrl: person.imageUrl || null,
-      affiliatedFactionIds: person.affiliatedFactionIds || [],
       relatedLocationIds: person.relatedLocationIds || [],
-      relatedEventIds: person.relatedEventIds || [],
-      factionSentiment: person.factionSentiment || {}
+      relatedEventIds: person.relatedEventIds || []
     });
   }
 
@@ -637,11 +601,10 @@ class DataStore {
 
   deletePerson(id) {
     this.deleteEntity('persons', id, () => {
-      // Clean up references in narratives, themes, events, and factions
+      // Clean up references in narratives, themes, and events
       this.removeIdFromArrayField('narratives', 'personIds', id);
       this.removeIdFromArrayField('themes', 'personIds', id);
       this.removeIdFromArrayField('events', 'personIds', id);
-      this.removeIdFromArrayField('factions', 'affiliatedPersonIds', id);
     });
   }
 
@@ -653,9 +616,7 @@ class DataStore {
     return this.createEntity('organizations', 'org', {
       name: org.name,
       type: org.type || 'general',
-      affiliatedFactionIds: org.affiliatedFactionIds || [],
-      relatedLocationIds: org.relatedLocationIds || [],
-      factionSentiment: org.factionSentiment || {}
+      relatedLocationIds: org.relatedLocationIds || []
     });
   }
 
@@ -665,11 +626,10 @@ class DataStore {
 
   deleteOrganization(id) {
     this.deleteEntity('organizations', id, () => {
-      // Clean up references in narratives, themes, events, and factions
+      // Clean up references in narratives, themes, and events
       this.removeIdFromArrayField('narratives', 'organizationIds', id);
       this.removeIdFromArrayField('themes', 'organizationIds', id);
       this.removeIdFromArrayField('events', 'organizationIds', id);
-      this.removeIdFromArrayField('factions', 'affiliatedOrganizationIds', id);
     });
   }
 
@@ -709,7 +669,6 @@ class DataStore {
         mode: 'simple',
         personIds: scope.personIds || [],
         organizationIds: scope.organizationIds || [],
-        factionIds: scope.factionIds || [],
         locationIds: scope.locationIds || [],
         eventIds: scope.eventIds || [],
         keywords: scope.keywords || [],
@@ -724,8 +683,7 @@ class DataStore {
         newNarrative: true,
         newEvent: true,
         volumeSpike: { threshold: 500, timeWindow: '24h' },
-        sentimentShift: { threshold: 0.15, direction: 'any' },
-        factionEngagement: null
+        sentimentShift: { threshold: 0.15, direction: 'any' }
       },
       enabled: monitor.enabled ?? true,
       lastTriggered: null
@@ -1361,7 +1319,6 @@ class DataStore {
         mode: 'simple',
         personIds: scope.personIds || [],
         organizationIds: scope.organizationIds || [],
-        factionIds: scope.factionIds || [],
         locationIds: scope.locationIds || [],
         eventIds: scope.eventIds || [],
         keywords: scope.keywords || []
@@ -1431,7 +1388,7 @@ class DataStore {
     return this.deleteEntity('tags', id, () => {
       // Remove tag from all entity types that can have tags
       const collectionsWithTags = [
-        'narratives', 'themes', 'factions', 'locations', 'events',
+        'narratives', 'themes', 'locations', 'events',
         'persons', 'organizations', 'documents', 'topics', 'monitors'
       ];
       collectionsWithTags.forEach(collection => {
@@ -1490,41 +1447,6 @@ class DataStore {
   }
 
   // ============================================
-  // Faction Overlaps
-  // ============================================
-
-  createFactionOverlap(overlap) {
-    this.data.factionOverlaps.push({
-      factionIds: overlap.factionIds,
-      overlapSize: overlap.overlapSize || 0,
-      sharedSentiment: overlap.sharedSentiment || {}
-    });
-    this.save();
-  }
-
-  updateFactionOverlap(factionIds, updates) {
-    const idx = this.data.factionOverlaps.findIndex(o =>
-      o.factionIds.length === factionIds.length &&
-      o.factionIds.every(id => factionIds.includes(id))
-    );
-    if (idx !== -1) {
-      this.data.factionOverlaps[idx] = {
-        ...this.data.factionOverlaps[idx],
-        ...updates
-      };
-      this.save();
-    }
-  }
-
-  deleteFactionOverlap(factionIds) {
-    this.data.factionOverlaps = this.data.factionOverlaps.filter(o =>
-      !(o.factionIds.length === factionIds.length &&
-        o.factionIds.every(id => factionIds.includes(id)))
-    );
-    this.save();
-  }
-
-  // ============================================
   // Document CRUD
   // ============================================
 
@@ -1538,7 +1460,6 @@ class DataStore {
       content: doc.content || '',
       sentiment: doc.sentiment || 'neutral',
       narrativeIds: doc.narrativeIds || [],
-      factionId: doc.factionId || null,
       date: doc.date || new Date().toISOString(),
       createdAt: new Date().toISOString()
     });
@@ -1623,8 +1544,6 @@ class DataStore {
       missions: [],
       narratives: [],
       themes: [],
-      factions: [],
-      factionOverlaps: [],
       locations: [],
       events: [],
       persons: [],

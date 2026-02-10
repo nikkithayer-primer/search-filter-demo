@@ -8,8 +8,6 @@ vi.mock('../js/data/DataStore.js', () => ({
     data: {
       narratives: [],
       themes: [],
-      factions: [],
-      factionOverlaps: [],
       locations: [],
       events: [],
       persons: [],
@@ -63,15 +61,7 @@ describe('DataService', () => {
           id: 'sub-1',
           text: 'Theme one',
           parentNarrativeId: 'narr-1',
-          factionMentions: { 'faction-1': { volume: 30, sentiment: 0.2 } }
         }
-      ],
-      factions: [
-        { id: 'faction-1', name: 'Faction One', color: '#FF0000', relatedFactionIds: ['faction-2'] },
-        { id: 'faction-2', name: 'Faction Two', color: '#00FF00', relatedFactionIds: [] }
-      ],
-      factionOverlaps: [
-        { factionIds: ['faction-1', 'faction-2'], overlapSize: 50 }
       ],
       locations: [
         { id: 'loc-1', name: 'Location One', coordinates: { lat: 40.7, lng: -74.0 } },
@@ -82,13 +72,13 @@ describe('DataService', () => {
         { id: 'event-2', text: 'Event two', date: '2024-01-05', locationId: 'loc-2', personIds: ['person-2'] }
       ],
       persons: [
-        { id: 'person-1', name: 'Person One', affiliatedFactionIds: ['faction-1'], relatedLocationIds: ['loc-1'] },
-        { id: 'person-2', name: 'Person Two', affiliatedFactionIds: ['faction-2'], relatedLocationIds: ['loc-2'] },
-        { id: 'person-3', name: 'Person Three', affiliatedFactionIds: [], relatedLocationIds: [] }
+        { id: 'person-1', name: 'Person One', relatedLocationIds: ['loc-1'] },
+        { id: 'person-2', name: 'Person Two', relatedLocationIds: ['loc-2'] },
+        { id: 'person-3', name: 'Person Three', relatedLocationIds: [] }
       ],
       organizations: [
-        { id: 'org-1', name: 'Organization One', affiliatedFactionIds: ['faction-1'] },
-        { id: 'org-2', name: 'Organization Two', affiliatedFactionIds: ['faction-2'] }
+        { id: 'org-1', name: 'Organization One' },
+        { id: 'org-2', name: 'Organization Two' }
       ],
       documents: [
         { 
@@ -96,32 +86,21 @@ describe('DataService', () => {
           title: 'Document One', 
           publisherId: 'pub-1', 
           publishedDate: '2024-01-01',
-          narrativeIds: ['narr-1'],
-          factionMentions: {
-            'faction-1': { sentiment: 0.5 },
-            'faction-2': { sentiment: -0.3 }
-          }
+          narrativeIds: ['narr-1']
         },
         { 
           id: 'doc-2', 
           title: 'Document Two', 
           publisherId: 'pub-1', 
           publishedDate: '2024-01-02',
-          narrativeIds: ['narr-1'],
-          factionMentions: {
-            'faction-1': { sentiment: 0.6 },
-            'faction-2': { sentiment: -0.2 }
-          }
+          narrativeIds: ['narr-1']
         },
         { 
           id: 'doc-3', 
           title: 'Document Three', 
           publisherId: 'pub-1', 
           publishedDate: '2024-01-03',
-          narrativeIds: ['narr-2'],
-          factionMentions: {
-            'faction-1': { sentiment: -0.2 }
-          }
+          narrativeIds: ['narr-2']
         }
       ],
       topics: [
@@ -192,31 +171,6 @@ describe('DataService', () => {
     });
   });
 
-  describe('getFactionsForNarrative', () => {
-    it('returns factions with volume and sentiment data', () => {
-      const result = DataService.getFactionsForNarrative('narr-1');
-      expect(result.length).toBe(2);
-      expect(result[0].faction).toBeDefined();
-      expect(result[0].volume).toBeDefined();
-      expect(result[0].sentiment).toBeDefined();
-    });
-
-    it('returns empty array for narrative without factions', () => {
-      dataStore.data.narratives.push({
-        id: 'narr-3',
-        text: 'No factions',
-        factionMentions: {}
-      });
-      const result = DataService.getFactionsForNarrative('narr-3');
-      expect(result.length).toBe(0);
-    });
-
-    it('returns empty array for nonexistent narrative', () => {
-      const result = DataService.getFactionsForNarrative('nonexistent');
-      expect(result.length).toBe(0);
-    });
-  });
-
   describe('isDateInRange', () => {
     const timeRange = {
       start: new Date('2024-01-01'),
@@ -243,9 +197,9 @@ describe('DataService', () => {
   describe('filterVolumeByTimeRange', () => {
     it('filters volume data by time range', () => {
       const volumeOverTime = [
-        { date: '2024-01-01', factionVolumes: { 'f1': 10 } },
-        { date: '2024-01-02', factionVolumes: { 'f1': 15 } },
-        { date: '2024-01-03', factionVolumes: { 'f1': 20 } }
+        { date: '2024-01-01', volume: 10 },
+        { date: '2024-01-02', volume: 15 },
+        { date: '2024-01-03', volume: 20 }
       ];
       const timeRange = {
         start: new Date('2024-01-01'),
@@ -258,8 +212,8 @@ describe('DataService', () => {
 
     it('returns all data when no time range', () => {
       const volumeOverTime = [
-        { date: '2024-01-01', factionVolumes: {} },
-        { date: '2024-01-02', factionVolumes: {} }
+        { date: '2024-01-01', volume: 0 },
+        { date: '2024-01-02', volume: 0 }
       ];
       
       const result = DataService.filterVolumeByTimeRange(volumeOverTime, null);
@@ -379,7 +333,6 @@ describe('DataService', () => {
         narratives: [],
         themes: [],
         topics: [],
-        factions: [],
         locations: [],
         events: [],
         persons: [],
@@ -390,7 +343,6 @@ describe('DataService', () => {
         narratives: [],
         themes: [],
         topics: [],
-        factions: [],
         locations: [],
         events: [],
         persons: [],

@@ -17,7 +17,6 @@
 import { NarrativeView } from './views/NarrativeView.js';
 import { escapeHtml } from './utils/htmlUtils.js';
 import { ThemeView } from './views/ThemeView.js';
-import { FactionView } from './views/FactionView.js';
 import { LocationView } from './views/LocationView.js';
 import { EventView } from './views/EventView.js';
 import { PersonView } from './views/PersonView.js';
@@ -50,7 +49,6 @@ import {
 const ENTITY_VIEW_MAP = {
   'narrative': { view: NarrativeView, listType: 'narratives' },
   'theme': { view: ThemeView, listType: 'narratives' },
-  'faction': { view: FactionView, listType: 'factions' },
   'location': { view: LocationView, listType: 'locations' },
   'event': { view: EventView, listType: 'events' },
   'person': { view: PersonView, listType: 'entities' },
@@ -292,7 +290,7 @@ export class Router {
       // Ensure series is an array
       const series = Array.isArray(volumeData.series) ? volumeData.series : [];
 
-      // Calculate total volume per date (sum all factions)
+      // Calculate total volume per date (sum all sources)
       const volumes = volumeData.dates.map((date, i) => {
         return series.reduce((sum, s) => {
           const val = Array.isArray(s) ? (s[i] || 0) : 0;

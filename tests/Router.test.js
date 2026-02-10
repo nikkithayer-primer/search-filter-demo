@@ -11,7 +11,6 @@ const CONTEXT_TYPES = ['workspace', 'monitor', 'dashboard'];
 const ENTITY_TYPES = {
   'narrative': { listType: 'narratives' },
   'theme': { listType: 'narratives' },
-  'faction': { listType: 'factions' },
   'location': { listType: 'locations' },
   'event': { listType: 'events' },
   'person': { listType: 'entities' },
@@ -20,7 +19,6 @@ const ENTITY_TYPES = {
   'topic': { listType: 'topics' },
   'tag': { listType: 'tags' },
   'narratives': { listType: 'narratives' },
-  'factions': { listType: 'factions' },
   'locations': { listType: 'locations' },
   'events': { listType: 'events' },
   'entities': { listType: 'entities' },
@@ -170,28 +168,28 @@ describe('Router.parseNestedRoute', () => {
     });
 
     it('parses workspace with entity list', () => {
-      const result = parseNestedRoute('workspace/ws-001/factions');
+      const result = parseNestedRoute('workspace/ws-001/locations');
       expect(result.context).toBe('workspace');
       expect(result.contextId).toBe('ws-001');
-      expect(result.entityType).toBe('factions');
+      expect(result.entityType).toBe('locations');
       expect(result.isListView).toBe(true);
     });
 
     it('parses workspace with entity detail', () => {
-      const result = parseNestedRoute('workspace/ws-001/faction/faction-123');
+      const result = parseNestedRoute('workspace/ws-001/person/person-123');
       expect(result.context).toBe('workspace');
       expect(result.contextId).toBe('ws-001');
-      expect(result.entityType).toBe('faction');
-      expect(result.entityId).toBe('faction-123');
+      expect(result.entityType).toBe('person');
+      expect(result.entityId).toBe('person-123');
       expect(result.isListView).toBe(false);
     });
 
     it('parses workspace entity documents tab', () => {
-      const result = parseNestedRoute('workspace/ws-001/faction/faction-123/documents');
+      const result = parseNestedRoute('workspace/ws-001/person/person-123/documents');
       expect(result.context).toBe('workspace');
       expect(result.contextId).toBe('ws-001');
-      expect(result.entityType).toBe('faction');
-      expect(result.entityId).toBe('faction-123');
+      expect(result.entityType).toBe('person');
+      expect(result.entityId).toBe('person-123');
       expect(result.subRoute).toBe('documents');
     });
   });
@@ -214,14 +212,6 @@ describe('Router.parseNestedRoute', () => {
   });
 
   describe('Legacy global routes', () => {
-    it('marks global entity route as legacy', () => {
-      const result = parseNestedRoute('faction/faction-123');
-      expect(result.isLegacyRoute).toBe(true);
-      expect(result.context).toBe('dashboard');
-      expect(result.entityType).toBe('faction');
-      expect(result.entityId).toBe('faction-123');
-    });
-
     it('marks global list route as legacy', () => {
       const result = parseNestedRoute('narratives');
       expect(result.isLegacyRoute).toBe(true);

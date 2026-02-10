@@ -2,7 +2,7 @@
  * EntityCardPopover.js
  * "Baseball card" style hover popover for quick entity preview
  * Shows entity name, image, summary, type, and related entity counts
- * Supports: person, organization, faction, location
+ * Supports: person, organization, location
  */
 
 import { DataService } from '../data/DataService.js';
@@ -11,11 +11,6 @@ import { escapeHtml } from '../utils/htmlUtils.js';
 
 // Icons for different entity types
 const ENTITY_ICONS = {
-  faction: `<svg class="entity-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-    <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-    <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
-    <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
-  </svg>`,
   location: `<svg class="entity-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
     <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
   </svg>`
@@ -99,7 +94,6 @@ export class EntityCardPopover {
     switch (entityType) {
       case 'person': return DataService.getPerson(entityId);
       case 'organization': return DataService.getOrganization(entityId);
-      case 'faction': return DataService.getFaction(entityId);
       case 'location': return DataService.getLocation(entityId);
       default: return null;
     }
@@ -167,12 +161,6 @@ export class EntityCardPopover {
     switch (entityType) {
       case 'person':
       case 'organization':
-        return [
-          { label: 'People', count: counts.persons },
-          { label: 'Orgs', count: counts.organizations },
-          { label: 'Narratives', count: counts.narratives }
-        ];
-      case 'faction':
         return [
           { label: 'People', count: counts.persons },
           { label: 'Orgs', count: counts.organizations },
@@ -279,7 +267,7 @@ export class EntityCardPopover {
   /**
    * Get related entity counts
    * @param {string} entityId - The entity ID
-   * @param {string} entityType - 'person', 'organization', 'faction', or 'location'
+   * @param {string} entityType - 'person', 'organization', or 'location'
    * @returns {Object} Counts of related entities
    */
   getRelatedCounts(entityId, entityType) {
@@ -296,12 +284,6 @@ export class EntityCardPopover {
           organizations: DataService.getRelatedOrganizations(entityId).length,
           narratives: DataService.getNarrativesForOrganization(entityId).length
         };
-      case 'faction':
-        return {
-          persons: DataService.getAffiliatedPersonsForFaction(entityId).length,
-          organizations: DataService.getAffiliatedOrganizationsForFaction(entityId).length,
-          narratives: DataService.getNarrativesForFaction(entityId).length
-        };
       case 'location':
         return {
           persons: DataService.getPersonsForLocation(entityId).length,
@@ -316,7 +298,7 @@ export class EntityCardPopover {
   /**
    * Get the display type label for an entity
    * @param {Object} entity - The entity object
-   * @param {string} entityType - 'person', 'organization', 'faction', or 'location'
+   * @param {string} entityType - 'person', 'organization', or 'location'
    * @returns {string} Human-readable type label
    */
   getTypeLabel(entity, entityType) {
@@ -328,7 +310,6 @@ export class EntityCardPopover {
     const defaultLabels = {
       person: 'Person',
       organization: 'Organization',
-      faction: 'Faction',
       location: 'Location'
     };
     return defaultLabels[entityType] || entityType;
@@ -379,20 +360,11 @@ export class EntityCardPopover {
   /**
    * Render the entity avatar
    * @param {Object} entity - The entity object
-   * @param {string} entityType - 'person', 'organization', 'faction', or 'location'
+   * @param {string} entityType - 'person', 'organization', or 'location'
    * @returns {string} HTML for avatar
    */
   renderAvatar(entity, entityType) {
     const icon = this.getIcon(entityType);
-    
-    // Factions use their color
-    if (entityType === 'faction' && entity.color) {
-      return `
-        <div class="entity-card-avatar ${entityType}" style="background: ${entity.color}; border-color: ${entity.color};">
-          ${icon}
-        </div>
-      `;
-    }
     
     // Person/org with image
     if (entity.imageUrl) {

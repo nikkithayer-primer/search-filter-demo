@@ -223,7 +223,6 @@ export class SearchView extends BaseView {
     if (!scope) return false;
     return (scope.personIds?.length > 0) ||
            (scope.organizationIds?.length > 0) ||
-           (scope.factionIds?.length > 0) ||
            (scope.locationIds?.length > 0) ||
            (scope.keywords?.length > 0) ||
            (scope.documentTypes?.length > 0) ||
@@ -565,24 +564,6 @@ export class SearchView extends BaseView {
       });
     }
     
-    // Factions
-    if (scope.factionIds?.length > 0) {
-      scope.factionIds.forEach(id => {
-        const faction = DataService.getFaction(id);
-        if (faction) {
-          chips.push({
-            type: 'faction',
-            id: id,
-            label: faction.name,
-            icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 13V5l5-3 5 3v8"/>
-              <path d="M6 13v-4h4v4"/>
-            </svg>`
-          });
-        }
-      });
-    }
-    
     // Locations
     if (scope.locationIds?.length > 0) {
       scope.locationIds.forEach(id => {
@@ -744,9 +725,6 @@ export class SearchView extends BaseView {
         break;
       case 'organization':
         scope.organizationIds = scope.organizationIds.filter(i => i !== id);
-        break;
-      case 'faction':
-        scope.factionIds = scope.factionIds.filter(i => i !== id);
         break;
       case 'location':
         scope.locationIds = scope.locationIds.filter(i => i !== id);
@@ -1140,7 +1118,6 @@ export class SearchView extends BaseView {
     if (!scope) return 0;
     return (scope.personIds?.length || 0) +
            (scope.organizationIds?.length || 0) +
-           (scope.factionIds?.length || 0) +
            (scope.locationIds?.length || 0) +
            (scope.keywords?.length || 0) +
            (scope.documentTypes?.length || 0) +

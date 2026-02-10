@@ -357,7 +357,6 @@
 
 .selected-scope-chips .scope-chip-person svg { color: var(--accent-primary); }
 .selected-scope-chips .scope-chip-organization svg { color: #8b5cf6; }
-.selected-scope-chips .scope-chip-faction svg { color: #f59e0b; }
 .selected-scope-chips .scope-chip-location svg { color: #10b981; }
 .selected-scope-chips .scope-chip-keyword svg { color: var(--text-muted); }
 .selected-scope-chips .scope-chip-documentType svg { color: #6366f1; }

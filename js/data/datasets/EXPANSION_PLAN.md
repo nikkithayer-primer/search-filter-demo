@@ -44,51 +44,47 @@
 ### narr-011: "2024 Election certification challenges and Capitol security concerns" (NEW)
 - **Timeline:** June-November 2025
 - **Related existing:** narr-005 (Trump foreign policy)
-- **Factions:** faction-001, faction-002, faction-004
 - **Theme IDs:** sub-028, sub-029, sub-030
 
 ### narr-012: "Federal budget showdown threatens government shutdown" (NEW)
 - **Timeline:** September-December 2025
-- **Factions:** faction-001, faction-002
 - **Theme IDs:** sub-031, sub-032
 
 ### narr-013: "Opioid settlement funds distribution sparks controversy" (DEEPENS narr-003 health)
 - **Timeline:** July-October 2025
-- **Factions:** faction-005, faction-006
 - **Theme IDs:** sub-033, sub-034
 
 ### narr-014: "Border state governors form coalition on immigration policy" (DEEPENS narr-006 immigration)
 - **Timeline:** August-December 2025
-- **Factions:** faction-001, faction-002, faction-003, faction-004
 - **Theme IDs:** sub-035, sub-036, sub-037
 
 ## New Persons (10)
 
-| ID | Name | Type | Org | Factions | Appears in Narratives |
-|----|------|------|-----|----------|----------------------|
-| person-027 | Greg Abbott | politician | org-024 (TX Gov) | faction-001 | narr-014 |
-| person-028 | Ron DeSantis | politician | org-025 (FL Gov) | faction-001 | narr-014, narr-011 |
-| person-029 | Gavin Newsom | politician | org-026 (CA Gov) | faction-002 | narr-014, narr-012 |
-| person-030 | Merrick Garland | government_official | org-010 (DOJ) | faction-002 | narr-011, narr-006 |
-| person-031 | John Roberts | judge | org-027 (SCOTUS) | faction-004 | narr-011 |
-| person-032 | Mike Johnson | politician | org-020 (Congress) | faction-001 | narr-011, narr-012 |
-| person-033 | Chuck Schumer | politician | org-020 (Congress) | faction-002 | narr-011, narr-012 |
-| person-034 | Anne Milgram | government_official | org-028 (DEA) | faction-004 | narr-013 |
-| person-035 | Xavier Becerra | government_official | org-022 (HHS) | faction-002 | narr-013 |
-| person-036 | Kash Patel | government_official | org-012 (FBI) | faction-001 | narr-011 |
+| ID | Name | Type | Org | Appears in Narratives |
+|----|------|------|-----|-----------------------|
+| person-027 | Greg Abbott | politician | org-024 (TX Gov) | narr-014 |
+| person-028 | Ron DeSantis | politician | org-025 (FL Gov) | narr-014, narr-011 |
+| person-029 | Gavin Newsom | politician | org-026 (CA Gov) | narr-014, narr-012 |
+| person-030 | Merrick Garland | government_official | org-010 (DOJ) | narr-011, narr-006 |
+| person-031 | John Roberts | judge | org-027 (SCOTUS) | narr-011 |
+| person-032 | Mike Johnson | politician | org-020 (Congress) | narr-011, narr-012 |
+| person-033 | Chuck Schumer | politician | org-020 (Congress) | narr-011, narr-012 |
+| person-034 | Anne Milgram | government_official | org-028 (DEA) | narr-013 |
+| person-035 | Xavier Becerra | government_official | org-022 (HHS) | narr-013 |
+| person-036 | Kash Patel | government_official | org-012 (FBI) | narr-011 |
 
 ## New Organizations (8)
 
-| ID | Name | Type | Factions | Narratives |
-|----|------|------|----------|------------|
-| org-024 | Office of the Governor of Texas | government | faction-001 | narr-014 |
-| org-025 | Office of the Governor of Florida | government | faction-001 | narr-014 |
-| org-026 | Office of the Governor of California | government | faction-002 | narr-014 |
-| org-027 | Supreme Court of the United States | judicial | faction-004 | narr-011 |
-| org-028 | Drug Enforcement Administration | government | faction-004 | narr-013 |
-| org-029 | Texas National Guard | military | faction-001, faction-004 | narr-014 |
-| org-030 | ACLU | nonprofit | faction-002, faction-003 | narr-014, narr-011 |
-| org-031 | Heritage Foundation | nonprofit | faction-001 | narr-011, narr-012 |
+| ID | Name | Type | Narratives |
+|----|------|------|------------|
+| org-024 | Office of the Governor of Texas | government | narr-014 |
+| org-025 | Office of the Governor of Florida | government | narr-014 |
+| org-026 | Office of the Governor of California | government | narr-014 |
+| org-027 | Supreme Court of the United States | judicial | narr-011 |
+| org-028 | Drug Enforcement Administration | government | narr-013 |
+| org-029 | Texas National Guard | military | narr-014 |
+| org-030 | ACLU | nonprofit | narr-014, narr-011 |
+| org-031 | Heritage Foundation | nonprofit | narr-011, narr-012 |
 
 ## New Locations (2)
 
@@ -117,61 +113,61 @@
 ## New Documents (25) - Timeline June 2025 to Jan 2026
 
 ### June 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-032 | Texas Governor Deploys 5,000 Guardsmen to Border | 2025-06-15 | pub-nat-fox | news_article | narr-014 | sub-035 | faction-001: 0.72, faction-002: -0.65 |
-| doc-033 | Immigration advocates condemn Texas border surge | 2025-06-18 | pub-nat-cnn | news_article | narr-014 | sub-035 | faction-001: -0.55, faction-002: 0.62, faction-003: 0.78 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-032 | Texas Governor Deploys 5,000 Guardsmen to Border | 2025-06-15 | pub-nat-fox | news_article | narr-014 | sub-035 |
+| doc-033 | Immigration advocates condemn Texas border surge | 2025-06-18 | pub-nat-cnn | news_article | narr-014 | sub-035 |
 
 ### July 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-034 | DeSantis signs aggressive border enforcement bill | 2025-07-10 | pub-nat-fox | news_article | narr-014 | sub-035 | faction-001: 0.75, faction-002: -0.68 |
-| doc-035 | Opioid settlement checks begin arriving in hardest-hit communities | 2025-07-05 | pub-nat-nyt | news_article | narr-013 | sub-033 | faction-005: 0.45, faction-006: 0.38 |
-| doc-036 | Health officials debate best use of opioid funds | 2025-07-20 | pub-nat-wapo | news_article | narr-013 | sub-033, sub-034 | faction-005: 0.35, faction-006: 0.42 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-034 | DeSantis signs aggressive border enforcement bill | 2025-07-10 | pub-nat-fox | news_article | narr-014 | sub-035 |
+| doc-035 | Opioid settlement checks begin arriving in hardest-hit communities | 2025-07-05 | pub-nat-nyt | news_article | narr-013 | sub-033 |
+| doc-036 | Health officials debate best use of opioid funds | 2025-07-20 | pub-nat-wapo | news_article | narr-013 | sub-033, sub-034 |
 
 ### August 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-037 | California files federal lawsuit over border policies | 2025-08-05 | pub-nat-cnn | news_article | narr-014 | sub-036 | faction-001: -0.72, faction-002: 0.68 |
-| doc-038 | DOJ opens investigation into Texas border operations | 2025-08-20 | pub-nat-nyt | news_article | narr-014 | sub-036 | faction-001: -0.58, faction-002: 0.55 |
-| doc-039 | States sue over opioid settlement formula | 2025-08-15 | pub-nat-wapo | news_article | narr-013 | sub-034 | faction-005: -0.42, faction-006: -0.35 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-037 | California files federal lawsuit over border policies | 2025-08-05 | pub-nat-cnn | news_article | narr-014 | sub-036 |
+| doc-038 | DOJ opens investigation into Texas border operations | 2025-08-20 | pub-nat-nyt | news_article | narr-014 | sub-036 |
+| doc-039 | States sue over opioid settlement formula | 2025-08-15 | pub-nat-wapo | news_article | narr-013 | sub-034 |
 
 ### September 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-040 | Border governors announce unified strategy at Texas summit | 2025-09-01 | pub-nat-fox | news_article | narr-014 | sub-035, sub-037 | faction-001: 0.78, faction-002: -0.72 |
-| doc-041 | House narrowly passes border security funding | 2025-09-15 | pub-int-reuters | news_article | narr-012, narr-014 | sub-031 | faction-001: 0.62, faction-002: -0.45 |
-| doc-042 | Senate Democrats block border bill, shutdown looms | 2025-09-22 | pub-nat-cnn | news_article | narr-012 | sub-031, sub-032 | faction-001: -0.68, faction-002: 0.52 |
-| doc-043 | Budget negotiations collapse as deadline approaches | 2025-09-28 | pub-nat-nyt | news_article | narr-012 | sub-031 | faction-001: -0.35, faction-002: -0.42 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-040 | Border governors announce unified strategy at Texas summit | 2025-09-01 | pub-nat-fox | news_article | narr-014 | sub-035, sub-037 |
+| doc-041 | House narrowly passes border security funding | 2025-09-15 | pub-int-reuters | news_article | narr-012, narr-014 | sub-031 |
+| doc-042 | Senate Democrats block border bill, shutdown looms | 2025-09-22 | pub-nat-cnn | news_article | narr-012 | sub-031, sub-032 |
+| doc-043 | Budget negotiations collapse as deadline approaches | 2025-09-28 | pub-nat-nyt | news_article | narr-012 | sub-031 |
 
 ### October 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-044 | Government shutdown begins, blame game intensifies | 2025-10-01 | pub-nat-wapo | news_article | narr-012 | sub-032 | faction-001: -0.52, faction-002: -0.55 |
-| doc-045 | Federal workers furloughed as shutdown enters second week | 2025-10-08 | pub-nat-cnn | news_article | narr-012 | sub-032 | faction-001: -0.48, faction-002: -0.45 |
-| doc-046 | Compromise reached, government reopens after 18 days | 2025-10-19 | pub-int-reuters | news_article | narr-012 | sub-031, sub-032 | faction-001: 0.25, faction-002: 0.28 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-044 | Government shutdown begins, blame game intensifies | 2025-10-01 | pub-nat-wapo | news_article | narr-012 | sub-032 |
+| doc-045 | Federal workers furloughed as shutdown enters second week | 2025-10-08 | pub-nat-cnn | news_article | narr-012 | sub-032 |
+| doc-046 | Compromise reached, government reopens after 18 days | 2025-10-19 | pub-int-reuters | news_article | narr-012 | sub-031, sub-032 |
 
 ### November 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-047 | Supreme Court agrees to expedite election certification cases | 2025-11-15 | pub-nat-nyt | news_article | narr-011 | sub-028 | faction-001: 0.55, faction-002: -0.62, faction-004: 0.48 |
-| doc-048 | Security preparations ramp up ahead of January certification | 2025-11-20 | pub-nat-wapo | news_article | narr-011 | sub-029 | faction-004: 0.65 |
-| doc-049 | ACLU announces legal challenges to state election laws | 2025-11-25 | pub-nat-cnn | news_article | narr-011 | sub-030 | faction-001: -0.72, faction-002: 0.68, faction-003: 0.55 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-047 | Supreme Court agrees to expedite election certification cases | 2025-11-15 | pub-nat-nyt | news_article | narr-011 | sub-028 |
+| doc-048 | Security preparations ramp up ahead of January certification | 2025-11-20 | pub-nat-wapo | news_article | narr-011 | sub-029 |
+| doc-049 | ACLU announces legal challenges to state election laws | 2025-11-25 | pub-nat-cnn | news_article | narr-011 | sub-030 |
 
 ### December 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-050 | FBI leadership shake-up announced amid transition | 2025-12-01 | pub-nat-fox | news_article | narr-011 | sub-028 | faction-001: 0.72, faction-002: -0.78 |
-| doc-051 | Capitol Police expand security perimeter for certification | 2025-12-10 | pub-nat-wapo | news_article | narr-011 | sub-029 | faction-004: 0.58 |
-| doc-052 | Heritage Foundation releases transition policy recommendations | 2025-12-15 | pub-nat-fox | news_article | narr-011, narr-012 | sub-028, sub-031 | faction-001: 0.82, faction-002: -0.75 |
-| doc-053 | Opioid funding disputes continue as year ends | 2025-12-20 | pub-nat-nyt | news_article | narr-013 | sub-034 | faction-005: -0.38, faction-006: -0.32 |
-| doc-054 | Border crossings reach five-year low, debate continues | 2025-12-28 | pub-int-reuters | news_article | narr-014 | sub-037 | faction-001: 0.65, faction-002: -0.42 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-050 | FBI leadership shake-up announced amid transition | 2025-12-01 | pub-nat-fox | news_article | narr-011 | sub-028 |
+| doc-051 | Capitol Police expand security perimeter for certification | 2025-12-10 | pub-nat-wapo | news_article | narr-011 | sub-029 |
+| doc-052 | Heritage Foundation releases transition policy recommendations | 2025-12-15 | pub-nat-fox | news_article | narr-011, narr-012 | sub-028, sub-031 |
+| doc-053 | Opioid funding disputes continue as year ends | 2025-12-20 | pub-nat-nyt | news_article | narr-013 | sub-034 |
+| doc-054 | Border crossings reach five-year low, debate continues | 2025-12-28 | pub-int-reuters | news_article | narr-014 | sub-037 |
 
 ### January 2026 (early, before current events)
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-055 | Election certification expected to proceed smoothly | 2026-01-02 | pub-nat-nyt | news_article | narr-011 | sub-028, sub-029 | faction-001: 0.45, faction-002: 0.38, faction-004: 0.52 |
-| doc-056 | New Congress sworn in amid partisan tensions | 2026-01-03 | pub-nat-cnn | news_article | narr-011, narr-012 | sub-028, sub-031 | faction-001: 0.35, faction-002: 0.32 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-055 | Election certification expected to proceed smoothly | 2026-01-02 | pub-nat-nyt | news_article | narr-011 | sub-028, sub-029 |
+| doc-056 | New Congress sworn in amid partisan tensions | 2026-01-03 | pub-nat-cnn | news_article | narr-011, narr-012 | sub-028, sub-031 |
 
 ## New Themes (10)
 
@@ -214,51 +210,47 @@
 
 ### narr-008: "Intel struggles to compete as foundry business falters" (NEW)
 - **Timeline:** June-October 2025
-- **Factions:** faction-002, faction-005, faction-006
 - **Theme IDs:** sub-018, sub-019
 
 ### narr-009: "South Korea semiconductor subsidies spark trade tensions" (NEW)
 - **Timeline:** July-November 2025
-- **Factions:** faction-002, faction-006
 - **Theme IDs:** sub-020, sub-021
 
 ### narr-010: "China rare earth export restrictions tighten chip supply chain" (DEEPENS narr-002 export controls)
 - **Timeline:** August-December 2025
-- **Factions:** faction-001, faction-002, faction-004
 - **Theme IDs:** sub-022, sub-023
 
 ### narr-011: "Nvidia AI chip demand outpaces production capacity" (DEEPENS narr-001 SMIC)
 - **Timeline:** September 2025-January 2026
-- **Factions:** faction-002, faction-003, faction-005, faction-006
 - **Theme IDs:** sub-024, sub-025
 
 ## New Persons (10)
 
-| ID | Name | Type | Org | Factions | Narratives |
-|----|------|------|-----|----------|------------|
-| person-020 | Pat Gelsinger | executive | org-027 (Intel) | faction-005 | narr-008 |
-| person-021 | Jensen Huang | executive | org-028 (Nvidia) | faction-005 | narr-011 |
-| person-022 | Lee Jae-yong | executive | org-014 (Samsung) | faction-006 | narr-009 |
-| person-023 | Kwon Young-soo | executive | org-029 (SK Hynix) | faction-006 | narr-009 |
-| person-024 | Alan Estevez | government_official | org-006 (BIS) | faction-002 | narr-010 |
-| person-025 | Wang Wentao | government_official | org-030 (MOFCOM) | faction-001, faction-004 | narr-010 |
-| person-026 | Lisa Su | executive | org-031 (AMD) | faction-005 | narr-011 |
-| person-027 | Lip-Bu Tan | executive | org-019 (Cadence) | faction-005 | narr-006 |
-| person-028 | Christophe Fouquet | executive | org-002 (ASML) | faction-006 | narr-002 |
-| person-029 | Gary Dickerson | executive | org-003 (Applied Materials) | faction-005 | narr-004 |
+| ID | Name | Type | Org | Narratives |
+|----|------|------|-----|------------|
+| person-020 | Pat Gelsinger | executive | org-027 (Intel) | narr-008 |
+| person-021 | Jensen Huang | executive | org-028 (Nvidia) | narr-011 |
+| person-022 | Lee Jae-yong | executive | org-014 (Samsung) | narr-009 |
+| person-023 | Kwon Young-soo | executive | org-029 (SK Hynix) | narr-009 |
+| person-024 | Alan Estevez | government_official | org-006 (BIS) | narr-010 |
+| person-025 | Wang Wentao | government_official | org-030 (MOFCOM) | narr-010 |
+| person-026 | Lisa Su | executive | org-031 (AMD) | narr-011 |
+| person-027 | Lip-Bu Tan | executive | org-019 (Cadence) | narr-006 |
+| person-028 | Christophe Fouquet | executive | org-002 (ASML) | narr-002 |
+| person-029 | Gary Dickerson | executive | org-003 (Applied Materials) | narr-004 |
 
 ## New Organizations (8)
 
-| ID | Name | Type | Factions | Narratives |
-|----|------|------|----------|------------|
-| org-027 | Intel Corporation | corporation | faction-005 | narr-008 |
-| org-028 | Nvidia Corporation | corporation | faction-005 | narr-011 |
-| org-029 | SK Hynix | corporation | faction-006 | narr-009 |
-| org-030 | Ministry of Commerce of China (MOFCOM) | government | faction-001, faction-004 | narr-010 |
-| org-031 | Advanced Micro Devices (AMD) | corporation | faction-005 | narr-011 |
-| org-032 | Korea Ministry of Trade | government | faction-006 | narr-009 |
-| org-033 | Taiwan Ministry of Economic Affairs | government | faction-005 | narr-007 |
-| org-034 | Arm Holdings | corporation | faction-005, faction-006 | narr-011 |
+| ID | Name | Type | Narratives |
+|----|------|------|------------|
+| org-027 | Intel Corporation | corporation | narr-008 |
+| org-028 | Nvidia Corporation | corporation | narr-011 |
+| org-029 | SK Hynix | corporation | narr-009 |
+| org-030 | Ministry of Commerce of China (MOFCOM) | government | narr-010 |
+| org-031 | Advanced Micro Devices (AMD) | corporation | narr-011 |
+| org-032 | Korea Ministry of Trade | government | narr-009 |
+| org-033 | Taiwan Ministry of Economic Affairs | government | narr-007 |
+| org-034 | Arm Holdings | corporation | narr-011 |
 
 ## New Locations (2)
 
@@ -287,61 +279,61 @@
 ## New Documents (25)
 
 ### June 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-036 | Intel announces 15,000 layoffs in major restructuring | 2025-06-20 | pub-bloomberg | news_article | narr-008 | sub-018 | faction-002: -0.55, faction-005: -0.72, faction-006: 0.35 |
-| doc-037 | Can Intel survive the foundry wars? | 2025-06-25 | pub-semiengi | news_article | narr-008 | sub-018, sub-019 | faction-003: -0.42, faction-005: -0.65 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-036 | Intel announces 15,000 layoffs in major restructuring | 2025-06-20 | pub-bloomberg | news_article | narr-008 | sub-018 |
+| doc-037 | Can Intel survive the foundry wars? | 2025-06-25 | pub-semiengi | news_article | narr-008 | sub-018, sub-019 |
 
 ### July 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-038 | Samsung pledges $17 billion chip investment in Korea | 2025-07-05 | pub-reuters | news_article | narr-009 | sub-020 | faction-006: 0.72 |
-| doc-039 | US raises concerns over Korean semiconductor subsidies | 2025-07-25 | pub-wsj | news_article | narr-009 | sub-020, sub-021 | faction-002: 0.58, faction-006: -0.45 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-038 | Samsung pledges $17 billion chip investment in Korea | 2025-07-05 | pub-reuters | news_article | narr-009 | sub-020 |
+| doc-039 | US raises concerns over Korean semiconductor subsidies | 2025-07-25 | pub-wsj | news_article | narr-009 | sub-020, sub-021 |
 
 ### August 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-040 | China imposes rare earth export quotas in escalation | 2025-08-10 | pub-scmp | news_article | narr-010 | sub-022 | faction-001: 0.75, faction-002: -0.78, faction-004: 0.82 |
-| doc-041 | Chip industry sounds alarm on rare earth restrictions | 2025-08-25 | pub-bloomberg | news_article | narr-010 | sub-022, sub-023 | faction-002: -0.65, faction-005: -0.58 |
-| doc-042 | Analysis: How China's rare earth controls reshape chip supply chains | 2025-08-30 | pub-eetimes | news_article | narr-010 | sub-023 | faction-003: -0.35 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-040 | China imposes rare earth export quotas in escalation | 2025-08-10 | pub-scmp | news_article | narr-010 | sub-022 |
+| doc-041 | Chip industry sounds alarm on rare earth restrictions | 2025-08-25 | pub-bloomberg | news_article | narr-010 | sub-022, sub-023 |
+| doc-042 | Analysis: How China's rare earth controls reshape chip supply chains | 2025-08-30 | pub-eetimes | news_article | narr-010 | sub-023 |
 
 ### September 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-043 | Intel reports $1.6B quarterly loss | 2025-09-15 | pub-reuters | news_article | narr-008 | sub-018 | faction-005: -0.68, faction-006: 0.42 |
-| doc-044 | Nvidia crushes earnings expectations on AI demand | 2025-09-20 | pub-bloomberg | news_article | narr-011 | sub-024 | faction-005: 0.85, faction-006: 0.72 |
-| doc-045 | The AI chip shortage is getting worse | 2025-09-25 | pub-wsj | news_article | narr-011 | sub-024, sub-025 | faction-003: -0.38, faction-005: 0.55 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-043 | Intel reports $1.6B quarterly loss | 2025-09-15 | pub-reuters | news_article | narr-008 | sub-018 |
+| doc-044 | Nvidia crushes earnings expectations on AI demand | 2025-09-20 | pub-bloomberg | news_article | narr-011 | sub-024 |
+| doc-045 | The AI chip shortage is getting worse | 2025-09-25 | pub-wsj | news_article | narr-011 | sub-024, sub-025 |
 
 ### October 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-046 | SK Hynix ramps HBM production to meet AI demand | 2025-10-01 | pub-semiengi | news_article | narr-011 | sub-024 | faction-006: 0.78 |
-| doc-047 | China further restricts gallium and germanium exports | 2025-10-15 | pub-xinhua | news_article | narr-010 | sub-022 | faction-001: 0.82, faction-004: 0.85 |
-| doc-048 | US firms scramble for rare earth alternatives | 2025-10-20 | pub-bloomberg | news_article | narr-010 | sub-023 | faction-002: -0.52, faction-005: -0.48 |
-| doc-049 | Korea-US tensions rise over chip subsidies | 2025-10-25 | pub-ft | news_article | narr-009 | sub-021 | faction-002: -0.42, faction-006: -0.55 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-046 | SK Hynix ramps HBM production to meet AI demand | 2025-10-01 | pub-semiengi | news_article | narr-011 | sub-024 |
+| doc-047 | China further restricts gallium and germanium exports | 2025-10-15 | pub-xinhua | news_article | narr-010 | sub-022 |
+| doc-048 | US firms scramble for rare earth alternatives | 2025-10-20 | pub-bloomberg | news_article | narr-010 | sub-023 |
+| doc-049 | Korea-US tensions rise over chip subsidies | 2025-10-25 | pub-ft | news_article | narr-009 | sub-021 |
 
 ### November 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-050 | ASML CEO: China restrictions will persist for years | 2025-11-05 | pub-reuters | news_article | narr-002 | sub-006 | faction-001: -0.62, faction-006: -0.48 |
-| doc-051 | AMD launches new AI chip to challenge Nvidia dominance | 2025-11-20 | pub-eetimes | news_article | narr-011 | sub-025 | faction-003: 0.55, faction-005: 0.62 |
-| doc-052 | Analysis: Can anyone catch Nvidia in AI chips? | 2025-11-25 | pub-semiengi | news_article | narr-011 | sub-024, sub-025 | faction-003: 0.42 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-050 | ASML CEO: China restrictions will persist for years | 2025-11-05 | pub-reuters | news_article | narr-002 | sub-006 |
+| doc-051 | AMD launches new AI chip to challenge Nvidia dominance | 2025-11-20 | pub-eetimes | news_article | narr-011 | sub-025 |
+| doc-052 | Analysis: Can anyone catch Nvidia in AI chips? | 2025-11-25 | pub-semiengi | news_article | narr-011 | sub-024, sub-025 |
 
 ### December 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-053 | Intel secures $8.5B CHIPS Act funding | 2025-12-10 | pub-wsj | news_article | narr-008 | sub-019 | faction-002: 0.65, faction-005: 0.72 |
-| doc-054 | Year in review: China semiconductor progress exceeds expectations | 2025-12-20 | pub-scmp | news_article | narr-001 | sub-002 | faction-001: 0.78, faction-003: 0.45 |
-| doc-055 | US-Korea chip subsidy dispute heads to WTO | 2025-12-28 | pub-reuters | news_article | narr-009 | sub-021 | faction-002: -0.35, faction-006: -0.42 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-053 | Intel secures $8.5B CHIPS Act funding | 2025-12-10 | pub-wsj | news_article | narr-008 | sub-019 |
+| doc-054 | Year in review: China semiconductor progress exceeds expectations | 2025-12-20 | pub-scmp | news_article | narr-001 | sub-002 |
+| doc-055 | US-Korea chip subsidy dispute heads to WTO | 2025-12-28 | pub-reuters | news_article | narr-009 | sub-021 |
 
 ### January 2026 (early)
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-056 | Nvidia announces next-gen AI chip at CES | 2026-01-05 | pub-bloomberg | news_article | narr-011 | sub-024 | faction-005: 0.82, faction-006: 0.68 |
-| doc-057 | Intel CEO outlines turnaround strategy at CES | 2026-01-06 | pub-eetimes | news_article | narr-008 | sub-019 | faction-005: 0.45 |
-| doc-058 | China rare earth restrictions show limited impact so far | 2026-01-08 | pub-ft | news_article | narr-010 | sub-023 | faction-001: -0.35, faction-002: 0.42 |
-| doc-059 | TSMC reports strong Q4 driven by AI chip demand | 2026-01-10 | pub-reuters | news_article | narr-007, narr-011 | sub-016, sub-024 | faction-005: 0.72, faction-006: 0.65 |
-| doc-060 | Samsung and SK Hynix announce HBM alliance | 2026-01-12 | pub-semiengi | news_article | narr-009 | sub-020 | faction-006: 0.75 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-056 | Nvidia announces next-gen AI chip at CES | 2026-01-05 | pub-bloomberg | news_article | narr-011 | sub-024 |
+| doc-057 | Intel CEO outlines turnaround strategy at CES | 2026-01-06 | pub-eetimes | news_article | narr-008 | sub-019 |
+| doc-058 | China rare earth restrictions show limited impact so far | 2026-01-08 | pub-ft | news_article | narr-010 | sub-023 |
+| doc-059 | TSMC reports strong Q4 driven by AI chip demand | 2026-01-10 | pub-reuters | news_article | narr-007, narr-011 | sub-016, sub-024 |
+| doc-060 | Samsung and SK Hynix announce HBM alliance | 2026-01-12 | pub-semiengi | news_article | narr-009 | sub-020 |
 
 ## New Themes (10)
 
@@ -382,51 +374,47 @@
 
 ### narr-008: "Walmart faces scrutiny over Great Value supplier practices" (NEW)
 - **Timeline:** June-September 2025
-- **Factions:** faction-003, faction-004
 - **Theme IDs:** sub-017, sub-018
 
 ### narr-009: "E-commerce fulfillment center workers push for unionization" (NEW)
 - **Timeline:** July-November 2025
-- **Factions:** faction-002, faction-003
 - **Theme IDs:** sub-019, sub-020
 
 ### narr-010: "Walmart expands healthcare services amid rural hospital closures" (DEEPENS narr-007 rural)
 - **Timeline:** August-December 2025
-- **Factions:** faction-001, faction-004, faction-005
 - **Theme IDs:** sub-021, sub-022
 
 ### narr-011: "Holiday season delivery failures damage Walmart's reputation" (DEEPENS narr-006 delivery)
 - **Timeline:** November 2025-January 2026
-- **Factions:** faction-001, faction-005, faction-006
 - **Theme IDs:** sub-023, sub-024
 
 ## New Persons (10)
 
-| ID | Name | Type | Org | Factions | Narratives |
-|----|------|------|-----|----------|------------|
-| person-018 | Cedric Clark | executive | org-001 (Walmart) | | narr-002, narr-011 |
-| person-019 | Tom Ward | executive | org-001 (Walmart) | | narr-011 |
-| person-020 | Stuart Appelbaum | labor_leader | org-016 (RWDSU) | faction-002, faction-003 | narr-009 |
-| person-021 | Chris Smalls | activist | org-017 (Amazon Labor Union) | faction-003 | narr-009 |
-| person-022 | Lina Khan | government_official | org-018 (FTC) | faction-004 | narr-008 |
-| person-023 | Ron Wahlen | executive | org-019 (Walmart Health) | | narr-010 |
-| person-024 | John Rainey | executive | org-001 (Walmart) | faction-005 | narr-002, narr-005 |
-| person-025 | Kelvin Buncum | activist | org-006 (United for Respect) | faction-003 | narr-003, narr-009 |
-| person-026 | Chris Kirkpatrick | journalist | | faction-005 | narr-005 |
-| person-027 | Craig Jelinek | executive | org-011 (Costco) | faction-006 | narr-006 |
+| ID | Name | Type | Org | Narratives |
+|----|------|------|-----|------------|
+| person-018 | Cedric Clark | executive | org-001 (Walmart) | narr-002, narr-011 |
+| person-019 | Tom Ward | executive | org-001 (Walmart) | narr-011 |
+| person-020 | Stuart Appelbaum | labor_leader | org-016 (RWDSU) | narr-009 |
+| person-021 | Chris Smalls | activist | org-017 (Amazon Labor Union) | narr-009 |
+| person-022 | Lina Khan | government_official | org-018 (FTC) | narr-008 |
+| person-023 | Ron Wahlen | executive | org-019 (Walmart Health) | narr-010 |
+| person-024 | John Rainey | executive | org-001 (Walmart) | narr-002, narr-005 |
+| person-025 | Kelvin Buncum | activist | org-006 (United for Respect) | narr-003, narr-009 |
+| person-026 | Chris Kirkpatrick | journalist | | narr-005 |
+| person-027 | Craig Jelinek | executive | org-011 (Costco) | narr-006 |
 
 ## New Organizations (8)
 
-| ID | Name | Type | Factions | Narratives |
-|----|------|------|----------|------------|
-| org-016 | Retail, Wholesale and Department Store Union (RWDSU) | union | faction-002, faction-003 | narr-009 |
-| org-017 | Amazon Labor Union | union | faction-003 | narr-009 |
-| org-018 | Federal Trade Commission | government | faction-004 | narr-008 |
-| org-019 | Walmart Health | corporation | | narr-010 |
-| org-020 | Dollar General | corporation | faction-006 | narr-007 |
-| org-021 | CVS Health | corporation | | narr-010 |
-| org-022 | Instacart | corporation | faction-006 | narr-006, narr-011 |
-| org-023 | Kroger | corporation | faction-006 | narr-005, narr-006 |
+| ID | Name | Type | Narratives |
+|----|------|------|------------|
+| org-016 | Retail, Wholesale and Department Store Union (RWDSU) | union | narr-009 |
+| org-017 | Amazon Labor Union | union | narr-009 |
+| org-018 | Federal Trade Commission | government | narr-008 |
+| org-019 | Walmart Health | corporation | narr-010 |
+| org-020 | Dollar General | corporation | narr-007 |
+| org-021 | CVS Health | corporation | narr-010 |
+| org-022 | Instacart | corporation | narr-006, narr-011 |
+| org-023 | Kroger | corporation | narr-005, narr-006 |
 
 ## New Locations (2)
 
@@ -455,61 +443,61 @@
 ## New Documents (25)
 
 ### June 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-024 | Investigation reveals unsafe conditions at Great Value supplier | 2025-06-15 | pub-reuters | news_article | narr-008 | sub-017 | faction-003: -0.72, faction-004: -0.68 |
-| doc-025 | Walmart faces pressure over supply chain transparency | 2025-06-22 | pub-wsj | news_article | narr-008 | sub-017, sub-018 | faction-003: -0.65, faction-005: -0.42 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-024 | Investigation reveals unsafe conditions at Great Value supplier | 2025-06-15 | pub-reuters | news_article | narr-008 | sub-017 |
+| doc-025 | Walmart faces pressure over supply chain transparency | 2025-06-22 | pub-wsj | news_article | narr-008 | sub-017, sub-018 |
 
 ### July 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-026 | FTC opens inquiry into retail supply chain practices | 2025-07-01 | pub-bloomberg | news_article | narr-008 | sub-018 | faction-004: 0.55, faction-005: -0.48 |
-| doc-027 | Walmart fulfillment workers in Texas seek union vote | 2025-07-20 | pub-ap | news_article | narr-009 | sub-019 | faction-002: 0.72, faction-003: 0.78 |
-| doc-028 | Why warehouse workers are organizing in record numbers | 2025-07-28 | pub-usatoday | news_article | narr-009 | sub-019, sub-020 | faction-002: 0.68, faction-003: 0.75 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-026 | FTC opens inquiry into retail supply chain practices | 2025-07-01 | pub-bloomberg | news_article | narr-008 | sub-018 |
+| doc-027 | Walmart fulfillment workers in Texas seek union vote | 2025-07-20 | pub-ap | news_article | narr-009 | sub-019 |
+| doc-028 | Why warehouse workers are organizing in record numbers | 2025-07-28 | pub-usatoday | news_article | narr-009 | sub-019, sub-020 |
 
 ### August 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-029 | Walmart bets big on healthcare as rural hospitals struggle | 2025-08-05 | pub-wsj | news_article | narr-010 | sub-021 | faction-001: 0.45, faction-004: 0.52, faction-005: 0.58 |
-| doc-030 | Can Walmart fill the rural healthcare gap? | 2025-08-15 | pub-localnews | news_article | narr-010 | sub-021, sub-022 | faction-001: 0.55, faction-004: 0.48 |
-| doc-031 | Critics question Walmart's healthcare motives | 2025-08-25 | pub-consumeraffairs | news_article | narr-010 | sub-022 | faction-001: -0.35, faction-004: 0.42 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-029 | Walmart bets big on healthcare as rural hospitals struggle | 2025-08-05 | pub-wsj | news_article | narr-010 | sub-021 |
+| doc-030 | Can Walmart fill the rural healthcare gap? | 2025-08-15 | pub-localnews | news_article | narr-010 | sub-021, sub-022 |
+| doc-031 | Critics question Walmart's healthcare motives | 2025-08-25 | pub-consumeraffairs | news_article | narr-010 | sub-022 |
 
 ### September 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-032 | Union vote fails at Texas Walmart fulfillment center | 2025-09-15 | pub-reuters | news_article | narr-009 | sub-020 | faction-002: -0.65, faction-003: -0.72 |
-| doc-033 | Workers vow to continue organizing despite setback | 2025-09-18 | pub-ap | news_article | narr-009 | sub-019 | faction-002: 0.58, faction-003: 0.65 |
-| doc-034 | Walmart's anti-union tactics come under scrutiny | 2025-09-25 | pub-bloomberg | news_article | narr-009 | sub-020 | faction-002: -0.72, faction-003: -0.78, faction-005: -0.35 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-032 | Union vote fails at Texas Walmart fulfillment center | 2025-09-15 | pub-reuters | news_article | narr-009 | sub-020 |
+| doc-033 | Workers vow to continue organizing despite setback | 2025-09-18 | pub-ap | news_article | narr-009 | sub-019 |
+| doc-034 | Walmart's anti-union tactics come under scrutiny | 2025-09-25 | pub-bloomberg | news_article | narr-009 | sub-020 |
 
 ### October 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-035 | Second Walmart fulfillment center files for union election | 2025-10-01 | pub-usatoday | news_article | narr-009 | sub-019 | faction-002: 0.72, faction-003: 0.75 |
-| doc-036 | Walmart Health opens 15 new clinics in underserved areas | 2025-10-15 | pub-localnews | news_article | narr-010 | sub-021 | faction-001: 0.62, faction-004: 0.55 |
-| doc-037 | Rural communities embrace Walmart healthcare expansion | 2025-10-25 | pub-ap | news_article | narr-010 | sub-021, sub-022 | faction-001: 0.68, faction-004: 0.52 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-035 | Second Walmart fulfillment center files for union election | 2025-10-01 | pub-usatoday | news_article | narr-009 | sub-019 |
+| doc-036 | Walmart Health opens 15 new clinics in underserved areas | 2025-10-15 | pub-localnews | news_article | narr-010 | sub-021 |
+| doc-037 | Rural communities embrace Walmart healthcare expansion | 2025-10-25 | pub-ap | news_article | narr-010 | sub-021, sub-022 |
 
 ### November 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-038 | Black Friday online sales surge overwhelms Walmart delivery | 2025-11-29 | pub-wsj | news_article | narr-011 | sub-023 | faction-001: -0.72, faction-005: -0.65, faction-006: 0.48 |
-| doc-039 | Thousands of Walmart orders stuck in transit | 2025-11-30 | pub-x | social_post | narr-011 | sub-023 | faction-001: -0.82 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-038 | Black Friday online sales surge overwhelms Walmart delivery | 2025-11-29 | pub-wsj | news_article | narr-011 | sub-023 |
+| doc-039 | Thousands of Walmart orders stuck in transit | 2025-11-30 | pub-x | social_post | narr-011 | sub-023 |
 
 ### December 2025
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-040 | Walmart CEO apologizes for holiday delivery failures | 2025-12-05 | pub-reuters | news_article | narr-011 | sub-023, sub-024 | faction-001: -0.58, faction-005: -0.42 |
-| doc-041 | Customer fury mounts as Walmart gifts arrive late | 2025-12-10 | pub-tiktok | social_post | narr-011 | sub-023 | faction-001: -0.85 |
-| doc-042 | Consumer groups file FTC complaint over Walmart delivery | 2025-12-15 | pub-consumeraffairs | news_article | narr-011 | sub-024 | faction-001: 0.62, faction-004: 0.72 |
-| doc-043 | How Walmart's delivery system failed during peak season | 2025-12-20 | pub-retaildive | news_article | narr-011 | sub-023, sub-024 | faction-005: -0.52, faction-006: 0.45 |
-| doc-044 | Walmart announces $500M investment in delivery infrastructure | 2025-12-28 | pub-bloomberg | news_article | narr-011 | sub-024 | faction-001: 0.35, faction-005: 0.58 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-040 | Walmart CEO apologizes for holiday delivery failures | 2025-12-05 | pub-reuters | news_article | narr-011 | sub-023, sub-024 |
+| doc-041 | Customer fury mounts as Walmart gifts arrive late | 2025-12-10 | pub-tiktok | social_post | narr-011 | sub-023 |
+| doc-042 | Consumer groups file FTC complaint over Walmart delivery | 2025-12-15 | pub-consumeraffairs | news_article | narr-011 | sub-024 |
+| doc-043 | How Walmart's delivery system failed during peak season | 2025-12-20 | pub-retaildive | news_article | narr-011 | sub-023, sub-024 |
+| doc-044 | Walmart announces $500M investment in delivery infrastructure | 2025-12-28 | pub-bloomberg | news_article | narr-011 | sub-024 |
 
 ### January 2026 (early)
-| ID | Title | Date | Publisher | Type | Narratives | Themes | Factions |
-|----|-------|------|-----------|------|------------|--------|----------|
-| doc-045 | Walmart delivery still struggling as new year begins | 2026-01-02 | pub-x | social_post | narr-011 | sub-023 | faction-001: -0.72 |
-| doc-046 | Historic: Atlanta Walmart fulfillment center votes to unionize | 2026-01-10 | pub-reuters | news_article | narr-009 | sub-019 | faction-002: 0.85, faction-003: 0.88 |
-| doc-047 | What the Atlanta union vote means for retail workers | 2026-01-12 | pub-wsj | news_article | narr-009 | sub-020 | faction-002: 0.72, faction-003: 0.78, faction-005: -0.35 |
-| doc-048 | Walmart responds to union victory with new worker benefits | 2026-01-15 | pub-bloomberg | news_article | narr-009, narr-003 | sub-008, sub-019 | faction-002: 0.45, faction-003: 0.52 |
+| ID | Title | Date | Publisher | Type | Narratives | Themes |
+|----|-------|------|-----------|------|------------|--------|
+| doc-045 | Walmart delivery still struggling as new year begins | 2026-01-02 | pub-x | social_post | narr-011 | sub-023 |
+| doc-046 | Historic: Atlanta Walmart fulfillment center votes to unionize | 2026-01-10 | pub-reuters | news_article | narr-009 | sub-019 |
+| doc-047 | What the Atlanta union vote means for retail workers | 2026-01-12 | pub-wsj | news_article | narr-009 | sub-020 |
+| doc-048 | Walmart responds to union victory with new worker benefits | 2026-01-15 | pub-bloomberg | news_article | narr-009, narr-003 | sub-008, sub-019 |
 
 ## New Themes (10)
 
@@ -565,4 +553,3 @@
 - [ ] Bidirectional relationships complete
 - [ ] No orphaned entities
 - [ ] Date ranges valid (June 2025 - Jan 27, 2026)
-- [ ] Faction sentiments in valid range (-1.0 to 1.0)

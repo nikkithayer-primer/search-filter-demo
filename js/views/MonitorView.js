@@ -13,14 +13,13 @@ import {
   NetworkGraphCard,
   NarrativeListCard,
   TopicListCard,
-  SentimentChartCard,
   MapCard,
   TimelineVolumeCompositeCard
 } from '../components/CardComponents.js';
 
 /**
  * Helper to format alert descriptions with entity links
- * Links events, narratives, factions, persons, organizations, and locations
+ * Links events, narratives, persons, organizations, and locations
  * when their text/name appears in the description
  */
 function formatAlertDescriptionWithLinks(alert, DataServiceRef) {
@@ -51,19 +50,6 @@ function formatAlertDescriptionWithLinks(alert, DataServiceRef) {
         entityReplacements.push({
           name: narrative.text,
           link: `<a href="#/narrative/${id}">${narrative.text}</a>`
-        });
-      }
-    });
-  }
-  
-  // Process factions
-  if (alert.relatedFactionIds && alert.relatedFactionIds.length > 0) {
-    alert.relatedFactionIds.forEach(id => {
-      const faction = DS.getFaction(id);
-      if (faction) {
-        entityReplacements.push({
-          name: faction.name,
-          link: `<a href="#/faction/${id}">${faction.name}</a>`
         });
       }
     });
@@ -252,13 +238,12 @@ export class MonitorView extends DetailViewBase {
     const persons = DataService.getPersonsForMonitor(this.monitorId);
     const organizations = DataService.getOrganizationsForMonitor(this.monitorId);
     const locations = DataService.getLocationsForMonitor(this.monitorId);
-    const factions = DataService.getFactionsForMonitor(this.monitorId);
     const documents = DataService.getDocumentsForMonitor(this.monitorId);
     const topics = DataService.getTopicsForMonitor(this.monitorId);
     
     // Get aggregated volume data
     const volumeData = DataService.getAggregateVolumeForMonitor(this.monitorId);
-    const hasVolumeData = volumeData.dates.length > 0 && volumeData.factions.length > 0;
+    const hasVolumeData = volumeData.dates.length > 0;
     
     // Get narrative durations for duration view
     const narrativeDurations = this.getNarrativeDurationsForMonitor(narratives);
@@ -296,7 +281,7 @@ export class MonitorView extends DetailViewBase {
 
     return {
       narratives, events, allEvents, alerts,
-      persons, organizations, locations, factions, documents, topics,
+      persons, organizations, locations, documents, topics,
       volumeData, hasVolumeData, hasVolumeTimeline,
       narrativeDurations, hasDurationData,
       mapLocations, personIds, orgIds, hasNetwork,
@@ -324,29 +309,14 @@ export class MonitorView extends DetailViewBase {
       const startDate = sortedDates[0];
       const endDate = sortedDates[sortedDates.length - 1];
       
-      // Calculate total volume
+      // Calculate total volume from volume data entries
       let totalVolume = 0;
-      const factionVolumes = {};
       volumeData.forEach(v => {
-        Object.entries(v.factionVolumes || {}).forEach(([fId, vol]) => {
+        const volumes = v.publisherVolumes || {};
+        Object.values(volumes).forEach(vol => {
           totalVolume += vol;
-          factionVolumes[fId] = (factionVolumes[fId] || 0) + vol;
         });
       });
-      
-      // Get primary faction color
-      let primaryFactionId = null;
-      let maxFactionVolume = 0;
-      Object.entries(factionVolumes).forEach(([fId, vol]) => {
-        if (vol > maxFactionVolume) {
-          maxFactionVolume = vol;
-          primaryFactionId = fId;
-        }
-      });
-      
-      const primaryFaction = primaryFactionId 
-        ? DataService.getFaction(primaryFactionId)
-        : null;
       
       return {
         id: n.id,
@@ -355,7 +325,7 @@ export class MonitorView extends DetailViewBase {
         endDate,
         totalVolume,
         sentiment: n.sentiment || 0,
-        color: primaryFaction?.color || 'var(--accent-primary)'
+        color: 'var(--accent-primary)'
       };
     }).filter(Boolean);
     
@@ -397,16 +367,6 @@ export class MonitorView extends DetailViewBase {
         volumeHeight: 140,
         timelineHeight: 140,
         showViewToggle: false
-      }));
-    }
-
-    // Faction Engagement (half-width)
-    if (data.factions.length > 0) {
-      this.cardManager.add(new SentimentChartCard(this, 'monitor-faction-sentiment', {
-        title: 'Faction Engagement',
-        factions: data.factions,
-        halfWidth: true,
-        clickRoute: 'faction'
       }));
     }
 
@@ -539,8 +499,7 @@ export class MonitorView extends DetailViewBase {
       'volume_spike': 'volume',
       'sentiment_shift': 'sentiment',
       'new_narrative': 'narrative',
-      'new_event': 'event',
-      'faction_engagement': 'faction'
+      'new_event': 'event'
     };
     return classes[type] || 'default';
   }
@@ -553,8 +512,7 @@ export class MonitorView extends DetailViewBase {
       'volume_spike': 'Volume Spike',
       'sentiment_shift': 'Sentiment Shift',
       'new_narrative': 'New Narrative',
-      'new_event': 'New Event',
-      'faction_engagement': 'Faction Engagement'
+      'new_event': 'New Event'
     };
     return labels[type] || type;
   }

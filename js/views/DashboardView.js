@@ -14,8 +14,7 @@ import {
   NarrativeListCard,
   TopicListCard,
   MapCard,
-  TimelineVolumeCompositeCard,
-  SentimentChartCard
+  TimelineVolumeCompositeCard
 } from '../components/CardComponents.js';
 
 export class DashboardView extends BaseView {
@@ -103,9 +102,8 @@ export class DashboardView extends BaseView {
     initAllCardToggles(contentGrid, 'dashboard', {
       0: 'full', // Volume & Timeline Composite - full width
       1: 'half', // Top Narratives - half width
-      2: 'half', // Sentiment by Faction - half width
-      3: 'half', // Trending Topics - half width
-      4: 'half'  // Events & Locations Map - half width
+      2: 'half', // Trending Topics - half width
+      3: 'half'  // Events & Locations Map - half width
     });
 
     // Initialize stat card dropdowns
@@ -129,9 +127,6 @@ export class DashboardView extends BaseView {
     const recentEvents = DataService.getRecentEvents(null, this.timeRange);
     const narrativeDurations = DataService.getNarrativeDurations(this.missionId, this.timeRange);
 
-    // Faction sentiments
-    const factionSentiments = DataService.getAggregateFactionSentiments(this.missionId, this.timeRange);
-
     // Locations for map
     const locations = DataService.getAllLocationsWithCounts(this.timeRange);
 
@@ -151,7 +146,6 @@ export class DashboardView extends BaseView {
       publisherData,
       recentEvents,
       narrativeDurations,
-      factionSentiments,
       locations
     };
   }
@@ -172,9 +166,6 @@ export class DashboardView extends BaseView {
     
     // Get topics
     const topics = DataService.getTopicsInRange(this.timeRange, tagIds);
-    
-    // Get factions
-    const factions = DataService.getFactions();
     
     // Get locations
     const locations = DataService.getLocations();
@@ -202,7 +193,6 @@ export class DashboardView extends BaseView {
     return {
       narratives,
       topics,
-      factions,
       locations,
       events,
       entities,
@@ -218,7 +208,7 @@ export class DashboardView extends BaseView {
     // Reset card manager for fresh setup
     this.cardManager = new CardManager(this);
 
-    const hasVolumeData = data.volumeData?.dates?.length > 0 && data.volumeData?.factions?.length > 0;
+    const hasVolumeData = data.volumeData?.dates?.length > 0;
     const hasPublisherData = data.publisherData?.dates?.length > 0 && data.publisherData?.publishers?.length > 0;
     const hasEvents = data.recentEvents?.length > 0;
     const hasDurationData = data.narrativeDurations?.length > 0;
@@ -250,17 +240,7 @@ export class DashboardView extends BaseView {
       }));
     }
 
-    // 3. Sentiment by Faction (half width)
-    if (data.factionSentiments.length > 0) {
-      this.cardManager.add(new SentimentChartCard(this, 'dashboard-sentiment-chart', {
-        title: 'Sentiment by Faction',
-        factions: data.factionSentiments,
-        halfWidth: true,
-        clickRoute: 'faction'
-      }));
-    }
-
-    // 4. Trending Topics (half width)
+    // 3. Trending Topics (half width)
     if (data.topics.length > 0) {
       this.cardManager.add(new TopicListCard(this, 'dashboard-topic-list', {
         title: 'Trending Topics',
@@ -272,7 +252,7 @@ export class DashboardView extends BaseView {
       }));
     }
 
-    // 5. Events & Locations Map (half width with map/list toggle)
+    // 4. Events & Locations Map (half width with map/list toggle)
     if (data.locations.length > 0 || hasEvents) {
       this.cardManager.add(new MapCard(this, 'dashboard-events-map', {
         title: 'Events & Locations',

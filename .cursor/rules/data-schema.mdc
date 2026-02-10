@@ -20,7 +20,6 @@ Always use the correct prefix when creating entity IDs:
 | Mission | `mission-` |
 | Narrative | `narr-` |
 | Theme | `sub-` |
-| Faction | `faction-` |
 | Location | `loc-` |
 | Event | `event-` |
 | Person | `person-` |
@@ -52,7 +51,6 @@ Always use the correct prefix when creating entity IDs:
 ### Many-to-Many (Array Fields)
 Most entities use array fields for relationships:
 - `personIds`, `organizationIds`, `locationIds`, `eventIds`, `documentIds`, `topicIds`
-- `affiliatedFactionIds` (on Person/Organization)
 - `themeIds` (on Narrative, auto-managed)
 - `tagIds` (on most entities for flexible tagging)
 
@@ -62,22 +60,21 @@ Three document collection types with different scoping models:
 - **Workspaces**: Search-driven - `scope` for dynamic matching OR legacy `documentIds` + manual overrides
 - **Projects**: Manual - Only `documentIds` (no scope, purely curated). Projects can be nested via `parentProjectId`/`subProjectIds`
 
-Scope fields: `personIds`, `orgIds`, `factionIds`, `locationIds`, `eventIds`, `keywords`, `logic: 'AND'|'OR'`
+Scope fields: `personIds`, `orgIds`, `locationIds`, `eventIds`, `keywords`, `logic: 'AND'|'OR'`
 
 ## Common Field Patterns
 
 ### Sentiment
 Always a number from -1.0 (negative) to 1.0 (positive):
 ```javascript
-sentiment: -0.52,
-factionSentiment: { 'faction-001': 0.67, 'faction-002': -0.78 }
+sentiment: -0.52
 ```
 
 ### Volume Over Time
 Time series data for tracking engagement:
 ```javascript
 volumeOverTime: [
-  { date: '2026-01-20', factionVolumes: { 'faction-001': 180 }, publisherVolumes: { 'pub-x': 145 } }
+  { date: '2026-01-20', publisherVolumes: { 'pub-x': 145 } }
 ]
 ```
 
@@ -101,7 +98,7 @@ volumeOverTime: [
 `news_article`, `social_media`, `internal_report`, `intelligence_report`, `memo`, `transcript`
 
 ### Alert Types
-`volume_spike`, `new_event`, `new_narrative`, `sentiment_shift`, `faction_engagement`
+`volume_spike`, `new_event`, `new_narrative`, `sentiment_shift`
 
 ## DataStore Usage
 
@@ -112,7 +109,7 @@ import { dataStore } from './js/data/DataStore.js';
 const id = dataStore.createPerson({ name: 'John Doe', type: 'politician' });
 
 // Update entities
-dataStore.updatePerson(id, { affiliatedFactionIds: ['faction-001'] });
+dataStore.updatePerson(id, { type: 'executive' });
 
 // Delete entities (handles relationship cleanup)
 dataStore.deletePerson(id);
@@ -125,7 +122,7 @@ const person = dataStore.findEntity('persons', id);
 
 Sample data is organized in `js/data/datasets/{dataset-name}/`:
 - `entities.js` - Persons and Organizations
-- `narratives.js`, `themes.js`, `factions.js`, `locations.js`, `events.js`
+- `narratives.js`, `themes.js`, `locations.js`, `events.js`
 - `documents.js`, `publishers.js`, `repositories.js`, `monitors.js`, `missions.js`, `topics.js`, `users.js`, `searchFilters.js`, `tags.js`
 
 ---

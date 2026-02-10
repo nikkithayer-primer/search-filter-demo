@@ -27,7 +27,6 @@ const AVAILABLE_COLUMNS = {
   locations: 'Locations',
   persons: 'People',
   organizations: 'Organizations',
-  factions: 'Factions',
   topics: 'Topics'
 };
 

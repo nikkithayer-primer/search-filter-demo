@@ -263,7 +263,7 @@ class App {
           <div class="settings-row">
             <div class="settings-label">
               <span class="settings-label-text">Default View Tab</span>
-              <span class="settings-label-description">Tab to show when navigating to detail pages (narratives, factions, etc.)</span>
+              <span class="settings-label-description">Tab to show when navigating to detail pages (narratives, topics, etc.)</span>
             </div>
             <select id="setting-default-tab" class="settings-select">
               <option value="dashboard" ${settings.defaultViewTab === 'dashboard' ? 'selected' : ''}>Dashboard</option>
@@ -694,7 +694,6 @@ class App {
       const scope = filter.scope || {};
       const itemCount = (scope.personIds?.length || 0) +
         (scope.organizationIds?.length || 0) +
-        (scope.factionIds?.length || 0) +
         (scope.locationIds?.length || 0) +
         (scope.eventIds?.length || 0) +
         (scope.keywords?.length || 0);
@@ -851,9 +850,6 @@ class App {
           break;
         case 'event':
           entity = DataService.getEvent(id);
-          break;
-        case 'faction':
-          entity = DataService.getFaction(id);
           break;
         case 'location':
           entity = DataService.getLocation(id);
@@ -1250,8 +1246,6 @@ class App {
         return 'Give me a brief 2-3 sentence summary of this narrative, including key themes and the overall sentiment.';
       case 'theme':
         return 'Briefly summarize this theme and how it relates to its parent narrative.';
-      case 'faction':
-        return 'Give me a brief summary of this faction, their key narratives, and notable affiliated entities.';
       case 'person':
         return 'Briefly summarize this person, their role, affiliations, and which narratives they appear in.';
       case 'organization':
@@ -1348,7 +1342,6 @@ class App {
         context.description = narrative.description;
         context.sentiment = narrative.sentiment;
         context.themeCount = DataService.getThemesForNarrative(id).length;
-        context.factionCount = Object.keys(DataService.getAggregateFactionMentionsForNarrative(id) || {}).length;
         context.documentCount = DataService.getDocumentsForNarrative(id).length;
         context.personCount = DataService.getPersonsForNarrative(id).length;
         context.orgCount = DataService.getOrganizationsForNarrative(id).length;
@@ -1368,16 +1361,6 @@ class App {
         context.documentCount = DataService.getDocumentsForTheme(id).length;
         break;
       }
-      case 'faction': {
-        const faction = DataService.getFaction(id);
-        if (!faction) return null;
-        context.name = faction.name;
-        context.description = faction.description;
-        context.narrativeCount = DataService.getNarrativesForFaction(id).length;
-        context.personCount = DataService.getPersonsForFaction(id).length;
-        context.orgCount = DataService.getOrganizationsForFaction(id).length;
-        break;
-      }
       case 'person': {
         const person = DataService.getPerson(id);
         if (!person) return null;
@@ -1386,8 +1369,6 @@ class App {
         context.role = person.role;
         context.narrativeCount = DataService.getNarrativesForPerson(id).length;
         context.documentCount = DataService.getDocumentsForPerson(id).length;
-        const factions = DataService.getFactionsForPerson(id);
-        context.affiliatedFactions = factions.map(f => f.name);
         break;
       }
       case 'organization': {
@@ -1398,8 +1379,6 @@ class App {
         context.orgType = org.type;
         context.narrativeCount = DataService.getNarrativesForOrganization(id).length;
         context.documentCount = DataService.getDocumentsForOrganization(id).length;
-        const factions = DataService.getFactionsForOrganization(id);
-        context.affiliatedFactions = factions.map(f => f.name);
         break;
       }
       case 'document': {
@@ -1429,7 +1408,6 @@ class App {
       case 'monitors': {
         context.type = 'dashboard overview';
         context.narrativeCount = DataService.getNarratives().length;
-        context.factionCount = DataService.getFactions().length;
         const alerts = DataService.getAlerts?.() || [];
         context.alertCount = alerts.length;
         break;
@@ -1468,7 +1446,7 @@ class App {
       case 'narrative':
         return [
           'What are the main themes in this narrative?',
-          'Which factions are most engaged with this narrative?',
+          'Who are the key people and organizations involved?',
           'What are the most recent documents about this?'
         ];
       case 'theme':
@@ -1477,23 +1455,17 @@ class App {
           'What entities are mentioned in this theme?',
           'What documents support this theme?'
         ];
-      case 'faction':
-        return [
-          'What narratives is this faction most active in?',
-          'Who are the key people affiliated with this faction?',
-          'How does this faction\'s sentiment compare to others?'
-        ];
       case 'person':
         return [
           'What narratives mention this person?',
-          'What factions is this person affiliated with?',
+          'What organizations is this person associated with?',
           'What are the most recent documents about this person?'
         ];
       case 'organization':
         return [
           'What narratives involve this organization?',
-          'Which factions is this organization connected to?',
-          'Who are the key people associated with this organization?'
+          'Who are the key people associated with this organization?',
+          'What are the most recent documents about this organization?'
         ];
       case 'document':
         return [
@@ -1505,7 +1477,7 @@ class App {
       case 'monitor':
         return [
           'What are the top trending narratives?',
-          'Which factions have been most active recently?',
+          'Which publishers are most active recently?',
           'Are there any emerging themes I should know about?'
         ];
       default:
@@ -1587,10 +1559,6 @@ class App {
         return this.getNarrativeListSummary();
       case 'theme':
         return id ? this.getThemeSummary(id) : null;
-      case 'faction':
-        return id ? this.getFactionSummary(id) : this.getFactionListSummary();
-      case 'factions':
-        return this.getFactionListSummary();
       case 'location':
         return id ? this.getLocationSummary(id) : this.getLocationListSummary();
       case 'locations':
@@ -1638,10 +1606,10 @@ class App {
     
     // Calculate total volume for each recent narrative using document aggregation
     const narrativesWithVolume = recentNarratives.map(n => {
-      const factionMentions = DataService.getAggregateFactionMentionsForNarrative(n.id);
       const volumeOverTime = DataService.getVolumeOverTimeForNarrative(n.id);
-      const totalVolume = Object.values(factionMentions)
-        .reduce((sum, f) => sum + (f.volume || 0), 0);
+      const publisherVols = n.publisherVolumes || {};
+      const totalVolume = Object.values(publisherVols)
+        .reduce((sum, p) => sum + (p.volume || 0), 0);
       const themes = DataService.getThemesForNarrative(n.id);
       return { ...n, totalVolume, volumeOverTime, themes };
     });
@@ -1712,7 +1680,7 @@ class App {
       return [];
     }
     return volumeOverTime.map(d =>
-      Object.values(d.factionVolumes || {}).reduce((a, b) => a + b, 0)
+      Object.values(d.publisherVolumes || {}).reduce((a, b) => a + b, 0)
     );
   }
 
@@ -1724,15 +1692,13 @@ class App {
     if (!narrative) return null;
     
     const themes = DataService.getThemesForNarrative(id);
-    const factions = DataService.getFactionsForNarrative(id);
     const sentiment = narrative.sentiment || 0;
     const sentimentLabel = sentiment > 0.2 ? 'positive' : sentiment < -0.2 ? 'negative' : 'neutral';
     
     return `<strong>Narrative: ${this.escapeHtml(narrative.title || narrative.text?.substring(0, 50) + '...')}</strong><br><br>` +
       `<strong>Status:</strong> ${narrative.status || 'unknown'}<br>` +
       `<strong>Sentiment:</strong> ${sentimentLabel} (${(sentiment * 100).toFixed(0)}%)<br>` +
-      `<strong>Themes:</strong> ${themes.length}<br>` +
-      `<strong>Factions involved:</strong> ${factions.length}`;
+      `<strong>Themes:</strong> ${themes.length}`;
   }
 
   /**
@@ -1758,31 +1724,6 @@ class App {
     
     return `<strong>Theme: ${this.escapeHtml(theme.title || theme.text?.substring(0, 50) + '...')}</strong>` +
       (parentNarrative ? `<br><br><strong>Parent narrative:</strong> ${this.escapeHtml(parentNarrative.title || 'Untitled')}` : '');
-  }
-
-  /**
-   * Generate faction detail summary
-   */
-  getFactionSummary(id) {
-    const faction = DataService.getFactionById(id);
-    if (!faction) return null;
-    
-    const narratives = DataService.getNarrativesForFaction(id);
-    
-    return `<strong>Faction: ${this.escapeHtml(faction.name)}</strong><br><br>` +
-      (faction.description ? `${this.escapeHtml(faction.description.substring(0, 150))}...<br><br>` : '') +
-      `<strong>Associated narratives:</strong> ${narratives.length}`;
-  }
-
-  /**
-   * Generate faction list summary
-   */
-  getFactionListSummary() {
-    const factions = DataService.getFactions();
-    
-    return `<strong>Factions List</strong><br><br>` +
-      `Tracking <strong>${factions.length} factions</strong>.<br><br>` +
-      `Ask to compare faction activities or identify coordination patterns.`;
   }
 
   /**
@@ -1963,14 +1904,12 @@ class App {
       'get_narrative_details': 'Loading narrative',
       'get_theme_details': 'Loading theme',
       'get_narratives_for_entity': 'Finding narratives',
-      'get_faction_details': 'Loading faction',
       'get_person_details': 'Loading person',
       'get_organization_details': 'Loading organization',
       'get_related_entities': 'Finding connections',
-      'compare_factions': 'Comparing factions',
       'get_volume_trends': 'Analyzing trends',
       'list_all_narratives': 'Listing narratives',
-      'list_all_factions': 'Listing factions'
+      'list_all_publishers': 'Listing publishers'
     };
     return nameMap[fnName] || 'Thinking';
   }
@@ -2008,7 +1947,6 @@ class App {
     formatted = formatted.replace(/\b(sub-\d+)\b/g, `<a href="#/${contextPrefix}$1/" class="chat-entity-link">$1</a>`);
     formatted = formatted.replace(/\b(person-\d+)\b/g, `<a href="#/${contextPrefix}$1/" class="chat-entity-link">$1</a>`);
     formatted = formatted.replace(/\b(org-\d+)\b/g, `<a href="#/${contextPrefix}$1/" class="chat-entity-link">$1</a>`);
-    formatted = formatted.replace(/\b(faction-\d+)\b/g, `<a href="#/${contextPrefix}$1/" class="chat-entity-link">$1</a>`);
     formatted = formatted.replace(/\b(doc-\d+)\b/g, `<a href="#/${contextPrefix}$1/" class="chat-entity-link">$1</a>`);
     
     return formatted;
@@ -2036,11 +1974,7 @@ class App {
     
     // Context-aware placeholder responses
     if (lowerMessage.includes('narrative') || lowerMessage.includes('story')) {
-      return "Several narratives match this query. A full implementation would analyze the narrative database and provide insights on themes, sentiment trends, and faction involvement. Explore narratives using the sidebar navigation.";
-    }
-    
-    if (lowerMessage.includes('faction') || lowerMessage.includes('group')) {
-      return "Faction analysis is a key feature of Primer. This would typically include breakdowns of faction activities, associated narratives, and sentiment patterns. Check the Factions view for detailed faction information.";
+      return "Several narratives match this query. A full implementation would analyze the narrative database and provide insights on themes, sentiment trends, and key entities. Explore narratives using the sidebar navigation.";
     }
     
     if (lowerMessage.includes('event') || lowerMessage.includes('timeline')) {
@@ -2052,7 +1986,7 @@ class App {
     }
     
     if (lowerMessage.includes('help') || lowerMessage.includes('what can you')) {
-      return "This chat can help analyze disinformation narratives, track faction activities, identify trends, and explore connections in the data. Ask about specific narratives, factions, events, or locations. Note: This is a mockup with placeholder responses.";
+      return "This chat can help analyze narratives, identify trends, and explore connections in the data. Ask about specific narratives, events, or locations. Note: This is a mockup with placeholder responses.";
     }
     
     if (lowerMessage.includes('trend') || lowerMessage.includes('pattern')) {
@@ -2063,8 +1997,8 @@ class App {
     const defaultResponses = [
       "Query received: \"" + message.substring(0, 50) + (message.length > 50 ? "..." : "") + "\". In a production environment, this would query the narrative database and provide detailed analysis. Explore the dashboard to find relevant information.",
       "Interesting question. While this is showing placeholder responses, a full implementation would provide AI-powered insights based on the narrative data. Browse the available views for more information.",
-      "Query noted. The complete system would analyze patterns across narratives, factions, and events to provide actionable intelligence. The sidebar navigation helps explore different data categories.",
-      "Thanks for the question. This mockup demonstrates the chat interface. A production version would integrate with AI models to provide real-time analysis of disinformation narratives and faction activities."
+      "Query noted. The complete system would analyze patterns across narratives and events to provide actionable intelligence. The sidebar navigation helps explore different data categories.",
+      "Thanks for the question. This mockup demonstrates the chat interface. A production version would integrate with AI models to provide real-time analysis of narratives and trends."
     ];
     
     return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];

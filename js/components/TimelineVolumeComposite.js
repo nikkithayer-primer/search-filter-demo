@@ -6,7 +6,6 @@
 
 import { BaseComponent } from './BaseComponent.js';
 import { formatDate, formatDateLong, formatDateTimeLong, getTimeFormatter } from '../utils/formatters.js';
-import { getEntityCardModal } from './EntityCardModal.js';
 
 export class TimelineVolumeComposite extends BaseComponent {
   constructor(containerId, options = {}) {
@@ -58,17 +57,17 @@ export class TimelineVolumeComposite extends BaseComponent {
     const { volumeData, events, publisherData, narrativeDurations } = this.data || {};
     
     // Check what data is available
-    const hasFactionData = volumeData && volumeData.dates && volumeData.dates.length > 0;
+    const hasVolumeData = volumeData && volumeData.dates && volumeData.dates.length > 0;
     const hasPublisherData = publisherData && publisherData.dates && publisherData.dates.length > 0;
     const hasDurationData = narrativeDurations && narrativeDurations.length > 0;
     
     // Auto-detect currentView based on available data if not set
     if (!this.currentView) {
-      this.currentView = hasFactionData ? 'factions' : (hasPublisherData ? 'publishers' : 'factions');
+      this.currentView = hasPublisherData ? 'publishers' : 'publishers';
     }
     
     // Need at least volume data, publisher data, events, or duration data to render
-    if (!hasFactionData && !hasPublisherData && (!events || !events.length) && !hasDurationData) {
+    if (!hasVolumeData && !hasPublisherData && (!events || !events.length) && !hasDurationData) {
       this.showEmptyState('No data to display');
       return;
     }
@@ -147,10 +146,10 @@ export class TimelineVolumeComposite extends BaseComponent {
     const controlsDiv = document.createElement('div');
     controlsDiv.className = 'composite-controls';
     
-    // Determine if we should show view toggle (both faction and publisher data must exist)
-    const showViewToggle = this.options.showViewToggle && hasPublisherData && hasFactionData;
+    // Determine if we should show view toggle (not needed since we only have publisher data now)
+    const showViewToggle = false;
     // Determine if we should show display mode toggle (duration data must exist)
-    const showDisplayToggle = this.options.showDisplayToggle && hasDurationData && (hasFactionData || hasPublisherData || (events && events.length));
+    const showDisplayToggle = this.options.showDisplayToggle && hasDurationData && (hasVolumeData || hasPublisherData || (events && events.length));
     
     controlsDiv.innerHTML = `
       ${showDisplayToggle ? `
@@ -169,12 +168,7 @@ export class TimelineVolumeComposite extends BaseComponent {
           </button>
         </div>
       ` : ''}
-      ${showViewToggle && this.displayMode === 'volume' ? `
-        <div class="view-toggle faction-publisher-toggle">
-          <button class="view-toggle-btn ${this.currentView === 'factions' ? 'active' : ''}" data-view="factions">By Faction</button>
-          <button class="view-toggle-btn ${this.currentView === 'publishers' ? 'active' : ''}" data-view="publishers">By Publisher</button>
-        </div>
-      ` : ''}
+      
       <div class="zoom-controls">
         <button class="timeline-zoom-btn" data-action="in" title="Zoom In">+</button>
         <button class="timeline-zoom-btn" data-action="out" title="Zoom Out">−</button>
@@ -339,16 +333,6 @@ export class TimelineVolumeComposite extends BaseComponent {
       });
     });
 
-    // Attach view toggle handlers (faction/publisher)
-    controlsDiv.querySelectorAll('.faction-publisher-toggle .view-toggle-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const view = e.target.dataset.view;
-        if (view && view !== this.currentView) {
-          this.currentView = view;
-          this.render();
-        }
-      });
-    });
   }
 
   calculateTimeExtent(volumeData, events) {
@@ -375,11 +359,9 @@ export class TimelineVolumeComposite extends BaseComponent {
   }
 
   renderVolumeArea(volumeData) {
-    // Determine which data to use based on current view
+    // Use publisher data if available, otherwise fall back to volumeData
     const { publisherData } = this.data || {};
-    const dataToUse = this.currentView === 'publishers' && publisherData 
-      ? publisherData 
-      : volumeData;
+    const dataToUse = publisherData || volumeData;
 
     if (!dataToUse || !dataToUse.dates || !dataToUse.dates.length) {
       // Show placeholder if no volume data
@@ -394,11 +376,9 @@ export class TimelineVolumeComposite extends BaseComponent {
       return;
     }
 
-    // Extract the data arrays (factions or publishers)
+    // Extract the data arrays (publishers)
     const { dates, series } = dataToUse;
-    const items = this.currentView === 'publishers' 
-      ? dataToUse.publishers 
-      : dataToUse.factions;
+    const items = dataToUse.publishers;
 
     if (!items || items.length === 0) {
       this.volumeGroup.append('text')
@@ -856,7 +836,6 @@ export class TimelineVolumeComposite extends BaseComponent {
 
     const items = this.currentDataItems;
     const innerWidth = this.innerWidth;
-    const isFactionView = this.currentView === 'factions';
 
     // Calculate item width for horizontal layout
     const maxItems = Math.min(items.length, 8);
@@ -885,14 +864,7 @@ export class TimelineVolumeComposite extends BaseComponent {
         .append('title')
         .text(item.name);
 
-      // Add click handler for faction navigation
-      if (isFactionView && this.options.onFactionClick) {
-        legendItem.on('click', () => {
-          this.options.onFactionClick(item);
-        });
-      }
-
-      // Add hover effect to highlight corresponding area and show entity card
+      // Add hover effect to highlight corresponding area
       const self = this;
       legendItem
         .on('mouseover', function() {
@@ -904,10 +876,6 @@ export class TimelineVolumeComposite extends BaseComponent {
               .attr('stroke', d => d.key === item.id ? item.color : 'none')
               .attr('stroke-width', d => d.key === item.id ? 2 : 0);
           }
-          // Show entity card for factions
-          if (isFactionView) {
-            getEntityCardModal().show(item.id, 'faction', this);
-          }
         })
         .on('mouseout', function() {
           d3.select(this).select('text').attr('fill', 'var(--text-secondary)');
@@ -917,10 +885,6 @@ export class TimelineVolumeComposite extends BaseComponent {
               .attr('fill-opacity', 0.8)
               .attr('stroke', 'none')
               .attr('stroke-width', 0);
-          }
-          // Hide entity card
-          if (isFactionView) {
-            getEntityCardModal().scheduleHide();
           }
         });
     });
@@ -1126,7 +1090,7 @@ export class TimelineVolumeComposite extends BaseComponent {
       .attr('opacity', 0)
       .attr('pointer-events', 'none');
 
-    // Hover dots for each faction/publisher
+    // Hover dots for each publisher
     this.hoverDots = mainGroup.append('g')
       .attr('class', 'hover-dots')
       .attr('opacity', 0)
@@ -1224,12 +1188,12 @@ export class TimelineVolumeComposite extends BaseComponent {
 
   showVolumeTooltip(event, d, nearbyEvents = []) {
     const items = this.currentDataItems;
-    const viewType = this.currentView === 'publishers' ? 'Publisher' : 'Faction';
+    const viewType = 'Publisher';
     
     // Calculate total volume
     const total = items.reduce((sum, item) => sum + (d[item.id] || 0), 0);
 
-    // Build tooltip content - filter out factions with zero documents
+    // Build tooltip content - filter out publishers with zero documents
     const itemsWithData = items.filter(item => (d[item.id] || 0) > 0);
     
     let tooltipContent = `
@@ -1244,7 +1208,7 @@ export class TimelineVolumeComposite extends BaseComponent {
           return `
             <div class="tooltip-row">
               <span class="tooltip-color" style="background: ${item.color}"></span>
-              <span class="tooltip-faction">${item.name}</span>
+              <span class="tooltip-publisher">${item.name}</span>
               <span class="tooltip-value">${this.formatNumber(value)}</span>
               <span class="tooltip-percent">(${percent}%)</span>
             </div>

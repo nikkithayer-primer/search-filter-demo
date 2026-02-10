@@ -62,24 +62,6 @@ const SCHEMAS = {
     }
   },
 
-  factions: {
-    idPrefix: 'faction-',
-    required: ['id', 'name'],
-    optional: ['description', 'color', 'relatedFactionIds', 'memberCount',
-               'affiliatedPersonIds', 'affiliatedOrganizationIds', 'documentIds',
-               'createdAt', 'updatedAt'],
-    types: {
-      name: 'string',
-      memberCount: 'number'
-    },
-    references: {
-      relatedFactionIds: 'factions',
-      affiliatedPersonIds: 'persons',
-      affiliatedOrganizationIds: 'organizations',
-      documentIds: 'documents'
-    }
-  },
-
   locations: {
     idPrefix: 'loc-',
     required: ['id', 'name'],
@@ -120,18 +102,16 @@ const SCHEMAS = {
     idPrefix: 'person-',
     required: ['id', 'name'],
     optional: ['description', 'type', 'imageUrl', 'affiliatedOrganizationId',
-               'affiliatedFactionIds', 'relatedLocationIds', 'relatedEventIds',
-               'documentIds', 'factionSentiment', 'tagIds', 'createdAt', 'updatedAt'],
+               'relatedLocationIds', 'relatedEventIds',
+               'documentIds', 'tagIds', 'createdAt', 'updatedAt'],
     types: {
       name: 'string',
       type: ['politician', 'executive', 'government_official', 'judge', 'analyst',
              'journalist', 'activist', 'labor_leader', 'civilian', 'employee',
-             'legal_professional', 'general'],
-      factionSentiment: { type: 'sentimentMap' }
+             'legal_professional', 'general']
     },
     references: {
       affiliatedOrganizationId: 'organizations',
-      affiliatedFactionIds: 'factions',
       relatedLocationIds: 'locations',
       relatedEventIds: 'events',
       documentIds: 'documents',
@@ -142,8 +122,8 @@ const SCHEMAS = {
   organizations: {
     idPrefix: 'org-',
     required: ['id', 'name'],
-    optional: ['description', 'type', 'imageUrl', 'affiliatedFactionIds',
-               'relatedLocationIds', 'documentIds', 'factionSentiment', 'tagIds',
+    optional: ['description', 'type', 'imageUrl',
+               'relatedLocationIds', 'documentIds', 'tagIds',
                'createdAt', 'updatedAt'],
     types: {
       name: 'string',
@@ -152,7 +132,6 @@ const SCHEMAS = {
              'law_enforcement', 'military', 'general']
     },
     references: {
-      affiliatedFactionIds: 'factions',
       relatedLocationIds: 'locations',
       documentIds: 'documents',
       tagIds: 'tags'
@@ -163,7 +142,7 @@ const SCHEMAS = {
   documents: {
     idPrefix: 'doc-',
     required: ['id', 'documentType', 'repositoryId', 'title', 'publishedDate',
-               'publisherId', 'factionMentions'],
+               'publisherId'],
     optional: ['classification', 'url', 'author', 'excerpt', 'headerImage',
                'contentBlocks', 'narrativeIds', 'themeIds', 'topicIds',
                'personIds', 'organizationIds', 'locationIds', 'eventIds',
@@ -176,7 +155,6 @@ const SCHEMAS = {
                      'corporate_record', 'watchlist_match', 'political_finance', 'event_attendance'],
       classification: ['U', 'CUI', 'C', 'S', 'TS'],
       publishedDate: 'datetime',
-      factionMentions: { type: 'factionMentionsMap' },
       structuredData: 'object',
       contentBlocks: { type: 'contentBlocksArray' },
       quotes: { type: 'quotesArray' },
@@ -249,11 +227,11 @@ const SCHEMAS = {
     required: ['id', 'monitorId', 'type', 'title', 'triggeredAt'],
     optional: ['description', 'severity', 'acknowledged', 'relatedNarrativeIds',
                'relatedThemeIds', 'relatedEventIds', 'relatedSubEventIds',
-               'relatedPersonIds', 'relatedOrganizationIds', 'relatedFactionIds',
+               'relatedPersonIds', 'relatedOrganizationIds',
                'relatedLocationIds', 'metadata'],
     types: {
       type: ['volume_spike', 'new_event', 'new_narrative',
-             'sentiment_shift', 'faction_engagement'],
+             'sentiment_shift'],
       triggeredAt: 'datetime'
     },
     references: {
@@ -346,21 +324,25 @@ const SCHEMAS = {
   },
 
   // Non-prefixed collections
-  factionOverlaps: {
-    idPrefix: null,
-    required: ['factionIds'],
-    optional: ['overlapSize', 'sharedSentiment'],
-    types: {
-      factionIds: 'array',
-      overlapSize: 'number'
-    }
-  },
-
   publisherCategories: {
     idPrefix: null,
     required: ['id', 'name'],
     optional: ['color'],
     types: { name: 'string' }
+  },
+
+  filterCatalog: {
+    idPrefix: null,
+    required: ['id', 'name', 'type', 'source'],
+    optional: ['metadataKey', 'documentCount', 'filterableCount', 'options', 'docMapping'],
+    types: {
+      name: 'string',
+      type: 'string',
+      source: 'string',
+      documentCount: 'number',
+      filterableCount: 'number',
+      options: 'array'
+    }
   }
 };
 
@@ -564,60 +546,6 @@ export class SchemaValidator {
               `${field} must be <= ${typeSpec.max}, got ${value}`,
               { field, entity: entityId }
             );
-          }
-        }
-      }
-
-      // factionMentions map: { [factionId]: { sentiment: number } }
-      if (typeSpec.type === 'factionMentionsMap') {
-        if (typeof value !== 'object' || value === null) {
-          result.addError(`${field} must be an object`, { field, entity: entityId });
-        } else {
-          for (const [factionId, data] of Object.entries(value)) {
-            if (!factionId.startsWith('faction-')) {
-              result.addWarning(
-                `${field} key '${factionId}' should start with 'faction-'`,
-                { field, entity: entityId }
-              );
-            }
-            if (typeof data !== 'object' || data === null) {
-              result.addError(
-                `${field}['${factionId}'] must be an object with sentiment`,
-                { field, entity: entityId }
-              );
-            } else if (typeof data.sentiment !== 'number') {
-              result.addError(
-                `${field}['${factionId}'].sentiment must be a number`,
-                { field, entity: entityId }
-              );
-            } else if (data.sentiment < -1 || data.sentiment > 1) {
-              result.addError(
-                `${field}['${factionId}'].sentiment must be between -1 and 1`,
-                { field, entity: entityId }
-              );
-            }
-          }
-        }
-      }
-
-      // factionSentiment map: { [factionId]: number }
-      if (typeSpec.type === 'sentimentMap') {
-        if (typeof value !== 'object' || value === null) {
-          result.addError(`${field} must be an object`, { field, entity: entityId });
-        } else {
-          for (const [factionId, sentiment] of Object.entries(value)) {
-            if (!factionId.startsWith('faction-')) {
-              result.addWarning(
-                `${field} key '${factionId}' should start with 'faction-'`,
-                { field, entity: entityId }
-              );
-            }
-            if (typeof sentiment !== 'number' || sentiment < -1 || sentiment > 1) {
-              result.addError(
-                `${field}['${factionId}'] must be a number between -1 and 1`,
-                { field, entity: entityId }
-              );
-            }
           }
         }
       }

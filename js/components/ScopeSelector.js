@@ -29,7 +29,6 @@ export class ScopeSelector {
     this.scope = {
       personIds: [],
       organizationIds: [],
-      factionIds: [],
       locationIds: [],
       keywords: [],
       documentTypes: [],
@@ -59,12 +58,11 @@ export class ScopeSelector {
    */
   setScope(scope) {
     if (scope?.mode === 'advanced') {
-      this.scope = { personIds: [], organizationIds: [], factionIds: [], locationIds: [], keywords: [], documentTypes: [], publisherIds: [], authors: [], metadataFilters: {} };
+      this.scope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], publisherIds: [], authors: [], metadataFilters: {} };
     } else {
       this.scope = {
         personIds: [...(scope?.personIds || [])],
         organizationIds: [...(scope?.organizationIds || [])],
-        factionIds: [...(scope?.factionIds || [])],
         locationIds: [...(scope?.locationIds || [])],
         keywords: [...(scope?.keywords || [])],
         documentTypes: [...(scope?.documentTypes || [])],
@@ -78,7 +76,6 @@ export class ScopeSelector {
     this.expandedSections = new Set();
     if (this.scope.personIds.length > 0) this.expandedSections.add('persons');
     if (this.scope.organizationIds.length > 0) this.expandedSections.add('organizations');
-    if (this.scope.factionIds.length > 0) this.expandedSections.add('factions');
     if (this.scope.locationIds.length > 0) this.expandedSections.add('locations');
     if (this.scope.documentTypes.length > 0) this.expandedSections.add('documentTypes');
     if (this.scope.publisherIds.length > 0) this.expandedSections.add('publishers');
@@ -113,7 +110,7 @@ export class ScopeSelector {
     const filterScope = filter.scope || {};
     
     // Add entities from filter (avoiding duplicates)
-    ['personIds', 'organizationIds', 'factionIds', 'locationIds'].forEach(key => {
+    ['personIds', 'organizationIds', 'locationIds'].forEach(key => {
       const filterIds = filterScope[key] || [];
       filterIds.forEach(id => {
         if (!this.scope[key].includes(id)) {
@@ -166,7 +163,6 @@ export class ScopeSelector {
     // Update expanded sections
     if (this.scope.personIds.length > 0) this.expandedSections.add('persons');
     if (this.scope.organizationIds.length > 0) this.expandedSections.add('organizations');
-    if (this.scope.factionIds.length > 0) this.expandedSections.add('factions');
     if (this.scope.locationIds.length > 0) this.expandedSections.add('locations');
     if (this.scope.documentTypes.length > 0) this.expandedSections.add('documentTypes');
     if (this.scope.publisherIds.length > 0) this.expandedSections.add('publishers');
@@ -186,7 +182,6 @@ export class ScopeSelector {
     this.scope = {
       personIds: [],
       organizationIds: [],
-      factionIds: [],
       locationIds: [],
       keywords: [],
       documentTypes: [],
@@ -219,7 +214,6 @@ export class ScopeSelector {
     return {
       persons: { label: 'Persons', scopeKey: 'personIds', entities: DataService.getPersons() },
       organizations: { label: 'Organizations', scopeKey: 'organizationIds', entities: DataService.getOrganizations() },
-      factions: { label: 'Factions', scopeKey: 'factionIds', entities: DataService.getFactions() },
       locations: { label: 'Locations', scopeKey: 'locationIds', entities: DataService.getLocations() }
     };
   }
@@ -453,7 +447,10 @@ export class ScopeSelector {
     // Render search filters accordion first (if enabled and filters exist)
     const searchFiltersHtml = this.options.showSearchFilters ? this.renderSearchFiltersAccordion() : '';
     
-    const groups = Object.entries(allEntities).map(([type, { label, scopeKey, entities }]) => {
+    // Sort entity groups alphabetically by label
+    const sortedEntityEntries = Object.entries(allEntities).sort((a, b) => a[1].label.localeCompare(b[1].label));
+    
+    const groups = sortedEntityEntries.map(([type, { label, scopeKey, entities }]) => {
       const selectedIds = this.scope[scopeKey] || [];
       
       // Filter entities by search text, exclude already selected
@@ -524,138 +521,73 @@ export class ScopeSelector {
   }
 
   /**
-   * Render document attribute filter groups (document types, publishers, authors)
+   * Render document attribute filter groups (document types, publishers, authors),
+   * sorted alphabetically by label.
    */
   renderDocumentAttributeGroups() {
     const filterLower = this.filterText.toLowerCase();
+
+    // Define attribute sections with consistent structure
+    // (Authors and Publishers have been moved into the Metadata accordion)
+    const sections = [
+      {
+        label: 'Document Types',
+        sectionType: 'documentTypes',
+        scopeKey: 'documentTypes',
+        itemType: 'documentType',
+        items: this.getDocumentTypes(),
+        selected: this.scope.documentTypes || [],
+        icon: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v3h3"/></svg>',
+        getId: item => item.id,
+        getName: item => item.name
+      }
+    ];
+
+    // Sort sections alphabetically by label
+    sections.sort((a, b) => a.label.localeCompare(b.label));
+
     let html = '';
-    
-    // Document Types section
-    const documentTypes = this.getDocumentTypes();
-    const selectedDocTypes = this.scope.documentTypes || [];
-    const filteredDocTypes = documentTypes.filter(dt => {
-      if (selectedDocTypes.includes(dt.id)) return false;
-      if (!filterLower) return true;
-      return dt.name.toLowerCase().includes(filterLower);
-    });
-    
-    if (filteredDocTypes.length > 0 || selectedDocTypes.length < documentTypes.length) {
-      const isExpanded = this.expandedSections.has('documentTypes');
-      const filteredDocTypeIds = filteredDocTypes.map(dt => dt.id);
+
+    for (const section of sections) {
+      const filtered = section.items.filter(item => {
+        if (section.selected.includes(section.getId(item))) return false;
+        if (!filterLower) return true;
+        return section.getName(item).toLowerCase().includes(filterLower);
+      });
+
+      // Sort items alphabetically
+      filtered.sort((a, b) => section.getName(a).localeCompare(section.getName(b)));
+
+      if (filtered.length === 0 && section.selected.length >= section.items.length) continue;
+
+      const isExpanded = this.expandedSections.has(section.sectionType);
+      const filteredIds = filtered.map(item => section.getId(item));
+
       html += `
-        <div class="scope-entity-group ${isExpanded ? 'expanded' : ''}" data-type="documentTypes">
-          <button class="scope-entity-group-header" data-type="documentTypes">
+        <div class="scope-entity-group ${isExpanded ? 'expanded' : ''}" data-type="${section.sectionType}">
+          <button class="scope-entity-group-header" data-type="${section.sectionType}">
             <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 6l4 4 4-4"/>
             </svg>
-            <span class="scope-group-label">Document Types</span>
-            <span class="scope-group-count">${filteredDocTypes.length}</span>
-            ${filteredDocTypes.length >= 1 ? `<span class="scope-add-all" data-scope-key="documentTypes" data-ids="${filteredDocTypeIds.join(',')}">${filteredDocTypes.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
+            <span class="scope-group-label">${section.label}</span>
+            <span class="scope-group-count">${filtered.length}</span>
+            ${filtered.length >= 1 ? `<span class="scope-add-all" data-scope-key="${section.scopeKey}" data-ids="${filteredIds.join(',')}">${filtered.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
           </button>
           <div class="scope-entity-group-items">
-            ${filteredDocTypes.length > 0 ? filteredDocTypes.map(dt => `
+            ${filtered.length > 0 ? filtered.map(item => `
               <button class="scope-entity-item scope-docattr-item" 
-                      data-id="${dt.id}" 
-                      data-scope-key="documentTypes"
-                      data-type="documentType">
-                <span class="scope-entity-item-icon">
-                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
-                    <path d="M10 2v3h3"/>
-                  </svg>
-                </span>
-                <span class="scope-entity-item-name">${this.escapeHtml(dt.name)}</span>
+                      data-id="${this.escapeHtml(section.getId(item))}" 
+                      data-scope-key="${section.scopeKey}"
+                      data-type="${section.itemType}">
+                <span class="scope-entity-item-icon">${section.icon}</span>
+                <span class="scope-entity-item-name">${this.escapeHtml(section.getName(item))}</span>
               </button>
-            `).join('') : `<div class="scope-entity-group-empty">No matching document types</div>`}
+            `).join('') : `<div class="scope-entity-group-empty">No matching ${section.label.toLowerCase()}</div>`}
           </div>
         </div>
       `;
     }
-    
-    // Publishers section
-    const publishers = this.getPublishers();
-    const selectedPublisherIds = this.scope.publisherIds || [];
-    const filteredPublishers = publishers.filter(pub => {
-      if (selectedPublisherIds.includes(pub.id)) return false;
-      if (!filterLower) return true;
-      return pub.name.toLowerCase().includes(filterLower);
-    });
-    
-    if (filteredPublishers.length > 0 || selectedPublisherIds.length < publishers.length) {
-      const isExpanded = this.expandedSections.has('publishers');
-      const filteredPublisherIds = filteredPublishers.map(pub => pub.id);
-      html += `
-        <div class="scope-entity-group ${isExpanded ? 'expanded' : ''}" data-type="publishers">
-          <button class="scope-entity-group-header" data-type="publishers">
-            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6l4 4 4-4"/>
-            </svg>
-            <span class="scope-group-label">Publishers</span>
-            <span class="scope-group-count">${filteredPublishers.length}</span>
-            ${filteredPublishers.length >= 1 ? `<span class="scope-add-all" data-scope-key="publisherIds" data-ids="${filteredPublisherIds.join(',')}">${filteredPublishers.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
-          </button>
-          <div class="scope-entity-group-items">
-            ${filteredPublishers.length > 0 ? filteredPublishers.map(pub => `
-              <button class="scope-entity-item scope-docattr-item" 
-                      data-id="${pub.id}" 
-                      data-scope-key="publisherIds"
-                      data-type="publisher">
-                <span class="scope-entity-item-icon">
-                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="2" y="3" width="12" height="10" rx="1"/>
-                    <path d="M5 6h6M5 9h4"/>
-                  </svg>
-                </span>
-                <span class="scope-entity-item-name">${this.escapeHtml(pub.name)}</span>
-              </button>
-            `).join('') : `<div class="scope-entity-group-empty">No matching publishers</div>`}
-          </div>
-        </div>
-      `;
-    }
-    
-    // Authors section
-    const authors = this.getAuthors();
-    const selectedAuthors = this.scope.authors || [];
-    const filteredAuthors = authors.filter(author => {
-      if (selectedAuthors.includes(author.id)) return false;
-      if (!filterLower) return true;
-      return author.name.toLowerCase().includes(filterLower);
-    });
-    
-    if (filteredAuthors.length > 0 || selectedAuthors.length < authors.length) {
-      const isExpanded = this.expandedSections.has('authors');
-      const filteredAuthorIds = filteredAuthors.map(author => author.id);
-      html += `
-        <div class="scope-entity-group ${isExpanded ? 'expanded' : ''}" data-type="authors">
-          <button class="scope-entity-group-header" data-type="authors">
-            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6l4 4 4-4"/>
-            </svg>
-            <span class="scope-group-label">Authors</span>
-            <span class="scope-group-count">${filteredAuthors.length}</span>
-            ${filteredAuthors.length >= 1 ? `<span class="scope-add-all" data-scope-key="authors" data-ids="${filteredAuthorIds.join(',')}">${filteredAuthors.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
-          </button>
-          <div class="scope-entity-group-items">
-            ${filteredAuthors.length > 0 ? filteredAuthors.map(author => `
-              <button class="scope-entity-item scope-docattr-item" 
-                      data-id="${this.escapeHtml(author.id)}" 
-                      data-scope-key="authors"
-                      data-type="author">
-                <span class="scope-entity-item-icon">
-                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="8" cy="5" r="3"/>
-                    <path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/>
-                  </svg>
-                </span>
-                <span class="scope-entity-item-name">${this.escapeHtml(author.name)}</span>
-              </button>
-            `).join('') : `<div class="scope-entity-group-empty">No matching authors</div>`}
-          </div>
-        </div>
-      `;
-    }
-    
+
     return html;
   }
 
@@ -687,112 +619,282 @@ export class ScopeSelector {
   }
 
   /**
-   * Categorize a search filter into one of three subsections.
-   * Returns 'search' (entity-based), 'extractions', or 'metadata'.
+   * Render a catalog dimension as an expandable sub-accordion with
+   * individually selectable values.
+   * @param {Object} dimension - catalog dimension object
+   * @param {string} displayName - name to show in the header
+   * @param {string} filterLower - lowercase search text
+   * @returns {{ sortName: string, html: string } | null}
    */
-  categorizeFilter(filter) {
-    const scope = filter.scope || {};
-    const mfKeys = Object.keys(scope.metadataFilters || {});
+  renderCatalogDimensionAccordion(dimension, displayName, filterLower) {
+    const VISIBLE_LIMIT = 20;
+    const dimId = dimension.id;
+    const accordionKey = 'catalog_' + dimId;
+    const selectedValues = this.scope.metadataFilters?.[dimId] || [];
+    const allOptions = dimension.options || [];
 
-    // If it has metadata filters, classify by dimension name
-    if (mfKeys.length > 0) {
-      const hasExtracted = mfKeys.some(k => k.startsWith('extracted'));
-      return hasExtracted ? 'extractions' : 'metadata';
-    }
+    // Filter options: exclude selected, apply search text
+    const filteredOptions = allOptions.filter(opt => {
+      if (selectedValues.includes(opt)) return false;
+      if (!filterLower) return true;
+      return opt.toLowerCase().includes(filterLower);
+    });
 
-    // Otherwise it's entity-based
-    return 'search';
-  }
+    const totalFiltered = filteredOptions.length;
+    if (totalFiltered === 0 && selectedValues.length === 0) return null;
 
-  /**
-   * Render a single filter-group accordion section.
-   * @param {string} sectionKey  - expandedSections key (e.g. 'searchFilters')
-   * @param {string} label       - display label
-   * @param {Array}  allFilters  - unfiltered list for this section
-   * @param {Array}  filters     - search-filtered list for this section
-   */
-  renderFilterSection(sectionKey, label, allFilters, filters) {
-    const isExpanded = this.expandedSections.has(sectionKey);
+    const isTruncated = totalFiltered > VISIBLE_LIMIT;
+    const visibleOptions = isTruncated ? filteredOptions.slice(0, VISIBLE_LIMIT) : filteredOptions;
+    const isExpanded = this.expandedSections.has(accordionKey);
 
-    const filtersContent = filters.length > 0
-      ? filters.map(filter => {
-          const itemCount = this.getFilterItemCount(filter);
-          const tooltipHtml = this.getFilterTooltipHtml(filter);
-          return `
-            <div class="scope-filter-item-wrapper">
-              <button class="scope-entity-item scope-filter-item" data-filter-id="${filter.id}">
-                <span class="scope-filter-icon">
+    return {
+      sortName: displayName,
+      html: `
+        <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="${accordionKey}">
+          <button class="scope-entity-group-header" data-type="${accordionKey}">
+            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+            <span class="scope-group-label">${this.escapeHtml(displayName)}</span>
+            <span class="scope-group-count">${totalFiltered}${filterLower ? ' match' + (totalFiltered !== 1 ? 'es' : '') : ''}</span>
+          </button>
+          <div class="scope-entity-group-items">
+            ${visibleOptions.length > 0 ? visibleOptions.map(opt => `
+              <button class="scope-entity-item scope-catalog-item"
+                      data-dimension-id="${this.escapeHtml(dimId)}"
+                      data-value="${this.escapeHtml(opt)}"
+                      data-type="${accordionKey}">
+                <span class="scope-entity-item-icon">
                   <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
                   </svg>
                 </span>
-                <span class="scope-entity-item-name">${this.escapeHtml(filter.name)}</span>
-                <span class="scope-filter-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
-                <span class="scope-filter-apply">Add</span>
+                <span class="scope-entity-item-name">${this.escapeHtml(opt)}</span>
               </button>
-              <div class="scope-filter-tooltip">
-                <div class="scope-filter-tooltip-header">${this.escapeHtml(filter.name)}</div>
-                <div class="scope-filter-tooltip-content">${tooltipHtml}</div>
-              </div>
-            </div>
-          `;
-        }).join('')
-      : (allFilters.length > 0
-          ? `<div class="scope-entity-group-empty">No matching filters</div>`
-          : `<div class="scope-entity-group-empty">No saved filters yet</div>`);
-
-    const countText = this.filterText
-      ? `${filters.length} match${filters.length !== 1 ? 'es' : ''}`
-      : `${allFilters.length} saved`;
-
-    return `
-      <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="${sectionKey}">
-        <button class="scope-entity-group-header" data-type="${sectionKey}">
-          <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 6l4 4 4-4"/>
-          </svg>
-          <span class="scope-group-label">${label}</span>
-          <span class="scope-group-count">${countText}</span>
-        </button>
-        <div class="scope-entity-group-items">
-          ${filtersContent}
+            `).join('') : `<div class="scope-entity-group-empty">No matching options</div>`}
+            ${isTruncated ? `<div class="scope-entity-group-hint">Showing ${VISIBLE_LIMIT} of ${totalFiltered} — type to narrow results</div>` : ''}
+          </div>
         </div>
-      </div>
-    `;
+      `
+    };
   }
 
   /**
-   * Render the Search Filters accordion — three subsections:
-   *   1. Search Filters  (entity-based)
-   *   2. Extractions     (extracted dimensions)
-   *   3. Metadata        (other catalog dimensions)
+   * Render the three filter accordion sections:
+   *   1. Search Filters  – saved/curated filters from searchFilters.js
+   *   2. Extractions     – catalog dimensions whose name starts with "Extracted"
+   *   3. Metadata        – all other catalog dimensions, plus Authors & Publishers
    */
   renderSearchFiltersAccordion() {
-    const allFilters = dataStore.data.searchFilters || [];
-
-    // Split into three buckets
-    const buckets = { search: [], extractions: [], metadata: [] };
-    for (const f of allFilters) {
-      buckets[this.categorizeFilter(f)].push(f);
-    }
-
-    // Apply the current search text to each bucket
-    const filtered = {
-      search:      buckets.search.filter(f => this.filterMatchesSearch(f, this.filterText)),
-      extractions: buckets.extractions.filter(f => this.filterMatchesSearch(f, this.filterText)),
-      metadata:    buckets.metadata.filter(f => this.filterMatchesSearch(f, this.filterText))
-    };
-
+    const filterLower = this.filterText.toLowerCase();
     let html = '';
 
-    if (buckets.search.length > 0) {
-      html += this.renderFilterSection('searchFilters', 'Search Filters', buckets.search, filtered.search);
+    // ── 1. Search Filters (saved/curated) ──────────────────────────
+    const allSavedFilters = dataStore.data.searchFilters || [];
+    const matchedSavedFilters = allSavedFilters.filter(f => this.filterMatchesSearch(f, this.filterText));
+
+    if (allSavedFilters.length > 0) {
+      const isExpanded = this.expandedSections.has('searchFilters');
+      const sortedFilters = [...matchedSavedFilters].sort((a, b) => a.name.localeCompare(b.name));
+
+      const savedContent = sortedFilters.length > 0
+        ? sortedFilters.map(filter => {
+            const itemCount = this.getFilterItemCount(filter);
+            const tooltipHtml = this.getFilterTooltipHtml(filter);
+            return `
+              <div class="scope-filter-item-wrapper">
+                <button class="scope-entity-item scope-filter-item" data-filter-id="${filter.id}">
+                  <span class="scope-filter-icon">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
+                    </svg>
+                  </span>
+                  <span class="scope-entity-item-name">${this.escapeHtml(filter.name)}</span>
+                  <span class="scope-filter-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
+                  <span class="scope-filter-apply">Add</span>
+                </button>
+                <div class="scope-filter-tooltip">
+                  <div class="scope-filter-tooltip-header">${this.escapeHtml(filter.name)}</div>
+                  <div class="scope-filter-tooltip-content">${tooltipHtml}</div>
+                </div>
+              </div>
+            `;
+          }).join('')
+        : `<div class="scope-entity-group-empty">No matching filters</div>`;
+
+      const countText = this.filterText
+        ? `${matchedSavedFilters.length} match${matchedSavedFilters.length !== 1 ? 'es' : ''}`
+        : `${allSavedFilters.length} saved`;
+
+      html += `
+        <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="searchFilters">
+          <button class="scope-entity-group-header" data-type="searchFilters">
+            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+            <span class="scope-group-label">Search Filters</span>
+            <span class="scope-group-count">${countText}</span>
+          </button>
+          <div class="scope-entity-group-items">
+            ${savedContent}
+          </div>
+        </div>
+      `;
     }
-    if (buckets.extractions.length > 0) {
-      html += this.renderFilterSection('extractionFilters', 'Extractions', buckets.extractions, filtered.extractions);
+
+    // ── 2 & 3. Extractions and Metadata from filterCatalog ─────────
+    const catalog = DataService.getFilterCatalog();
+    if (!catalog || catalog.length === 0) return html;
+
+    const extractionItems = [];
+    const metadataItems = [];
+
+    for (const dimension of catalog) {
+      const isExtraction = dimension.name.toLowerCase().startsWith('extracted');
+      // Strip "Extracted " prefix for extraction dimensions
+      const displayName = isExtraction
+        ? dimension.name.replace(/^Extracted\s+/i, '')
+        : dimension.name;
+
+      const item = this.renderCatalogDimensionAccordion(dimension, displayName, filterLower);
+      if (!item) continue;
+
+      if (isExtraction) {
+        extractionItems.push(item);
+      } else {
+        metadataItems.push(item);
+      }
     }
-    if (buckets.metadata.length > 0) {
-      html += this.renderFilterSection('metadataFilters', 'Metadata', buckets.metadata, filtered.metadata);
+
+    // Add Authors and Publishers into the Metadata section
+    const authors = this.getAuthors();
+    const selectedAuthors = this.scope.authors || [];
+    const filteredAuthors = authors.filter(a => {
+      if (selectedAuthors.includes(a.id)) return false;
+      if (!filterLower) return true;
+      return a.name.toLowerCase().includes(filterLower);
+    }).sort((a, b) => a.name.localeCompare(b.name));
+
+    if (filteredAuthors.length > 0 || selectedAuthors.length < authors.length) {
+      const isExpanded = this.expandedSections.has('authors');
+      const filteredAuthorIds = filteredAuthors.map(a => a.id);
+      metadataItems.push({
+        sortName: 'Authors',
+        html: `
+          <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="authors">
+            <button class="scope-entity-group-header" data-type="authors">
+              <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4 4 4-4"/>
+              </svg>
+              <span class="scope-group-label">Authors</span>
+              <span class="scope-group-count">${filteredAuthors.length}</span>
+              ${filteredAuthors.length >= 1 ? `<span class="scope-add-all" data-scope-key="authors" data-ids="${filteredAuthorIds.join(',')}">${filteredAuthors.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
+            </button>
+            <div class="scope-entity-group-items">
+              ${filteredAuthors.length > 0 ? filteredAuthors.map(author => `
+                <button class="scope-entity-item scope-docattr-item"
+                        data-id="${this.escapeHtml(author.id)}"
+                        data-scope-key="authors"
+                        data-type="author">
+                  <span class="scope-entity-item-icon">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <circle cx="8" cy="5" r="3"/>
+                      <path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/>
+                    </svg>
+                  </span>
+                  <span class="scope-entity-item-name">${this.escapeHtml(author.name)}</span>
+                </button>
+              `).join('') : `<div class="scope-entity-group-empty">No matching authors</div>`}
+            </div>
+          </div>
+        `
+      });
+    }
+
+    const publishers = this.getPublishers();
+    const selectedPublisherIds = this.scope.publisherIds || [];
+    const filteredPublishers = publishers.filter(pub => {
+      if (selectedPublisherIds.includes(pub.id)) return false;
+      if (!filterLower) return true;
+      return pub.name.toLowerCase().includes(filterLower);
+    }).sort((a, b) => a.name.localeCompare(b.name));
+
+    if (filteredPublishers.length > 0 || selectedPublisherIds.length < publishers.length) {
+      const isExpanded = this.expandedSections.has('publishers');
+      const filteredPubIds = filteredPublishers.map(p => p.id);
+      metadataItems.push({
+        sortName: 'Publishers',
+        html: `
+          <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="publishers">
+            <button class="scope-entity-group-header" data-type="publishers">
+              <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6l4 4 4-4"/>
+              </svg>
+              <span class="scope-group-label">Publishers</span>
+              <span class="scope-group-count">${filteredPublishers.length}</span>
+              ${filteredPublishers.length >= 1 ? `<span class="scope-add-all" data-scope-key="publisherIds" data-ids="${filteredPubIds.join(',')}">${filteredPublishers.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
+            </button>
+            <div class="scope-entity-group-items">
+              ${filteredPublishers.length > 0 ? filteredPublishers.map(pub => `
+                <button class="scope-entity-item scope-docattr-item"
+                        data-id="${pub.id}"
+                        data-scope-key="publisherIds"
+                        data-type="publisher">
+                  <span class="scope-entity-item-icon">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <rect x="2" y="3" width="12" height="10" rx="1"/>
+                      <path d="M5 6h6M5 9h4"/>
+                    </svg>
+                  </span>
+                  <span class="scope-entity-item-name">${this.escapeHtml(pub.name)}</span>
+                </button>
+              `).join('') : `<div class="scope-entity-group-empty">No matching publishers</div>`}
+            </div>
+          </div>
+        `
+      });
+    }
+
+    // Sort each section alphabetically
+    extractionItems.sort((a, b) => a.sortName.localeCompare(b.sortName));
+    metadataItems.sort((a, b) => a.sortName.localeCompare(b.sortName));
+
+    // Render Extractions accordion
+    if (extractionItems.length > 0) {
+      const isExpanded = this.expandedSections.has('extractionFilters');
+      html += `
+        <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="extractionFilters">
+          <button class="scope-entity-group-header" data-type="extractionFilters">
+            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+            <span class="scope-group-label">Extractions</span>
+            <span class="scope-group-count">${extractionItems.length}</span>
+          </button>
+          <div class="scope-entity-group-items">
+            ${extractionItems.map(item => item.html).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Render Metadata accordion
+    if (metadataItems.length > 0) {
+      const isExpanded = this.expandedSections.has('metadataFilters');
+      html += `
+        <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="metadataFilters">
+          <button class="scope-entity-group-header" data-type="metadataFilters">
+            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+            <span class="scope-group-label">Metadata</span>
+            <span class="scope-group-count">${metadataItems.length}</span>
+          </button>
+          <div class="scope-entity-group-items">
+            ${metadataItems.map(item => item.html).join('')}
+          </div>
+        </div>
+      `;
     }
 
     return html;
@@ -805,7 +907,6 @@ export class ScopeSelector {
     const scope = filter.scope || {};
     let count = (scope.personIds?.length || 0) +
            (scope.organizationIds?.length || 0) +
-           (scope.factionIds?.length || 0) +
            (scope.locationIds?.length || 0) +
            (scope.keywords?.length || 0) +
            (scope.documentTypes?.length || 0) +
@@ -829,7 +930,6 @@ export class ScopeSelector {
     const scopeToType = {
       personIds: 'persons',
       organizationIds: 'organizations',
-      factionIds: 'factions',
       locationIds: 'locations'
     };
     
@@ -958,7 +1058,6 @@ export class ScopeSelector {
   getScopeItemCount() {
     let count = (this.scope.personIds?.length || 0) +
            (this.scope.organizationIds?.length || 0) +
-           (this.scope.factionIds?.length || 0) +
            (this.scope.locationIds?.length || 0) +
            (this.scope.keywords?.length || 0) +
            (this.scope.documentTypes?.length || 0) +
@@ -1059,7 +1158,6 @@ export class ScopeSelector {
         mode: 'simple',
         personIds: [...this.scope.personIds],
         organizationIds: [...this.scope.organizationIds],
-        factionIds: [...this.scope.factionIds],
         locationIds: [...this.scope.locationIds],
         keywords: [...this.scope.keywords],
         documentTypes: [...(this.scope.documentTypes || [])],

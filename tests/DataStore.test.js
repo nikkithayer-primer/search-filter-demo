@@ -215,14 +215,14 @@ describe('DataStore', () => {
   describe('removeKeyFromObjectField', () => {
     it('removes key from object fields in all items', () => {
       dataStore.data.narratives = [
-        { id: 'n1', factionMentions: { f1: { volume: 10 }, f2: { volume: 20 } } },
-        { id: 'n2', factionMentions: { f1: { volume: 5 } } }
+        { id: 'n1', metadata: { k1: { volume: 10 }, k2: { volume: 20 } } },
+        { id: 'n2', metadata: { k1: { volume: 5 } } }
       ];
       
-      dataStore.removeKeyFromObjectField('narratives', 'factionMentions', 'f1');
+      dataStore.removeKeyFromObjectField('narratives', 'metadata', 'k1');
       
-      expect(dataStore.data.narratives[0].factionMentions).toEqual({ f2: { volume: 20 } });
-      expect(dataStore.data.narratives[1].factionMentions).toEqual({});
+      expect(dataStore.data.narratives[0].metadata).toEqual({ k2: { volume: 20 } });
+      expect(dataStore.data.narratives[1].metadata).toEqual({});
     });
   });
 
@@ -266,8 +266,7 @@ describe('DataStore', () => {
       const id = dataStore.createNarrative({
         text: 'Test narrative',
         missionId: 'mission-1',
-        sentiment: 'positive',
-        factionMentions: { f1: { volume: 100 } }
+        sentiment: 'positive'
       });
       
       expect(id).toMatch(/^narr-/);
@@ -335,19 +334,16 @@ describe('DataStore', () => {
       
       const person = dataStore.data.persons[0];
       expect(person.name).toBe('Test Person');
-      expect(person.affiliatedFactionIds).toEqual([]);
       expect(person.relatedLocationIds).toEqual([]);
     });
 
     it('deletes person and cleans up references', () => {
       const personId = dataStore.createPerson({ name: 'Test' });
       dataStore.data.narratives = [{ id: 'n1', personIds: [personId] }];
-      dataStore.data.factions = [{ id: 'f1', affiliatedPersonIds: [personId] }];
       
       dataStore.deletePerson(personId);
       
       expect(dataStore.data.narratives[0].personIds).not.toContain(personId);
-      expect(dataStore.data.factions[0].affiliatedPersonIds).not.toContain(personId);
     });
   });
 
@@ -357,30 +353,6 @@ describe('DataStore', () => {
       
       const org = dataStore.data.organizations[0];
       expect(org.name).toBe('Test Org');
-      expect(org.affiliatedFactionIds).toEqual([]);
-    });
-  });
-
-  describe('Faction CRUD', () => {
-    it('creates faction', () => {
-      const id = dataStore.createFaction({ name: 'Test Faction' });
-      
-      expect(id).toMatch(/^faction-/);
-      expect(dataStore.data.factions[0].name).toBe('Test Faction');
-    });
-
-    it('deletes faction and cleans up mentions', () => {
-      const factionId = dataStore.createFaction({ name: 'Test' });
-      dataStore.data.narratives = [{ 
-        id: 'n1', 
-        factionMentions: { [factionId]: { volume: 100 } } 
-      }];
-      dataStore.data.factionOverlaps = [{ factionIds: [factionId, 'other'] }];
-      
-      dataStore.deleteFaction(factionId);
-      
-      expect(dataStore.data.narratives[0].factionMentions[factionId]).toBeUndefined();
-      expect(dataStore.data.factionOverlaps.length).toBe(0);
     });
   });
 
@@ -469,7 +441,6 @@ describe('DataStore', () => {
       expect(defaults).toHaveProperty('missions');
       expect(defaults).toHaveProperty('narratives');
       expect(defaults).toHaveProperty('themes');
-      expect(defaults).toHaveProperty('factions');
       expect(defaults).toHaveProperty('persons');
       expect(defaults).toHaveProperty('organizations');
       expect(defaults).toHaveProperty('locations');

@@ -34,7 +34,6 @@ const tools = [
           },
           narrativeId: { type: 'string', description: 'Filter to documents linked to this narrative' },
           themeId: { type: 'string', description: 'Filter to documents linked to this theme' },
-          factionId: { type: 'string', description: 'Filter to documents mentioning this faction' },
           personId: { type: 'string', description: 'Filter to documents mentioning this person' },
           organizationId: { type: 'string', description: 'Filter to documents mentioning this organization' },
           eventId: { type: 'string', description: 'Filter to documents linked to this event' },
@@ -77,27 +76,13 @@ const tools = [
     type: 'function',
     function: {
       name: 'get_narratives_for_entity',
-      description: 'Find all narratives that mention a specific person, organization, location, or faction',
+      description: 'Find all narratives that mention a specific person, organization, or location',
       parameters: {
         type: 'object',
         properties: {
-          entityId: { type: 'string', description: 'The entity ID (e.g., person-001, org-002, faction-001)' }
+          entityId: { type: 'string', description: 'The entity ID (e.g., person-001, org-002, loc-001)' }
         },
         required: ['entityId']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_faction_details',
-      description: 'Get faction details including affiliated entities, narratives they appear in, and sentiment',
-      parameters: {
-        type: 'object',
-        properties: {
-          factionId: { type: 'string', description: 'The faction ID' }
-        },
-        required: ['factionId']
       }
     }
   },
@@ -133,12 +118,11 @@ const tools = [
     type: 'function',
     function: {
       name: 'get_related_entities',
-      description: 'Find people, organizations, and locations related to a narrative or faction',
+      description: 'Find people, organizations, and locations related to a narrative',
       parameters: {
         type: 'object',
         properties: {
-          narrativeId: { type: 'string', description: 'Find entities related to this narrative' },
-          factionId: { type: 'string', description: 'Find entities affiliated with this faction' }
+          narrativeId: { type: 'string', description: 'Find entities related to this narrative' }
         }
       }
     }
@@ -146,29 +130,13 @@ const tools = [
   {
     type: 'function',
     function: {
-      name: 'compare_factions',
-      description: 'Compare two factions by their narratives, sentiment, and activity',
-      parameters: {
-        type: 'object',
-        properties: {
-          factionId1: { type: 'string', description: 'First faction ID' },
-          factionId2: { type: 'string', description: 'Second faction ID' }
-        },
-        required: ['factionId1', 'factionId2']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
       name: 'get_volume_trends',
-      description: 'Get volume over time data for a narrative, theme, or faction',
+      description: 'Get volume over time data for a narrative or theme',
       parameters: {
         type: 'object',
         properties: {
           narrativeId: { type: 'string' },
-          themeId: { type: 'string' },
-          factionId: { type: 'string' }
+          themeId: { type: 'string' }
         }
       }
     }
@@ -181,14 +149,6 @@ const tools = [
       parameters: { type: 'object', properties: {} }
     }
   },
-  {
-    type: 'function',
-    function: {
-      name: 'list_all_factions',
-      description: 'Get a list of all factions in the system',
-      parameters: { type: 'object', properties: {} }
-    }
-  }
 ];
 
 // ============================================
@@ -207,7 +167,7 @@ function createFunctionHandlers(router) {
       return buildPageContext(route, id);
     },
 
-    search_documents: ({ keywords, narrativeId, themeId, factionId, personId, organizationId, eventId, startDate, endDate, limit = 10 }) => {
+    search_documents: ({ keywords, narrativeId, themeId, personId, organizationId, eventId, startDate, endDate, limit = 10 }) => {
       let docs = DataService.getDocuments();
       
       if (narrativeId) {
@@ -215,9 +175,6 @@ function createFunctionHandlers(router) {
       }
       if (themeId) {
         docs = docs.filter(d => d.themeIds?.includes(themeId));
-      }
-      if (factionId) {
-        docs = docs.filter(d => d.factionMentions?.[factionId]);
       }
       if (personId) {
         docs = docs.filter(d => d.personIds?.includes(personId));
@@ -260,18 +217,7 @@ function createFunctionHandlers(router) {
       if (!narrative) return { error: 'Narrative not found' };
       
       const themes = DataService.getThemesForNarrative(narrativeId);
-      const factionMentions = DataService.getAggregateFactionMentionsForNarrative(narrativeId);
       const docs = DataService.getDocumentsForNarrative(narrativeId);
-      
-      // Resolve faction names
-      const factionData = {};
-      for (const [factionId, data] of Object.entries(factionMentions)) {
-        const faction = DataService.getFaction(factionId);
-        factionData[faction?.name || factionId] = {
-          volume: data.volume,
-          sentiment: data.sentiment
-        };
-      }
       
       return {
         id: narrative.id,
@@ -279,7 +225,6 @@ function createFunctionHandlers(router) {
         description: narrative.description,
         sentiment: narrative.sentiment,
         themes: themes.map(t => ({ id: t.id, title: t.text, sentiment: t.sentiment })),
-        factionEngagement: factionData,
         documentCount: docs.length,
         recentDocuments: docs.slice(0, 5).map(d => ({ id: d.id, title: d.title, date: d.publishedDate }))
       };
@@ -310,8 +255,6 @@ function createFunctionHandlers(router) {
         narratives = DataService.getNarrativesForPerson(entityId);
       } else if (entityId.startsWith('org-')) {
         narratives = DataService.getNarrativesForOrganization(entityId);
-      } else if (entityId.startsWith('faction-')) {
-        narratives = DataService.getNarrativesForFaction(entityId);
       } else if (entityId.startsWith('loc-')) {
         narratives = DataService.getNarrativesForLocation(entityId);
       }
@@ -324,31 +267,10 @@ function createFunctionHandlers(router) {
       }));
     },
 
-    get_faction_details: ({ factionId }) => {
-      const faction = DataService.getFaction(factionId);
-      if (!faction) return { error: 'Faction not found' };
-      
-      const narratives = DataService.getNarrativesForFaction(factionId);
-      const people = DataService.getPersonsForFaction(factionId);
-      const orgs = DataService.getOrganizationsForFaction(factionId);
-      
-      return {
-        id: faction.id,
-        name: faction.name,
-        description: faction.description,
-        memberCount: faction.memberCount,
-        narrativeCount: narratives.length,
-        topNarratives: narratives.slice(0, 5).map(n => ({ id: n.id, title: n.text, sentiment: n.sentiment })),
-        affiliatedPeople: people.slice(0, 10).map(p => ({ id: p.id, name: p.name, role: p.role })),
-        affiliatedOrganizations: orgs.slice(0, 10).map(o => ({ id: o.id, name: o.name, type: o.type }))
-      };
-    },
-
     get_person_details: ({ personId }) => {
       const person = DataService.getPerson(personId);
       if (!person) return { error: 'Person not found' };
       
-      const factions = DataService.getFactionsForPerson(personId);
       const narratives = DataService.getNarrativesForPerson(personId);
       const docs = DataService.getDocumentsForPerson(personId);
       
@@ -358,7 +280,6 @@ function createFunctionHandlers(router) {
         role: person.role,
         type: person.type,
         description: person.description,
-        affiliatedFactions: factions.map(f => ({ id: f.id, name: f.name })),
         narrativeCount: narratives.length,
         narratives: narratives.slice(0, 5).map(n => ({ id: n.id, title: n.text })),
         recentMentions: docs.slice(0, 5).map(d => ({ id: d.id, title: d.title, date: d.publishedDate }))
@@ -369,7 +290,6 @@ function createFunctionHandlers(router) {
       const org = DataService.getOrganization(organizationId);
       if (!org) return { error: 'Organization not found' };
       
-      const factions = DataService.getFactionsForOrganization(organizationId);
       const narratives = DataService.getNarrativesForOrganization(organizationId);
       const docs = DataService.getDocumentsForOrganization(organizationId);
       
@@ -378,14 +298,13 @@ function createFunctionHandlers(router) {
         name: org.name,
         type: org.type,
         description: org.description,
-        affiliatedFactions: factions.map(f => ({ id: f.id, name: f.name })),
         narrativeCount: narratives.length,
         narratives: narratives.slice(0, 5).map(n => ({ id: n.id, title: n.text })),
         recentMentions: docs.slice(0, 5).map(d => ({ id: d.id, title: d.title, date: d.publishedDate }))
       };
     },
 
-    get_related_entities: ({ narrativeId, factionId }) => {
+    get_related_entities: ({ narrativeId }) => {
       if (narrativeId) {
         return {
           people: DataService.getPersonsForNarrative(narrativeId).map(p => ({ id: p.id, name: p.name, role: p.role })),
@@ -393,49 +312,10 @@ function createFunctionHandlers(router) {
           locations: DataService.getLocationsForNarrative(narrativeId).map(l => ({ id: l.id, name: l.name, type: l.type }))
         };
       }
-      if (factionId) {
-        return {
-          people: DataService.getPersonsForFaction(factionId).map(p => ({ id: p.id, name: p.name, role: p.role })),
-          organizations: DataService.getOrganizationsForFaction(factionId).map(o => ({ id: o.id, name: o.name, type: o.type }))
-        };
-      }
-      return { error: 'Provide narrativeId or factionId' };
+      return { error: 'Provide narrativeId' };
     },
 
-    compare_factions: ({ factionId1, factionId2 }) => {
-      const f1 = DataService.getFaction(factionId1);
-      const f2 = DataService.getFaction(factionId2);
-      
-      if (!f1 || !f2) return { error: 'One or both factions not found' };
-      
-      const n1 = DataService.getNarrativesForFaction(factionId1);
-      const n2 = DataService.getNarrativesForFaction(factionId2);
-      
-      // Find shared narratives
-      const n1Ids = new Set(n1.map(n => n.id));
-      const sharedNarratives = n2.filter(n => n1Ids.has(n.id));
-      
-      return {
-        faction1: {
-          id: f1.id,
-          name: f1.name,
-          description: f1.description,
-          narrativeCount: n1.length,
-          topNarratives: n1.slice(0, 3).map(n => n.text)
-        },
-        faction2: {
-          id: f2.id,
-          name: f2.name,
-          description: f2.description,
-          narrativeCount: n2.length,
-          topNarratives: n2.slice(0, 3).map(n => n.text)
-        },
-        sharedNarratives: sharedNarratives.map(n => ({ id: n.id, title: n.text })),
-        sharedNarrativeCount: sharedNarratives.length
-      };
-    },
-
-    get_volume_trends: ({ narrativeId, themeId, factionId }) => {
+    get_volume_trends: ({ narrativeId, themeId }) => {
       if (narrativeId) {
         const volumeData = DataService.getVolumeOverTimeForNarrative(narrativeId);
         return { entityType: 'narrative', entityId: narrativeId, volumeOverTime: volumeData };
@@ -444,22 +324,7 @@ function createFunctionHandlers(router) {
         const volumeData = DataService.getVolumeOverTimeForTheme(themeId);
         return { entityType: 'theme', entityId: themeId, volumeOverTime: volumeData };
       }
-      if (factionId) {
-        // Get all docs for this faction and group by date
-        const docs = DataService.getDocuments().filter(d => d.factionMentions?.[factionId]);
-        const byDate = {};
-        docs.forEach(d => {
-          const date = d.publishedDate?.split('T')[0];
-          if (date) {
-            byDate[date] = (byDate[date] || 0) + 1;
-          }
-        });
-        const volumeData = Object.entries(byDate)
-          .map(([date, count]) => ({ date, volume: count }))
-          .sort((a, b) => a.date.localeCompare(b.date));
-        return { entityType: 'faction', entityId: factionId, volumeOverTime: volumeData };
-      }
-      return { error: 'Provide narrativeId, themeId, or factionId' };
+      return { error: 'Provide narrativeId or themeId' };
     },
 
     list_all_narratives: () => {
@@ -472,14 +337,6 @@ function createFunctionHandlers(router) {
       }));
     },
 
-    list_all_factions: () => {
-      const factions = DataService.getFactions();
-      return factions.map(f => ({
-        id: f.id,
-        name: f.name,
-        description: f.description?.substring(0, 100)
-      }));
-    }
   };
 }
 
@@ -493,7 +350,6 @@ function buildPageContext(route, id) {
     case 'dashboard':
       context.description = 'User is on the main dashboard viewing an overview of all narratives';
       context.narrativeCount = DataService.getNarratives().length;
-      context.factionCount = DataService.getFactions().length;
       break;
       
     case 'narrative':
@@ -519,16 +375,6 @@ function buildPageContext(route, id) {
           context.description = `User is viewing theme: "${theme.text}"`;
           context.theme = { id: theme.id, title: theme.text };
           context.parentNarrative = parent ? { id: parent.id, title: parent.text } : null;
-        }
-      }
-      break;
-      
-    case 'faction':
-      if (id) {
-        const faction = DataService.getFaction(id);
-        if (faction) {
-          context.description = `User is viewing faction: "${faction.name}"`;
-          context.faction = { id: faction.id, name: faction.name, description: faction.description };
         }
       }
       break;
@@ -606,7 +452,7 @@ function buildPageContext(route, id) {
 
 const SYSTEM_PROMPT = `You are an intelligence analyst with the goal of synthesizing the trends across the data you're presented with in order to see the big picture and make policy recommendations. Your role is to help users understand:
 
-- Narratives and themes being tracked, and which factions, people, and organizations are central to those narratives.
+- Narratives and themes being tracked, and which people and organizations are central to those narratives.
 - Relationships between people, organizations, and narratives
 - Which documents inform these relationships.
 - Trends and patterns over time.
@@ -768,14 +614,6 @@ export class ChatService {
           });
         }
         
-        const factionMentions = DataService.getAggregateFactionMentionsForNarrative(id);
-        if (Object.keys(factionMentions).length > 0) {
-          contextStr += `\n## Faction Engagement\n`;
-          for (const [factionId, data] of Object.entries(factionMentions)) {
-            const faction = DataService.getFaction(factionId);
-            contextStr += `- ${faction?.name || factionId}: ${data.volume} mentions, sentiment ${data.sentiment}\n`;
-          }
-        }
       }
     } else if (route === 'person' && id) {
       const person = DataService.getPerson(id);
@@ -786,37 +624,10 @@ export class ChatService {
         if (person.type) contextStr += `- Type: ${person.type}\n`;
         if (person.description) contextStr += `- Description: ${person.description}\n`;
         
-        const factions = DataService.getFactionsForPerson(id);
-        if (factions.length > 0) {
-          contextStr += `\n## Affiliated Factions\n`;
-          factions.forEach(f => contextStr += `- ${f.name}\n`);
-        }
-        
         const narratives = DataService.getNarrativesForPerson(id);
         if (narratives.length > 0) {
           contextStr += `\n## Appears in Narratives (${narratives.length})\n`;
           narratives.slice(0, 5).forEach(n => contextStr += `- ${n.text}\n`);
-        }
-      }
-    } else if (route === 'faction' && id) {
-      const faction = DataService.getFaction(id);
-      if (faction) {
-        contextStr += `## Faction Details\n`;
-        contextStr += `- Name: ${faction.name}\n`;
-        if (faction.description) contextStr += `- Description: ${faction.description}\n`;
-        
-        const narratives = DataService.getNarrativesForFaction(id);
-        if (narratives.length > 0) {
-          contextStr += `\n## Active Narratives (${narratives.length})\n`;
-          narratives.slice(0, 5).forEach(n => {
-            contextStr += `- ${n.text} (sentiment: ${n.sentiment})\n`;
-          });
-        }
-        
-        const people = DataService.getPersonsForFaction(id);
-        if (people.length > 0) {
-          contextStr += `\n## Affiliated People (${people.length})\n`;
-          people.slice(0, 5).forEach(p => contextStr += `- ${p.name}${p.role ? ` (${p.role})` : ''}\n`);
         }
       }
     } else if (route === 'document' && id) {
@@ -834,11 +645,9 @@ export class ChatService {
     } else if (route === 'dashboard' || route === 'monitor') {
       // Provide overview data
       const narratives = DataService.getNarratives();
-      const factions = DataService.getFactions();
       
       contextStr += `## Dashboard Overview\n`;
       contextStr += `- Total Narratives: ${narratives.length}\n`;
-      contextStr += `- Total Factions: ${factions.length}\n`;
       
       if (narratives.length > 0) {
         contextStr += `\n## Top Narratives\n`;
@@ -1106,9 +915,6 @@ Guidelines:
     if (context.themeCount > 0) {
       prompt += `- ${context.themeCount} themes\n`;
     }
-    if (context.factionCount > 0) {
-      prompt += `- ${context.factionCount} factions engaged\n`;
-    }
     if (context.documentCount > 0) {
       prompt += `- ${context.documentCount} related documents\n`;
     }
@@ -1128,10 +934,6 @@ Guidelines:
     if (context.hasRecentActivity) {
       prompt += `- Has recent activity (documents in last 7 days)\n`;
     }
-    if (context.affiliatedFactions?.length > 0) {
-      prompt += `- Affiliated with factions: ${context.affiliatedFactions.join(', ')}\n`;
-    }
-    
     prompt += '\nGenerate 3 specific questions the user might want to ask about this data.';
     
     return prompt;

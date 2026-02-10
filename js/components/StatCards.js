@@ -25,12 +25,6 @@ const STAT_ICONS = {
     <path d="M2 4h12M2 8h8M2 12h10"/>
     <circle cx="13" cy="8" r="2"/>
   </svg>`,
-  factions: `<svg class="stat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25">
-    <circle cx="8" cy="5" r="2.5"/>
-    <circle cx="4" cy="11" r="2"/>
-    <circle cx="12" cy="11" r="2"/>
-    <path d="M6 6.5L4.5 9M10 6.5l1.5 2.5"/>
-  </svg>`,
   locations: `<svg class="stat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25">
     <path d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z"/>
     <circle cx="8" cy="6" r="2"/>
@@ -70,7 +64,6 @@ const STAT_ROUTES = {
   narratives: '#/narratives',
   themes: '#/themes',
   topics: '#/topics',
-  factions: '#/factions',
   locations: '#/locations',
   events: '#/events',
   entities: '#/entities',
@@ -87,7 +80,6 @@ const STAT_LABELS = {
   narratives: 'Narratives',
   themes: 'Themes',
   topics: 'Topics',
-  factions: 'Factions',
   locations: 'Locations',
   events: 'Events',
   entities: 'Entities',
@@ -168,17 +160,6 @@ export const StatCards = {
           id: t.id, 
           name: t.headline,
           description: t.description 
-        }))
-      });
-    }
-    if (data.factions?.length > 0) {
-      stats.push({ 
-        type: 'factions', 
-        value: data.factions.length,
-        items: data.factions.map(f => ({ 
-          id: f.id, 
-          name: f.name,
-          description: f.description 
         }))
       });
     }
@@ -344,17 +325,6 @@ export const StatCards = {
           id: e.id, 
           name: e.text || e.headline || e.name,  // Events use 'text' field
           description: e.description 
-        }))
-      });
-    }
-    if (data.factions?.length > 0) {
-      stats.push({ 
-        type: 'factions', 
-        value: data.factions.length,
-        items: data.factions.map(f => ({ 
-          id: f.id, 
-          name: f.name,
-          description: f.description 
         }))
       });
     }

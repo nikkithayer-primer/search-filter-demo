@@ -12,8 +12,6 @@ import {
   CardManager,
   NetworkGraphCard,
   MapCard,
-  SentimentChartCard,
-  VennDiagramCard,
   ThemeListCard,
   TimelineVolumeCompositeCard
 } from '../components/CardComponents.js';
@@ -121,34 +119,12 @@ export class NarrativeView extends DetailViewBase {
     const scopeDocIds = this.getDocumentScope();
     
     const themes = DataService.getThemesForNarrative(narrative.id);
-    const factionData = DataService.getFactionsForNarrative(narrative.id);
-    const factions = factionData.map(f => f.faction).filter(Boolean);
-    const factionOverlaps = factions.length > 1 
-      ? DataService.getFactionOverlapsFor(factions[0]?.id).filter(o =>
-          o.factionIds.every(fid => factions.some(f => f.id === fid))
-        )
-      : [];
-
     // Volume/Timeline data - computed from documents (scoped)
     const events = DataService.getEventsForNarrative(narrative.id);
     const allEvents = events.flatMap(e => [e, ...DataService.getSubEventsForEvent(e.id)]);
-    const volumeOverTime = DataService.getVolumeOverTimeForNarrative(narrative.id, null, scopeDocIds);
-    const hasVolumeData = volumeOverTime.length > 0 && factions.length > 0;
     const publisherVolumeTime = DataService.getPublisherVolumeOverTime(narrative.id);
     const hasPublisherData = publisherVolumeTime.dates.length > 0 && publisherVolumeTime.publishers.length > 0;
-    const hasVolumeTimeline = hasVolumeData || hasPublisherData || allEvents.length > 0;
-
-    // Prepare volume data for the composite chart
-    let volumeData = null;
-    if (hasVolumeData) {
-      volumeData = {
-        dates: volumeOverTime.map(d => d.date),
-        series: factions.map(f =>
-          volumeOverTime.map(d => (d.factionVolumes || {})[f.id] || 0)
-        ),
-        factions: factions
-      };
-    }
+    const hasVolumeTimeline = hasPublisherData || allEvents.length > 0;
 
     // Map data
     const locations = DataService.getLocationsForNarrative(narrative.id);
@@ -180,12 +156,6 @@ export class NarrativeView extends DetailViewBase {
       (topic.documentIds || []).some(dId => narrativeDocIds.has(dId))
     );
 
-    // Build sentiment data for the sentiment chart
-    const sentimentFactions = factionData.map(fd => ({
-      ...fd.faction,
-      sentiment: fd.sentiment
-    }));
-
     // Narrative durations for volume/duration toggle (scoped)
     const narrativeDurations = DataService.getNarrativeDurations(null, null, null, scopeDocIds);
 
@@ -195,12 +165,12 @@ export class NarrativeView extends DetailViewBase {
     const activity = allActivity.filter(item => docIds.has(item.documentId));
 
     return {
-      themes, factionData, factions, factionOverlaps,
-      events, allEvents, volumeOverTime, hasVolumeData, volumeData,
+      themes,
+      events, allEvents,
       publisherVolumeTime, hasPublisherData, hasVolumeTimeline,
       locations, mapLocations, personIds, orgIds, hasNetwork,
       persons, organizations, entities, topics,
-      documents, sentimentFactions, narrativeDurations, activity
+      documents, narrativeDurations, activity
     };
   }
 
@@ -227,7 +197,7 @@ export class NarrativeView extends DetailViewBase {
     if (data.hasVolumeTimeline || hasDurationData) {
       this.cardManager.add(new TimelineVolumeCompositeCard(this, 'narrative-volume-events', {
         title: 'Volume & Events',
-        volumeData: data.volumeData,
+        volumeData: null,
         publisherData: data.hasPublisherData ? data.publisherVolumeTime : null,
         events: data.allEvents,
         narrativeDurations: hasDurationData ? data.narrativeDurations : null,
@@ -235,28 +205,7 @@ export class NarrativeView extends DetailViewBase {
         height: 320,
         volumeHeight: 140,
         timelineHeight: 140,
-        showViewToggle: !!(data.volumeData && data.hasPublisherData)
-      }));
-    }
-
-    // Sentiment by Faction (half-width)
-    if (data.sentimentFactions.length > 0) {
-      this.cardManager.add(new SentimentChartCard(this, 'narrative-sentiment-chart', {
-        title: 'Sentiment by Faction',
-        factions: data.sentimentFactions,
-        halfWidth: true,
-        clickRoute: 'faction'
-      }));
-    }
-
-    // Faction Overlaps Venn Diagram (half-width)
-    if (data.factions.length >= 2) {
-      this.cardManager.add(new VennDiagramCard(this, 'narrative-venn', {
-        title: 'Faction Overlaps',
-        factions: data.factions,
-        overlaps: data.factionOverlaps,
-        halfWidth: true,
-        height: 300
+        showViewToggle: false
       }));
     }
 

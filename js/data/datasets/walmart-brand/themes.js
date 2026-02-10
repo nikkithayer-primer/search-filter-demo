@@ -1,6 +1,6 @@
 /**
  * Themes for Walmart Brand dataset
- * Note: factionMentions and volumeOverTime are computed from documentIds via DataService
+ * Note: volumeOverTime is computed from documentIds via DataService
  */
 
 export const themes = [

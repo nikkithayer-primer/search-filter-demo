@@ -94,7 +94,6 @@ describe('formatters', () => {
 
 Mock the dataStore and test:
 - `getNarrativeById(id)` - returns narrative or undefined
-- `getFactionsForNarrative(narrativeId)` - returns faction array
 - `filterVolumeByTimeRange(volumeOverTime, timeRange)`
 - `isDateInRange(date, timeRange)`
 - `buildNetworkGraph(personIds, orgIds)`
@@ -109,7 +108,7 @@ vi.mock('../js/data/DataStore.js', () => ({
   dataStore: {
     data: {
       narratives: [],
-      factions: [],
+
       persons: [],
       organizations: []
     }
@@ -121,9 +120,8 @@ describe('DataService', () => {
     // Reset mock data before each test
     dataStore.data = {
       narratives: [
-        { id: 'narr-1', text: 'Test narrative', factionMentions: {} }
+        { id: 'narr-1', text: 'Test narrative' }
       ],
-      factions: [],
       persons: [],
       organizations: []
     };

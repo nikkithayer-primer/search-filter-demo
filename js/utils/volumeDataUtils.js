@@ -1,9 +1,9 @@
 /**
  * volumeDataUtils.js
- * Shared utilities for aggregating document volume data by publisher and faction
+ * Shared utilities for aggregating document volume data by publisher
  * 
  * NOTE: Most views now use DataService.getVolumeDataForDocuments() instead of these utilities.
- * aggregateFactionSentiment is still used for sentiment calculations.
+ * aggregatePublisherSentiment is still used for sentiment calculations.
  */
 
 import { DataService } from '../data/DataService.js';
@@ -49,74 +49,36 @@ export function aggregatePublisherVolumeData(documents) {
 }
 
 /**
- * @deprecated Use DataService.getVolumeDataForDocuments(docIds).byFaction instead
- * Aggregate documents by faction to build volume chart data
- * @param {Array} documents - Array of document objects with publishedDate and factionMentions
- * @returns {Object|null} - { dates, series, factions } or null if no data
+ * Aggregate publisher sentiment data from documents
+ * @param {Array} documents - Array of document objects with publisherId
+ * @returns {Array} - Array of publisher objects with sentiment property
  */
-export function aggregateFactionVolumeData(documents) {
-  if (!documents || documents.length === 0) return null;
-
-  const factionDateMap = new Map();
-  const factionIds = new Set();
-  
-  documents.forEach(doc => {
-    if (!doc.publishedDate || !doc.factionMentions) return;
-    const date = doc.publishedDate.split('T')[0];
-    if (!factionDateMap.has(date)) {
-      factionDateMap.set(date, {});
-    }
-    Object.keys(doc.factionMentions).forEach(factionId => {
-      factionIds.add(factionId);
-      const dayData = factionDateMap.get(date);
-      dayData[factionId] = (dayData[factionId] || 0) + 1;
-    });
-  });
-
-  const dates = [...factionDateMap.keys()].sort();
-  if (dates.length === 0) return null;
-
-  const relevantFactions = [...factionIds]
-    .map(id => DataService.getFaction(id))
-    .filter(Boolean);
-  
-  const series = relevantFactions.map(faction =>
-    dates.map(date => (factionDateMap.get(date) || {})[faction.id] || 0)
-  );
-
-  return { dates, series, factions: relevantFactions };
-}
-
-/**
- * Aggregate faction sentiment data from documents
- * @param {Array} documents - Array of document objects with factionMentions
- * @returns {Array} - Array of faction objects with sentiment property
- */
-export function aggregateFactionSentiment(documents) {
+export function aggregatePublisherSentiment(documents) {
   if (!documents || documents.length === 0) return [];
 
-  const factionMap = new Map();
+  const publisherMap = new Map();
   
   documents.forEach(doc => {
-    Object.entries(doc.factionMentions || {}).forEach(([factionId, mention]) => {
-      if (!factionMap.has(factionId)) {
-        factionMap.set(factionId, { volume: 0, sentimentSum: 0, count: 0 });
-      }
-      const data = factionMap.get(factionId);
-      data.volume += 1;
-      if (mention.sentiment !== undefined) {
-        data.sentimentSum += mention.sentiment;
-        data.count += 1;
-      }
-    });
+    if (!doc.publisherId) return;
+    if (!publisherMap.has(doc.publisherId)) {
+      publisherMap.set(doc.publisherId, { volume: 0, sentimentSum: 0, count: 0 });
+    }
+    const data = publisherMap.get(doc.publisherId);
+    data.volume += 1;
+    if (doc.sentiment !== undefined) {
+      data.sentimentSum += doc.sentiment;
+      data.count += 1;
+    }
   });
 
-  return [...factionMap.entries()]
-    .map(([factionId, data]) => {
-      const faction = DataService.getFaction(factionId);
-      if (!faction) return null;
+  const publishers = DataService.getPublishers ? DataService.getPublishers() : [];
+  
+  return [...publisherMap.entries()]
+    .map(([publisherId, data]) => {
+      const publisher = publishers.find(p => p.id === publisherId);
+      if (!publisher) return null;
       return {
-        ...faction,
+        ...publisher,
         volume: data.volume,
         sentiment: data.count > 0 ? data.sentimentSum / data.count : 0
       };

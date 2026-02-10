@@ -74,9 +74,9 @@ export class NarrativeList extends BaseItemList {
    * Calculate volume for a theme using document-based aggregation
    */
   calculateThemeVolume(theme) {
-    const factionMentions = DataService.getAggregateFactionMentionsForTheme(theme.id);
-    return Object.values(factionMentions)
-      .reduce((sum, f) => sum + (f.volume || 0), 0);
+    const publisherMentions = DataService.getAggregatePublisherMentionsForTheme(theme.id);
+    return Object.values(publisherMentions)
+      .reduce((sum, p) => sum + (p.volume || 0), 0);
   }
 
   /**

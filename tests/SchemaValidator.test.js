@@ -60,8 +60,8 @@ describe('SchemaValidator', () => {
       });
 
       it('validates number type', () => {
-        const entity = { id: 'faction-001', name: 'Test', memberCount: 100 };
-        const result = validator.validateEntity('factions', entity);
+        const entity = { id: 'narr-001', text: 'Test', sentiment: 0.5 };
+        const result = validator.validateEntity('narratives', entity);
         expect(result.isValid).toBe(true);
       });
 
@@ -129,57 +129,6 @@ describe('SchemaValidator', () => {
         const result = validator.validateEntity('narratives', entity);
         expect(result.isValid).toBe(false);
         expect(result.errors[0].message).toContain('must be <=');
-      });
-    });
-
-    describe('factionMentions validation', () => {
-      it('validates correct factionMentions structure', () => {
-        const entity = {
-          id: 'doc-001',
-          documentType: 'news_article',
-          repositoryId: 'repo-001',
-          title: 'Test',
-          publishedDate: '2024-01-01T00:00:00Z',
-          publisherId: 'pub-001',
-          factionMentions: {
-            'faction-001': { sentiment: 0.5 },
-            'faction-002': { sentiment: -0.3 }
-          }
-        };
-        const result = validator.validateEntity('documents', entity);
-        expect(result.isValid).toBe(true);
-      });
-
-      it('warns on non-faction prefixed keys', () => {
-        const entity = {
-          id: 'doc-001',
-          documentType: 'news_article',
-          repositoryId: 'repo-001',
-          title: 'Test',
-          publishedDate: '2024-01-01T00:00:00Z',
-          publisherId: 'pub-001',
-          factionMentions: {
-            'invalid-key': { sentiment: 0.5 }
-          }
-        };
-        const result = validator.validateEntity('documents', entity);
-        expect(result.hasWarnings).toBe(true);
-      });
-
-      it('rejects invalid sentiment in factionMentions', () => {
-        const entity = {
-          id: 'doc-001',
-          documentType: 'news_article',
-          repositoryId: 'repo-001',
-          title: 'Test',
-          publishedDate: '2024-01-01T00:00:00Z',
-          publisherId: 'pub-001',
-          factionMentions: {
-            'faction-001': { sentiment: 2.0 }  // Out of range
-          }
-        };
-        const result = validator.validateEntity('documents', entity);
-        expect(result.isValid).toBe(false);
       });
     });
 
@@ -271,7 +220,6 @@ describe('SchemaValidator', () => {
         persons: [{ id: 'person-001', name: 'John' }],
         narratives: [],
         documents: [],
-        factions: [],
         locations: [],
         events: [],
         organizations: [],

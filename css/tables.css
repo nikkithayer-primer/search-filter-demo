@@ -140,7 +140,7 @@
   min-width: 110px;
 }
 
-/* Entity columns (narratives, themes, events, locations, persons, organizations, factions, topics) */
+/* Entity columns (narratives, themes, events, locations, persons, organizations, topics) */
 .doc-col-narratives,
 .doc-col-themes,
 .doc-col-events,
@@ -151,8 +151,7 @@
 
 .doc-col-locations,
 .doc-col-persons,
-.doc-col-organizations,
-.doc-col-factions {
+.doc-col-organizations {
   width: 160px;
   min-width: 120px;
 }
@@ -278,7 +277,7 @@
   line-height: 1.3;
 }
 
-/* Entity cells (narratives, themes, events, locations, persons, organizations, factions, topics) */
+/* Entity cells (narratives, themes, events, locations, persons, organizations, topics) */
 .doc-entity-list {
   display: flex;
   flex-direction: column;

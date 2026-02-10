@@ -110,9 +110,6 @@ All entity routes follow the same pattern within each context.
 | `.../themes` | ListView | List themes in workspace scope |
 | `.../theme/{id}` | ThemeView | Theme dashboard (scoped) |
 | `.../theme/{id}/documents` | ThemeView | Theme documents tab (scoped) |
-| `.../factions` | ListView | List factions in workspace scope |
-| `.../faction/{id}` | FactionView | Faction dashboard (scoped) |
-| `.../faction/{id}/documents` | FactionView | Faction documents tab (scoped) |
 | `.../locations` | ListView | List locations in workspace scope |
 | `.../location/{id}` | LocationView | Location dashboard (scoped) |
 | `.../location/{id}/documents` | LocationView | Location documents tab (scoped) |
@@ -165,8 +162,6 @@ The following global entity routes are **removed** in favor of context-scoped ro
 | `#/narrative/{id}` | `#/{context}/narrative/{id}` |
 | `#/narratives` | `#/{context}/narratives` |
 | `#/theme/{id}` | `#/{context}/theme/{id}` |
-| `#/faction/{id}` | `#/{context}/faction/{id}` |
-| `#/factions` | `#/{context}/factions` |
 | `#/location/{id}` | `#/{context}/location/{id}` |
 | `#/locations` | `#/{context}/locations` |
 | `#/event/{id}` | `#/{context}/event/{id}` |
@@ -248,9 +243,9 @@ function getEntityRoute(entityType, entityId, context) {
 Breadcrumbs reflect the nested structure:
 
 ```
-Workspaces > Q1 Analysis > Factions > Pro-Democracy Movement
+Workspaces > Q1 Analysis > Narratives > Election Coverage
    ↓            ↓             ↓              ↓
-#/workspaces  #/workspace/  .../factions  .../faction/faction-001
+#/workspaces  #/workspace/  .../narratives  .../narrative/narr-001
               ws-001
 ```
 
@@ -290,7 +285,7 @@ parseRoute(hash) {
 All entity views receive context information:
 
 ```javascript
-new FactionView(container, factionId, {
+new NarrativeView(container, narrativeId, {
   context: {
     type: 'workspace',
     id: 'ws-001',
@@ -303,7 +298,7 @@ new FactionView(container, factionId, {
 ### Backward Compatibility
 
 During migration, old routes could redirect:
-- `#/faction/faction-001` → `#/dashboard/faction/faction-001`
+- `#/narrative/narr-001` → `#/dashboard/narrative/narr-001`
 
 This allows bookmarks to continue working while encouraging the new model.
 
@@ -331,8 +326,8 @@ Query parameters are used for non-navigation state:
 
 1. User opens workspaces list: `#/workspaces`
 2. Clicks "Q1 Campaign Analysis": `#/workspace/ws-001`
-3. Clicks faction card: `#/workspace/ws-001/faction/faction-005`
-4. Switches to documents tab: `#/workspace/ws-001/faction/faction-005/documents`
+3. Clicks narrative card: `#/workspace/ws-001/narrative/narr-005`
+4. Switches to documents tab: `#/workspace/ws-001/narrative/narr-005/documents`
 5. Opens a document: `#/workspace/ws-001/document/doc-123`
 6. Clicks person mentioned: `#/workspace/ws-001/person/person-042`
 

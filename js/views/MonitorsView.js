@@ -10,8 +10,6 @@ import { NarrativeList } from '../components/NarrativeList.js';
 import { TopicList } from '../components/TopicList.js';
 import { StackedAreaChart } from '../components/StackedAreaChart.js';
 import { TimelineVolumeComposite } from '../components/TimelineVolumeComposite.js';
-import { VennDiagram } from '../components/VennDiagram.js';
-import { SentimentChart } from '../components/SentimentChart.js';
 import { NetworkGraph } from '../components/NetworkGraph.js';
 import { getEntityCardModal } from '../components/EntityCardModal.js';
 import { DocumentTable } from '../components/DocumentTable.js';
@@ -31,8 +29,6 @@ const VISUALIZATION_TYPES = [
   { id: 'volume_events', label: 'Volume over time with events' },
   { id: 'topics', label: 'Topics' },
   { id: 'locations', label: 'Locations' },
-  { id: 'faction_overlaps', label: 'Faction overlaps' },
-  { id: 'faction_sentiment', label: 'Faction sentiment' },
   { id: 'network_graph', label: 'People & orgs network graph' },
   { id: 'documents', label: 'Documents' }
 ];
@@ -41,28 +37,28 @@ const VISUALIZATION_TYPES = [
 const DEFAULT_MONITOR_VISUALIZATIONS = {
   'Immigration Enforcement Activity': 'volume_events',
   'Public Health Policy': 'narratives',
-  'Trump Administration Actions': 'faction_sentiment',
+  'Trump Administration Actions': 'narratives',
   'Judicial Safety Watch': 'topics',
   'US-European Orgs': 'network_graph',
-  'SMIC Technology Progress': 'faction_overlaps',
+  'SMIC Technology Progress': 'narratives',
   'Chinese Investment Watch': 'volume_events',
-  'Export Controls Impact': 'faction_sentiment',
+  'Export Controls Impact': 'narratives',
   'Huawei Sanctions Monitoring': 'narratives',
   'Supply Chain and Manufacturing': 'topics',
   'Store Closure Impact': 'locations',
-  'Pricing Perception Monitor': 'faction_sentiment',
+  'Pricing Perception Monitor': 'narratives',
   'Employee Experience Tracker': 'documents',
   'Self Checkout Complaints': 'volume',
   'Product Availability Issues': 'volume',
   'Product Safety Alerts': 'narratives',
   'Competitor Activity Tracker': 'topics',
   // Singapore MCO dataset
-  'NS Sentiment Tracker': 'faction_sentiment',
+  'NS Sentiment Tracker': 'narratives',
   'PRC Influence Detection': 'narratives',
   'Malaysia Relations Watch': 'volume',
   'SAF Incident Watch': 'locations',
-  'Racial Harmony Monitor': 'faction_sentiment',
-  'Coordinated Campaign Detection': 'faction_overlaps'
+  'Racial Harmony Monitor': 'narratives',
+  'Coordinated Campaign Detection': 'narratives'
 };
 
 export class MonitorsView extends BaseView {
@@ -131,12 +127,6 @@ export class MonitorsView extends BaseView {
         <path d="M2 2h12v12H2z" rx="1"/>
         <path d="M4 5h8M4 8h6M4 11h4"/>
       </svg>`,
-      faction: `<svg class="scope-entity-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25">
-        <circle cx="8" cy="5" r="2.5"/>
-        <circle cx="4" cy="11" r="2"/>
-        <circle cx="12" cy="11" r="2"/>
-        <path d="M6 6.5L4.5 9M10 6.5l1.5 2.5"/>
-      </svg>`,
       person: `<svg class="scope-entity-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25">
         <circle cx="8" cy="4" r="2.5"/>
         <path d="M3 14c0-3 2.2-5 5-5s5 2 5 5"/>
@@ -186,8 +176,7 @@ export class MonitorsView extends BaseView {
       'volume_spike': 'Volume Spike',
       'sentiment_shift': 'Sentiment Shift',
       'new_narrative': 'New Narrative',
-      'new_event': 'New Event',
-      'faction_engagement': 'Faction Engagement'
+      'new_event': 'New Event'
     };
     return labels[type] || type;
   }
@@ -200,8 +189,7 @@ export class MonitorsView extends BaseView {
       'volume_spike': 'volume',
       'sentiment_shift': 'sentiment',
       'new_narrative': 'narrative',
-      'new_event': 'event',
-      'faction_engagement': 'faction'
+      'new_event': 'event'
     };
     return classes[type] || 'default';
   }
@@ -225,12 +213,6 @@ export class MonitorsView extends BaseView {
       scope.organizationIds.forEach(id => {
         const org = DataService.getOrganization(id);
         if (org) entities.push(org.name);
-      });
-    }
-    if (scope.factionIds?.length) {
-      scope.factionIds.forEach(id => {
-        const faction = DataService.getFaction(id);
-        if (faction) entities.push(faction.name);
       });
     }
     if (scope.narrativeIds?.length) {
@@ -585,12 +567,6 @@ export class MonitorsView extends BaseView {
       case 'locations':
         this.renderLocationsVisualization(monitor, container);
         break;
-      case 'faction_overlaps':
-        this.renderFactionOverlapsVisualization(monitor, container);
-        break;
-      case 'faction_sentiment':
-        this.renderFactionSentimentVisualization(monitor, container);
-        break;
       case 'network_graph':
         this.renderNetworkGraphVisualization(monitor, container);
         break;
@@ -651,10 +627,7 @@ export class MonitorsView extends BaseView {
       
       if (volumeData.dates.length > 0) {
         const chart = new StackedAreaChart(container, {
-          height: 280,
-          onFactionClick: (f) => {
-            window.location.hash = `#/faction/${f.id}`;
-          }
+          height: 280
         });
         chart.update(volumeData);
         this.visualizationComponents.push({ monitorId: monitor.id, component: chart, type: 'volume' });
@@ -681,9 +654,6 @@ export class MonitorsView extends BaseView {
         showViewToggle: false,
         onEventClick: (e) => {
           window.location.hash = `#/event/${e.id}`;
-        },
-        onFactionClick: (f) => {
-          window.location.hash = `#/faction/${f.id}`;
         }
       });
       composite.update({ volumeData, events: events || [] });
@@ -771,91 +741,6 @@ export class MonitorsView extends BaseView {
       this.visualizationComponents.push({ monitorId: monitor.id, component: mapView, type: 'locations' });
     } else {
       this.showEmptyVisualization(container, 'No locations with coordinates found');
-    }
-  }
-
-  /**
-   * Render Faction Overlaps visualization
-   * Uses document-based aggregation to identify involved factions
-   */
-  renderFactionOverlapsVisualization(monitor, container) {
-    const narratives = monitor.matchedNarratives;
-    
-    // Get factions involved in the matched narratives from document aggregation
-    const factionIds = new Set();
-    narratives.forEach(n => {
-      const factionMentions = DataService.getAggregateFactionMentionsForNarrative(n.id);
-      Object.keys(factionMentions).forEach(fId => factionIds.add(fId));
-    });
-    
-    const factions = [...factionIds].map(id => DataService.getFaction(id)).filter(Boolean);
-    // Only include overlaps where ALL factions are present in our set
-    // (venn.js requires all sets in an overlap to be defined)
-    const overlaps = DataService.getFactionOverlaps().filter(o => 
-      o.factionIds.every(fId => factionIds.has(fId))
-    );
-    
-    if (factions.length >= 2) {
-      const venn = new VennDiagram(container, {
-        height: 300,
-        onFactionClick: (f) => {
-          window.location.hash = `#/faction/${f.id}`;
-        }
-      });
-      venn.update({ sets: factions, overlaps });
-      this.visualizationComponents.push({ monitorId: monitor.id, component: venn, type: 'faction_overlaps' });
-    } else {
-      this.showEmptyVisualization(container, 'Need at least 2 factions for overlap visualization');
-    }
-  }
-
-  /**
-   * Render Faction Sentiment visualization
-   * Uses document-based aggregation for volume and sentiment
-   */
-  renderFactionSentimentVisualization(monitor, container) {
-    const narratives = monitor.matchedNarratives;
-    
-    // Aggregate faction sentiments from documents linked to matched narratives
-    const factionStats = new Map();
-    narratives.forEach(n => {
-      const factionMentions = DataService.getAggregateFactionMentionsForNarrative(n.id);
-      Object.entries(factionMentions).forEach(([factionId, data]) => {
-        if (!factionStats.has(factionId)) {
-          factionStats.set(factionId, { totalVolume: 0, weightedSentiment: 0 });
-        }
-        const stats = factionStats.get(factionId);
-        if (data.volume && typeof data.sentiment === 'number') {
-          stats.totalVolume += data.volume;
-          stats.weightedSentiment += data.sentiment * data.volume;
-        }
-      });
-    });
-    
-    const factions = [...factionStats.entries()]
-      .map(([factionId, stats]) => {
-        const faction = DataService.getFaction(factionId);
-        if (!faction || stats.totalVolume === 0) return null;
-        return {
-          ...faction,
-          sentiment: stats.weightedSentiment / stats.totalVolume,
-          volume: stats.totalVolume
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.volume - a.volume);
-    
-    if (factions.length > 0) {
-      const chart = new SentimentChart(container, {
-        height: Math.max(200, factions.length * 40 + 60),
-        onFactionClick: (f) => {
-          window.location.hash = `#/faction/${f.id}`;
-        }
-      });
-      chart.update({ factions });
-      this.visualizationComponents.push({ monitorId: monitor.id, component: chart, type: 'faction_sentiment' });
-    } else {
-      this.showEmptyVisualization(container, 'No faction sentiment data available');
     }
   }
 
@@ -1026,7 +911,6 @@ export class MonitorsView extends BaseView {
    * Aggregate volume data from multiple narratives using document-based aggregation
    */
   aggregateVolumeData(narratives) {
-    const factions = DataService.getFactions();
     const dateMap = new Map();
     
     // Aggregate volume over time from each narrative's documents
@@ -1034,21 +918,20 @@ export class MonitorsView extends BaseView {
       const volumeOverTime = DataService.getVolumeOverTimeForNarrative(n.id);
       volumeOverTime.forEach(entry => {
         if (!dateMap.has(entry.date)) {
-          dateMap.set(entry.date, {});
+          dateMap.set(entry.date, 0);
         }
-        const dayData = dateMap.get(entry.date);
-        Object.entries(entry.factionVolumes || {}).forEach(([fId, vol]) => {
-          dayData[fId] = (dayData[fId] || 0) + vol;
-        });
+        const volumes = entry.publisherVolumes || {};
+        const totalForEntry = Object.values(volumes).reduce((sum, vol) => sum + vol, 0);
+        dateMap.set(entry.date, dateMap.get(entry.date) + totalForEntry);
       });
     });
     
     const dates = [...dateMap.keys()].sort();
-    const series = factions.map(f =>
-      dates.map(date => (dateMap.get(date) || {})[f.id] || 0)
-    );
+    const totalSeries = [{ id: 'total', name: 'Total Volume', color: 'var(--accent-primary)' }];
+    const series = [dates.map(date => dateMap.get(date) || 0)];
     
-    return { dates, series, factions };
+    return { dates, series, publishers: totalSeries };
+    
   }
 
   /**

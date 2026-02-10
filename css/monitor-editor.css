@@ -171,7 +171,6 @@
 /* Chip icon colors by entity type */
 .scope-chip[data-type="person"] .scope-chip-icon { color: var(--accent-primary); }
 .scope-chip[data-type="organization"] .scope-chip-icon { color: #8b5cf6; }
-.scope-chip[data-type="faction"] .scope-chip-icon { color: #f59e0b; }
 .scope-chip[data-type="location"] .scope-chip-icon { color: #10b981; }
 .scope-chip[data-type="event"] .scope-chip-icon { color: #ec4899; }
 
@@ -266,11 +265,11 @@
   color: var(--text-muted);
 }
 
-.scope-entity-group.expanded .scope-group-chevron {
+.scope-entity-group.expanded > .scope-entity-group-header > .scope-group-chevron {
   transform: rotate(0deg);
 }
 
-.scope-entity-group:not(.expanded) .scope-group-chevron {
+.scope-entity-group:not(.expanded) > .scope-entity-group-header > .scope-group-chevron {
   transform: rotate(-90deg);
 }
 
@@ -303,7 +302,7 @@
   flex-direction: column;
 }
 
-.scope-entity-group.expanded .scope-entity-group-items {
+.scope-entity-group.expanded > .scope-entity-group-items {
   display: flex;
 }
 
@@ -361,7 +360,6 @@
 /* Entity type icon colors */
 .scope-entity-item[data-type="person"] .scope-entity-item-icon { color: var(--accent-primary); }
 .scope-entity-item[data-type="organization"] .scope-entity-item-icon { color: #8b5cf6; }
-.scope-entity-item[data-type="faction"] .scope-entity-item-icon { color: #f59e0b; }
 .scope-entity-item[data-type="location"] .scope-entity-item-icon { color: #10b981; }
 .scope-entity-item[data-type="event"] .scope-entity-item-icon { color: #ec4899; }
 
@@ -872,15 +870,6 @@
 
 .entity-chip-organization svg {
   color: var(--accent-primary);
-}
-
-.entity-chip-faction {
-  border-color: rgba(245, 158, 11, 0.3);
-  background: rgba(245, 158, 11, 0.08);
-}
-
-.entity-chip-faction svg {
-  color: #f59e0b;
 }
 
 .entity-chip-location {

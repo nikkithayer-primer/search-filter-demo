@@ -227,7 +227,6 @@ export class TagsView extends BaseView {
       { key: 'organizations', type: 'organization' },
       { key: 'events', type: 'event' },
       { key: 'locations', type: 'location' },
-      { key: 'factions', type: 'faction' },
       { key: 'documents', type: 'document' },
       { key: 'topics', type: 'topic' },
       { key: 'monitors', type: 'monitor' },
@@ -308,8 +307,7 @@ export class TagsView extends BaseView {
       subtitle = totalVolume > 0 ? `${totalVolume.toLocaleString()} mentions` : 'Topic';
     }
     
-    // Get color for factions
-    const color = entityType === 'faction' ? item.color : null;
+    const color = null;
 
     return `
       <li class="entity-list-item" data-id="${item.id}" data-type="${entityType}">

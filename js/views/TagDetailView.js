@@ -79,15 +79,6 @@ export class TagDetailView extends BaseView {
       })));
     }
     
-    if (entities.factions.length > 0) {
-      sections.push(this.renderSection('Factions', entities.factions, 'faction', (f) => ({
-        title: f.name,
-        href: `#/faction/${f.id}`,
-        subtitle: f.description,
-        color: f.color
-      })));
-    }
-    
     if (entities.documents.length > 0) {
       sections.push(this.renderSection('Documents', entities.documents.slice(0, 20), 'document', (d) => ({
         title: d.title || 'Untitled Document',
@@ -206,7 +197,7 @@ export class TagDetailView extends BaseView {
    */
   attachEntityHoverHandlers() {
     // Entity types that support hover cards
-    const hoverTypes = ['person', 'organization', 'faction', 'location'];
+    const hoverTypes = ['person', 'organization', 'location'];
     
     this.container.querySelectorAll('.entity-list-item').forEach(item => {
       const entityType = item.dataset.type;

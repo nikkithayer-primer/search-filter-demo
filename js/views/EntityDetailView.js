@@ -13,8 +13,6 @@ import {
   NetworkGraphCard,
   NarrativeListCard,
   MapCard,
-  SentimentChartCard,
-  VennDiagramCard,
   TimelineVolumeCompositeCard,
   TopicListCard,
   QuotesTableCard,
@@ -106,7 +104,6 @@ export class EntityDetailView extends DetailViewBase {
     if (this.isPerson) {
       data.relatedPersons = DataService.getRelatedPersons(this.entityId);
       data.relatedOrgs = DataService.getRelatedOrganizationsForPerson(this.entityId);
-      data.affiliatedFactions = DataService.getAffiliatedFactionsForPerson(this.entityId);
       data.locations = DataService.getLocationsForPerson(this.entityId);
       data.events = DataService.getEventsForPerson(this.entityId);
       data.narratives = DataService.getNarrativesForPerson(this.entityId);
@@ -114,20 +111,11 @@ export class EntityDetailView extends DetailViewBase {
     } else {
       data.relatedPersons = DataService.getRelatedPersonsForOrganization(this.entityId);
       data.relatedOrgs = DataService.getRelatedOrganizations(this.entityId);
-      data.affiliatedFactions = DataService.getAffiliatedFactionsForOrganization(this.entityId);
       data.locations = DataService.getLocationsForOrganization(this.entityId);
       data.events = []; // Organizations don't have events directly
       data.narratives = DataService.getNarrativesForOrganization(this.entityId);
       data.documents = DataService.getDocumentsForOrganization(this.entityId, scopeDocIds);
     }
-
-    // Build sentiment data - how factions feel about this entity
-    data.factionSentimentData = Object.entries(entity.factionSentiment || {})
-      .map(([factionId, sentiment]) => {
-        const faction = DataService.getFaction(factionId);
-        return faction ? { ...faction, sentiment } : null;
-      })
-      .filter(Boolean);
 
     // Build person IDs for network graph
     if (this.isPerson) {
@@ -142,9 +130,9 @@ export class EntityDetailView extends DetailViewBase {
     // Build volume data for the composite chart (scoped to entity's documents)
     const docIds = data.documents.map(d => d.id);
     const volumeResult = DataService.getVolumeDataForDocuments(docIds);
-    data.volumeData = volumeResult.byFaction;
+    data.volumeData = null;
     data.publisherData = volumeResult.byPublisher;
-    data.hasVolumeData = data.volumeData && data.volumeData.dates.length > 0;
+    data.hasVolumeData = false;
     data.hasPublisherData = data.publisherData && data.publisherData.dates.length > 0;
 
     // Get events from related narratives
@@ -163,38 +151,8 @@ export class EntityDetailView extends DetailViewBase {
       (topic.documentIds || []).some(dId => entityDocIds.has(dId))
     );
 
-    // Build factions for Venn diagram from document factionMentions
-    const factionMentionMap = new Map();
-    data.documents.forEach(doc => {
-      if (!doc.factionMentions) return;
-      Object.entries(doc.factionMentions).forEach(([factionId, mentions]) => {
-        if (!factionMentionMap.has(factionId)) {
-          factionMentionMap.set(factionId, { volume: 0, sentiment: 0, count: 0 });
-        }
-        const entry = factionMentionMap.get(factionId);
-        entry.volume += mentions.volume || 1;
-        entry.sentiment += mentions.sentiment || 0;
-        entry.count += 1;
-      });
-    });
-
-    data.factions = [...factionMentionMap.entries()].map(([factionId, stats]) => {
-      const faction = DataService.getFaction(factionId);
-      if (!faction) return null;
-      return {
-        ...faction,
-        volume: stats.volume,
-        sentiment: stats.count > 0 ? stats.sentiment / stats.count : 0
-      };
-    }).filter(Boolean);
-
     // Combine related persons and orgs as entities for stat cards
     data.entities = [...data.relatedPersons, ...data.relatedOrgs];
-
-    // Get faction overlaps from the factions found
-    const factionIdsForOverlaps = data.factions.map(f => f.id);
-    data.factionOverlaps = (DataService.getFactionOverlaps ? DataService.getFactionOverlaps() : [])
-      .filter(o => o.factionIds.some(fid => factionIdsForOverlaps.includes(fid)));
 
     // Build map locations from entity locations
     data.mapLocations = data.locations.map(loc => ({
@@ -264,17 +222,7 @@ export class EntityDetailView extends DetailViewBase {
       }));
     }
 
-    // 2. Faction Sentiment (half-width)
-    if (data.factionSentimentData.length > 0) {
-      this.cardManager.add(new SentimentChartCard(this, `${prefix}-sentiment`, {
-        title: `Faction Sentiment Toward ${entity.name}`,
-        factions: data.factionSentimentData,
-        halfWidth: true,
-        clickRoute: 'faction'
-      }));
-    }
-
-    // 3. Volume & Events Chart (w/ factions and source) - full-width
+    // 2. Volume & Events Chart (by source) - full-width
     const hasDurationData = data.narrativeDurations?.length > 0;
     if (data.hasVolumeTimeline || hasDurationData) {
       this.cardManager.add(new TimelineVolumeCompositeCard(this, `${prefix}-volume-events`, {
@@ -287,11 +235,11 @@ export class EntityDetailView extends DetailViewBase {
         height: 450,
         volumeHeight: 180,
         timelineHeight: 180,
-        showViewToggle: data.hasVolumeData && data.hasPublisherData
+        showViewToggle: false
       }));
     }
 
-    // 4. Narratives (half-width)
+    // 3. Narratives (half-width)
     if (data.narratives.length > 0) {
       this.cardManager.add(new NarrativeListCard(this, `${prefix}-narratives`, {
         title: 'Related Narratives',
@@ -302,7 +250,7 @@ export class EntityDetailView extends DetailViewBase {
       }));
     }
 
-    // 5. Topics (half-width)
+    // 4. Topics (half-width)
     if (data.topics.length > 0) {
       this.cardManager.add(new TopicListCard(this, `${prefix}-topics`, {
         title: 'Related Topics',
@@ -313,34 +261,7 @@ export class EntityDetailView extends DetailViewBase {
       }));
     }
 
-    // 6. Affiliated Factions Venn Diagram (half-width)
-    if (data.affiliatedFactions.length >= 1) {
-      // Get overlaps between affiliated factions
-      const affiliatedFactionIds = data.affiliatedFactions.map(f => f.id);
-      const affiliatedOverlaps = (DataService.getFactionOverlaps ? DataService.getFactionOverlaps() : [])
-        .filter(o => o.factionIds.every(fid => affiliatedFactionIds.includes(fid)));
-      
-      this.cardManager.add(new VennDiagramCard(this, `${prefix}-affiliated-factions`, {
-        title: 'Affiliated Factions',
-        factions: data.affiliatedFactions,
-        overlaps: affiliatedOverlaps,
-        halfWidth: true,
-        height: 300
-      }));
-    }
-
-    // 7. Related Factions Venn Diagram (half-width) - factions from document mentions
-    if (data.factions.length >= 1) {
-      this.cardManager.add(new VennDiagramCard(this, `${prefix}-venn`, {
-        title: 'Related Factions',
-        factions: data.factions,
-        overlaps: data.factionOverlaps,
-        halfWidth: true,
-        height: 300
-      }));
-    }
-
-    // 8. Locations & Events Map (half-width)
+    // 5. Locations & Events Map (half-width)
     if (data.locations.length > 0 || data.allEvents.length > 0) {
       this.cardManager.add(new MapCard(this, `${prefix}-map`, {
         title: 'Locations & Events',

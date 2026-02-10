@@ -1,11 +1,10 @@
 /**
  * StackedAreaChart.js
- * Volume over time by faction visualization with interactive tooltip
+ * Volume over time by publisher/source visualization with interactive tooltip
  */
 
 import { BaseComponent } from './BaseComponent.js';
 import { formatDateLong, getTimeFormatter } from '../utils/formatters.js';
-import { getEntityCardModal } from './EntityCardModal.js';
 
 export class StackedAreaChart extends BaseComponent {
   constructor(containerId, options = {}) {
@@ -23,7 +22,7 @@ export class StackedAreaChart extends BaseComponent {
     }
 
     const { width, height, margin } = this.options;
-    const { dates, series, factions } = this.data;
+    const { dates, series, publishers } = this.data;
 
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom - 30; // Space for legend
@@ -35,19 +34,19 @@ export class StackedAreaChart extends BaseComponent {
     // Prepare data for stacking
     const stackData = dates.map((date, i) => {
       const point = { date: new Date(date) };
-      factions.forEach((f, fi) => {
-        point[f.id] = series[fi] ? series[fi][i] : 0;
+      publishers.forEach((p, pi) => {
+        point[p.id] = series[pi] ? series[pi][i] : 0;
       });
       return point;
     });
 
     // Store for tooltip access
     this.stackData = stackData;
-    this.factions = factions;
+    this.publishers = publishers;
 
     // Stack generator
     const stack = d3.stack()
-      .keys(factions.map(f => f.id))
+      .keys(publishers.map(p => p.id))
       .order(d3.stackOrderNone)
       .offset(d3.stackOffsetNone);
 
@@ -64,8 +63,8 @@ export class StackedAreaChart extends BaseComponent {
       .range([innerHeight, 0]);
 
     const color = d3.scaleOrdinal()
-      .domain(factions.map(f => f.id))
-      .range(factions.map(f => f.color));
+      .domain(publishers.map(p => p.id))
+      .range(publishers.map(p => p.color));
 
     // Store scales for tooltip
     this.xScale = x;
@@ -147,17 +146,17 @@ export class StackedAreaChart extends BaseComponent {
       .attr('opacity', 0)
       .attr('pointer-events', 'none');
 
-    // Hover dots for each faction
+    // Hover dots for each publisher
     const hoverDots = g.append('g')
       .attr('class', 'hover-dots')
       .attr('opacity', 0)
       .attr('pointer-events', 'none');
 
-    factions.forEach(faction => {
+    publishers.forEach(publisher => {
       hoverDots.append('circle')
-        .attr('class', `hover-dot-${faction.id}`)
+        .attr('class', `hover-dot-${publisher.id}`)
         .attr('r', 4)
-        .attr('fill', faction.color)
+        .attr('fill', publisher.color)
         .attr('stroke', 'var(--bg-primary)')
         .attr('stroke-width', 2);
     });
@@ -207,16 +206,16 @@ export class StackedAreaChart extends BaseComponent {
         
         // Calculate cumulative values for dot positioning
         let cumulative = 0;
-        factions.forEach(faction => {
-          const value = d[faction.id] || 0;
+        publishers.forEach(publisher => {
+          const value = d[publisher.id] || 0;
           cumulative += value;
-          hoverDots.select(`.hover-dot-${faction.id}`)
+          hoverDots.select(`.hover-dot-${publisher.id}`)
             .attr('cx', xPos)
             .attr('cy', y(cumulative));
         });
 
         // Calculate total volume
-        const total = factions.reduce((sum, f) => sum + (d[f.id] || 0), 0);
+        const total = publishers.reduce((sum, p) => sum + (d[p.id] || 0), 0);
 
         // Build tooltip content
         const tooltipContent = `
@@ -225,13 +224,13 @@ export class StackedAreaChart extends BaseComponent {
             <span class="tooltip-total">${this.formatNumber(total)} total</span>
           </div>
           <div class="tooltip-body">
-            ${factions.map(faction => {
-              const value = d[faction.id] || 0;
+            ${publishers.map(publisher => {
+              const value = d[publisher.id] || 0;
               const percent = total > 0 ? Math.round((value / total) * 100) : 0;
               return `
                 <div class="tooltip-row">
-                  <span class="tooltip-color" style="background: ${faction.color}"></span>
-                  <span class="tooltip-faction">${faction.name}</span>
+                  <span class="tooltip-color" style="background: ${publisher.color}"></span>
+                  <span class="tooltip-publisher">${publisher.name}</span>
                   <span class="tooltip-value">${this.formatNumber(value)}</span>
                   <span class="tooltip-percent">(${percent}%)</span>
                 </div>
@@ -272,9 +271,9 @@ export class StackedAreaChart extends BaseComponent {
       .attr('class', 'chart-legend')
       .attr('transform', `translate(${margin.left}, ${height - 25})`);
 
-    const legendItemWidth = Math.min(140, innerWidth / factions.length);
+    const legendItemWidth = Math.min(140, innerWidth / publishers.length);
 
-    factions.forEach((faction, i) => {
+    publishers.forEach((publisher, i) => {
       const legendItem = legend.append('g')
         .attr('class', 'legend-item')
         .attr('transform', `translate(${i * legendItemWidth}, 0)`)
@@ -284,39 +283,29 @@ export class StackedAreaChart extends BaseComponent {
         .attr('width', 12)
         .attr('height', 12)
         .attr('rx', 2)
-        .attr('fill', faction.color);
+        .attr('fill', publisher.color);
 
       legendItem.append('text')
         .attr('x', 18)
         .attr('y', 10)
-        .text(faction.name.length > 15 ? faction.name.slice(0, 13) + '...' : faction.name)
+        .text(publisher.name.length > 15 ? publisher.name.slice(0, 13) + '...' : publisher.name)
         .attr('class', 'legend-label')
         .attr('fill', 'var(--text-secondary)')
         .attr('font-size', '11px')
         .attr('font-family', 'var(--font-sans)')
         .append('title')
-        .text(faction.name);
+        .text(publisher.name);
 
-      // Add click handler for faction navigation
-      if (this.options.onFactionClick) {
-        legendItem.on('click', () => {
-          this.options.onFactionClick(faction);
-        });
-      }
-
-      // Add hover effect to highlight corresponding area and show entity card
+      // Add hover effect to highlight corresponding area
       const self = this;
       legendItem
-        .style('cursor', 'pointer')
         .on('mouseover', function() {
           d3.select(this).select('text').attr('fill', 'var(--accent-primary)');
           // Highlight the corresponding area, dim others
           self.layers
-            .attr('fill-opacity', d => d.key === faction.id ? 1 : 0.4)
-            .attr('stroke', d => d.key === faction.id ? faction.color : 'none')
-            .attr('stroke-width', d => d.key === faction.id ? 2 : 0);
-          // Show entity card
-          getEntityCardModal().show(faction.id, 'faction', this);
+            .attr('fill-opacity', d => d.key === publisher.id ? 1 : 0.4)
+            .attr('stroke', d => d.key === publisher.id ? publisher.color : 'none')
+            .attr('stroke-width', d => d.key === publisher.id ? 2 : 0);
         })
         .on('mouseout', function() {
           d3.select(this).select('text').attr('fill', 'var(--text-secondary)');
@@ -325,8 +314,6 @@ export class StackedAreaChart extends BaseComponent {
             .attr('fill-opacity', 0.8)
             .attr('stroke', 'none')
             .attr('stroke-width', 0);
-          // Hide entity card
-          getEntityCardModal().scheduleHide();
         });
     });
   }

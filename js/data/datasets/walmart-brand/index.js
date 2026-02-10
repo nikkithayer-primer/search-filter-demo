@@ -9,7 +9,6 @@ import { users } from './users.js';
 import { missions } from './missions.js';
 import { narratives } from './narratives.js';
 import { themes } from './themes.js';
-import { factions, factionOverlaps } from './factions.js';
 import { persons, organizations } from './entities.js';
 import { locations } from './locations.js';
 import { events } from './events.js';
@@ -107,8 +106,6 @@ export const mockData = {
   missions,
   narratives,
   themes,
-  factions,
-  factionOverlaps,
   locations,
   events,
   persons,

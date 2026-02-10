@@ -12,8 +12,6 @@ import {
   NetworkGraphCard,
   NarrativeListCard,
   TopicListCard,
-  SentimentChartCard,
-  VennDiagramCard,
   MapCard,
   TimelineVolumeCompositeCard
 } from '../components/CardComponents.js';
@@ -130,7 +128,6 @@ export class WorkspaceView extends DetailViewBase {
     const themeIds = new Set();
     const locationIds = new Set();
     const eventIds = new Set();
-    const factionIds = new Set();
     const topicIds = new Set();
 
     documents.forEach(doc => {
@@ -152,23 +149,12 @@ export class WorkspaceView extends DetailViewBase {
     const events = [...eventIds].map(id => DataService.getEvent(id)).filter(Boolean);
     const topics = [...topicIds].map(id => DataService.getTopic(id)).filter(Boolean);
 
-    // Get factions from narratives using document-based aggregation
-    narratives.forEach(n => {
-      const factionMentions = DataService.getAggregateFactionMentionsForNarrative(n.id);
-      Object.keys(factionMentions).forEach(fId => factionIds.add(fId));
-    });
-    const factions = this.calculateFactionSentiment(narratives, [...factionIds]);
-
-    // Get faction overlaps for Venn diagram
-    const factionOverlaps = DataService.getFactionOverlaps();
-
     // Build network graph data
     const hasNetwork = persons.length > 0 || organizations.length > 0;
 
     // Get volume data for timeline (scoped to workspace documents)
     const scopeDocIds = workspace.documentIds || null;
     const volumeResult = DataService.getVolumeDataForDocuments(scopeDocIds);
-    const volumeData = volumeResult.byFaction;
     const publisherData = volumeResult.byPublisher;
     
     // Get narrative durations for duration view toggle (scoped to workspace documents)
@@ -186,60 +172,14 @@ export class WorkspaceView extends DetailViewBase {
       documents,
       persons, organizations,
       narratives, themes, topics,
-      locations, events, factions,
-      factionOverlaps,
+      locations, events,
       personIds: [...personIds],
       orgIds: [...organizationIds],
       hasNetwork,
-      volumeData,
       publisherData,
       narrativeDurations,
       entities, activity
     };
-  }
-
-  /**
-   * Calculate aggregated faction sentiment from narratives using document-based aggregation
-   */
-  calculateFactionSentiment(narratives, factionIds) {
-    const factionStats = new Map();
-    
-    // Initialize stats for each faction
-    factionIds.forEach(fId => {
-      factionStats.set(fId, { totalVolume: 0, weightedSentiment: 0 });
-    });
-    
-    // Aggregate volume and sentiment across narratives using document data
-    narratives.forEach(n => {
-      const factionMentions = DataService.getAggregateFactionMentionsForNarrative(n.id);
-      Object.entries(factionMentions).forEach(([factionId, data]) => {
-        const stats = factionStats.get(factionId);
-        if (stats && data.volume && typeof data.sentiment === 'number') {
-          stats.totalVolume += data.volume;
-          stats.weightedSentiment += data.sentiment * data.volume;
-        }
-      });
-    });
-    
-    // Calculate weighted average sentiment and return factions with data
-    return factionIds
-      .map(fId => {
-        const faction = DataService.getFaction(fId);
-        if (!faction) return null;
-        
-        const stats = factionStats.get(fId);
-        if (!stats || stats.totalVolume === 0) {
-          return { ...faction, sentiment: 0, volume: 0 };
-        }
-        
-        return {
-          ...faction,
-          sentiment: stats.weightedSentiment / stats.totalVolume,
-          volume: stats.totalVolume
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.volume - a.volume);
   }
 
   /**
@@ -251,19 +191,18 @@ export class WorkspaceView extends DetailViewBase {
 
     // Show empty state if no related data
     if (data.narratives.length === 0 && data.topics.length === 0 && 
-        !data.hasNetwork && data.factions.length === 0 && 
+        !data.hasNetwork && 
         data.locations.length === 0 && data.events.length === 0) {
       return; // CardManager will have no cards, view will show empty
     }
 
     // 1. Volume Over Time x Events (full width)
-    const hasVolumeData = data.volumeData?.dates?.length > 0;
     const hasPublisherData = data.publisherData?.dates?.length > 0;
     const hasDurationData = data.narrativeDurations?.length > 0;
-    if (hasVolumeData || hasPublisherData || data.events.length > 0 || hasDurationData) {
+    if (hasPublisherData || data.events.length > 0 || hasDurationData) {
       this.cardManager.add(new TimelineVolumeCompositeCard(this, 'workspace-volume-timeline', {
         title: 'Volume Over Time & Events',
-        volumeData: hasVolumeData ? data.volumeData : null,
+        volumeData: null,
         publisherData: hasPublisherData ? data.publisherData : null,
         events: data.events,
         narrativeDurations: hasDurationData ? data.narrativeDurations : null,
@@ -271,7 +210,7 @@ export class WorkspaceView extends DetailViewBase {
         height: 400,
         volumeHeight: 160,
         timelineHeight: 160,
-        showViewToggle: hasVolumeData && hasPublisherData
+        showViewToggle: false
       }));
     }
 
@@ -322,26 +261,6 @@ export class WorkspaceView extends DetailViewBase {
       }));
     }
 
-    // 6. Faction Sentiment (half-width)
-    if (data.factions.length > 0) {
-      this.cardManager.add(new SentimentChartCard(this, 'workspace-factions', {
-        title: 'Faction Sentiment',
-        factions: data.factions,
-        halfWidth: true,
-        clickRoute: 'faction'
-      }));
-    }
-
-    // 7. Faction Overlaps (half-width)
-    if (data.factions.length > 1 && data.factionOverlaps) {
-      this.cardManager.add(new VennDiagramCard(this, 'workspace-faction-overlaps', {
-        title: 'Faction Overlaps',
-        factions: data.factions,
-        overlaps: data.factionOverlaps,
-        halfWidth: true,
-        height: 280
-      }));
-    }
   }
 
 }

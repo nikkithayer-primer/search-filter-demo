@@ -6,7 +6,6 @@
 import { DetailViewBase } from './DetailViewBase.js';
 import { DataService } from '../data/DataService.js';
 import { PageHeader } from '../utils/PageHeader.js';
-import { aggregateFactionSentiment } from '../utils/volumeDataUtils.js';
 import { StatCards } from '../components/StatCards.js';
 import {
   CardManager,
@@ -15,8 +14,6 @@ import {
   MapCard,
   TimelineVolumeCompositeCard,
   TopicListCard,
-  SentimentChartCard,
-  VennDiagramCard,
   QuotesTableCard,
   ActivitiesTableCard
 } from '../components/CardComponents.js';
@@ -169,17 +166,6 @@ export class EventView extends DetailViewBase {
       (topic.documentIds || []).some(dId => eventDocIds.has(dId))
     );
 
-    // Get factions from documents and compute sentiment
-    const sentimentFactions = aggregateFactionSentiment(documents);
-    const factions = sentimentFactions.map(sf => DataService.getFaction(sf.id)).filter(Boolean);
-
-    // Get faction overlaps
-    const factionOverlaps = factions.length > 1
-      ? DataService.getFactionOverlapsFor(factions[0]?.id).filter(o =>
-          o.factionIds.every(fid => factions.some(f => f.id === fid))
-        )
-      : [];
-
     // Build map locations
     const mapLocations = location ? [{ ...location, isEvent: true, eventText: event.text }] : [];
 
@@ -206,7 +192,7 @@ export class EventView extends DetailViewBase {
       narratives, documents, hasNetwork, personIds, orgIds, allEvents,
       events: allEvents,
       publisherData, hasPublisherData, hasVolumeTimeline, topics,
-      factions, sentimentFactions, factionOverlaps, mapLocations,
+      mapLocations,
       narrativeDurations, entities, locations, activity,
       quotes, entityActivities
     };
@@ -287,28 +273,7 @@ export class EventView extends DetailViewBase {
       }));
     }
 
-    // 7. Faction Sentiment (half-width)
-    if (data.sentimentFactions.length > 0) {
-      this.cardManager.add(new SentimentChartCard(this, 'event-sentiment', {
-        title: 'Faction Sentiment',
-        factions: data.sentimentFactions,
-        halfWidth: true,
-        clickRoute: 'faction'
-      }));
-    }
-
-    // 8. Faction Overlaps Venn Diagram (half-width)
-    if (data.factions.length >= 2) {
-      this.cardManager.add(new VennDiagramCard(this, 'event-venn', {
-        title: 'Faction Overlaps',
-        factions: data.factions,
-        overlaps: data.factionOverlaps,
-        halfWidth: true,
-        height: 300
-      }));
-    }
-
-    // 9. Location Map (half-width)
+    // 7. Location Map (half-width)
     if (data.mapLocations.length > 0) {
       this.cardManager.add(new MapCard(this, 'event-map', {
         title: 'Locations',

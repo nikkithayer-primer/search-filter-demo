@@ -25,10 +25,6 @@ const ENTITY_ICONS = {
   organization: `<svg viewBox="0 0 16 16" fill="currentColor">
     <path fill-rule="evenodd" clip-rule="evenodd" d="M0.5 16H9.5C9.59107 16 9.67646 15.9757 9.75 15.9331C9.82354 15.9757 9.90893 16 10 16H15.5C15.7761 16 16 15.7761 16 15.5V4.5C16 4.22386 15.7761 4 15.5 4H10V0.5C10 0.223858 9.77614 0 9.5 0H0.5C0.223858 0 0 0.223858 0 0.5V15.5C0 15.7761 0.223858 16 0.5 16ZM1 15V1H9V15H7V13C7 12.7239 6.77614 12.5 6.5 12.5H3.5C3.22386 12.5 3 12.7239 3 13V15H1ZM6 13.5V15H4V13.5H6ZM10 5V15H15V5H10Z"/>
   </svg>`,
-  faction: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-    <path d="M3 13V5l5-3 5 3v8"/>
-    <path d="M6 13v-4h4v4"/>
-  </svg>`,
   location: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
     <path d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z"/>
     <circle cx="8" cy="6" r="2"/>
@@ -46,7 +42,6 @@ const ENTITY_ICONS = {
 const ENTITY_TYPES = [
   { key: 'persons', label: 'People', type: 'person', idPrefix: 'person-', getter: () => DataService.getPersons() },
   { key: 'organizations', label: 'Organizations', type: 'organization', idPrefix: 'org-', getter: () => DataService.getOrganizations() },
-  { key: 'factions', label: 'Factions', type: 'faction', idPrefix: 'faction-', getter: () => DataService.getFactions() },
   { key: 'locations', label: 'Locations', type: 'location', idPrefix: 'loc-', getter: () => DataService.getLocations() },
   { key: 'events', label: 'Events', type: 'event', idPrefix: 'event-', getter: () => DataService.getEvents() }
 ];

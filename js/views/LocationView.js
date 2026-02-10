@@ -13,7 +13,6 @@ import {
   NarrativeListCard,
   TopicListCard,
   MapCard,
-  VennDiagramCard,
   TimelineVolumeCompositeCard
 } from '../components/CardComponents.js';
 
@@ -138,21 +137,6 @@ export class LocationView extends DetailViewBase {
       (topic.documentIds || []).some(dId => locationDocIds.has(dId))
     );
 
-    // Get factions from documents and compute overlaps
-    // Note: factionMentions is an object with factionId keys, not an array
-    const factionIdSet = new Set();
-    documents.forEach(doc => {
-      Object.keys(doc.factionMentions || {}).forEach(factionId => {
-        factionIdSet.add(factionId);
-      });
-    });
-    const factions = [...factionIdSet].map(id => DataService.getFaction(id)).filter(Boolean);
-    const factionOverlaps = factions.length >= 2
-      ? DataService.getFactionOverlapsFor(factions[0]?.id).filter(o =>
-          o.factionIds.every(fid => factions.some(f => f.id === fid))
-        )
-      : [];
-
     // Narrative durations for volume/duration toggle
     const narrativeDurations = DataService.getNarrativeDurations();
 
@@ -167,7 +151,7 @@ export class LocationView extends DetailViewBase {
     return {
       narratives, events, allEvents, persons, organizations, documents,
       hasNetwork, personIds, orgIds, publisherData, hasPublisherData,
-      hasVolumeTimeline, topics, factions, factionOverlaps, narrativeDurations, entities, activity
+      hasVolumeTimeline, topics, narrativeDurations, entities, activity
     };
   }
 
@@ -183,7 +167,7 @@ export class LocationView extends DetailViewBase {
     if (data.hasVolumeTimeline || hasDurationData) {
       this.cardManager.add(new TimelineVolumeCompositeCard(this, 'location-volume-events', {
         title: 'Volume & Events',
-        volumeData: null, // No faction data for locations
+        volumeData: null,
         publisherData: data.publisherData,
         events: data.allEvents,
         narrativeDurations: hasDurationData ? data.narrativeDurations : null,
@@ -243,16 +227,6 @@ export class LocationView extends DetailViewBase {
       }));
     }
 
-    // Faction Overlaps Venn Diagram (half-width)
-    if (data.factions.length >= 2) {
-      this.cardManager.add(new VennDiagramCard(this, 'location-venn', {
-        title: 'Faction Overlaps',
-        factions: data.factions,
-        overlaps: data.factionOverlaps,
-        halfWidth: true,
-        height: 300
-      }));
-    }
   }
 
 }

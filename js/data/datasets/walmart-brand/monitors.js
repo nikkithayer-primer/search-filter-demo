@@ -63,8 +63,7 @@ export const monitors = [
     },
     triggers: {
       volumeSpike: { threshold: 400, timeWindow: '24h' },
-      sentimentShift: { threshold: 0.2, direction: 'negative' },
-      factionEngagement: true
+      sentimentShift: { threshold: 0.2, direction: 'negative' }
     },
     options: {
       includeThemes: true,
@@ -177,7 +176,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: [],
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-001']
@@ -196,7 +195,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: [],
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-003']
@@ -215,7 +214,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: [],
-    relatedFactionIds: [],
+
     relatedLocationIds: ['loc-004'], // Chicago
     metadata: {
       documentIds: ['doc-005']
@@ -234,7 +233,6 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: [],
-    relatedFactionIds: ['faction-002'], // Walmart Employees
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-008']
@@ -243,8 +241,8 @@ export const alerts = [
   {
     id: 'alert-005',
     monitorId: 'monitor-003',
-    type: 'faction_engagement',
-    title: 'High faction engagement: UFCW campaign',
+    type: 'volume_spike',
+    title: 'High engagement: UFCW campaign',
     description: 'United Food and Commercial Workers International Union (UFCW) launches #RespectWalmartWorkers campaign amplifying employee stories',
     triggeredAt: '2026-01-15T12:00:00Z',
     relatedNarrativeIds: ['narr-003'],
@@ -253,7 +251,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: ['org-005'],
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-010']
@@ -272,7 +270,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: ['org-007'],
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-012']
@@ -291,7 +289,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: ['org-001'], // Walmart (Great Value)
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-013']
@@ -310,7 +308,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: ['org-010'],
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-015']
@@ -329,7 +327,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: ['org-003'],
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-018']
@@ -348,7 +346,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: ['org-004'],
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-019']
@@ -367,7 +365,7 @@ export const alerts = [
     relatedSubEventIds: [],
     relatedPersonIds: [],
     relatedOrganizationIds: ['org-001'], // Walmart
-    relatedFactionIds: [],
+
     relatedLocationIds: [],
     metadata: {
       documentIds: ['doc-021', 'doc-022']

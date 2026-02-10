@@ -1,7 +1,7 @@
 /**
  * DocumentTable.js
  * Flexible table view for documents with customizable columns
- * Supports related entities: narratives, events, locations, persons, organizations, factions, topics
+ * Supports related entities: narratives, events, locations, persons, organizations, topics
  * Supports classification and document type display
  * Supports viewer mode: clicking title shows document content in split view
  */
@@ -155,17 +155,6 @@ const COLUMN_CONFIG = {
     getValue: (doc) => (doc.organizationIds || []).length,
     getEntities: (doc) => (doc.organizationIds || []).map(id => DataService.getOrganization(id)).filter(Boolean),
     route: 'organization',
-    displayField: 'name'
-  },
-  factions: {
-    label: 'Factions',
-    width: '160px',
-    minWidth: '120px',
-    sortable: true,
-    idField: 'factionIds',
-    getValue: (doc) => (doc.factionIds || []).length,
-    getEntities: (doc) => (doc.factionIds || []).map(id => DataService.getFaction(id)).filter(Boolean),
-    route: 'faction',
     displayField: 'name'
   },
   topics: {
@@ -619,7 +608,7 @@ export class DocumentTable extends BaseComponent {
       case 'publishedDate':
         return this.renderDateCell(doc);
       default:
-        // Entity columns (narratives, events, locations, persons, organizations, factions, topics, themes)
+        // Entity columns (narratives, events, locations, persons, organizations, topics, themes)
         return this.renderEntityCell(doc, column);
     }
   }

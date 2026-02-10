@@ -243,20 +243,10 @@ export class ListView extends BaseView {
         iconType: 'narratives',
         route: 'narrative',
         getSubtitle: (item) => {
-          const factionMentions = DataService.getAggregateFactionMentionsForNarrative(item.id);
-          const volume = Object.values(factionMentions)
-            .reduce((sum, f) => sum + (f.volume || 0), 0);
-          return `${volume.toLocaleString()} mentions`;
+          const docs = DataService.getDocumentsForNarrative ? DataService.getDocumentsForNarrative(item.id) : [];
+          return `${docs.length} document${docs.length !== 1 ? 's' : ''}`;
         },
         getStatus: null
-      },
-      factions: {
-        title: 'Factions',
-        itemName: 'faction',
-        iconType: 'factions',
-        route: 'faction',
-        getSubtitle: (item) => `${item.memberCount ? item.memberCount.toLocaleString() + ' members' : 'No member data'}`,
-        getColor: (item) => item.color
       },
       locations: {
         title: 'Locations',
@@ -334,8 +324,6 @@ export class ListView extends BaseView {
           items = items.filter(n => (n.status || 'new') === this.options.statusFilter);
         }
         return items;
-      case 'factions':
-        return DataService.getFactions();
       case 'locations':
         return DataService.getLocations();
       case 'events':
@@ -534,7 +522,7 @@ export class ListView extends BaseView {
    */
   attachItemClickListeners(config) {
     // Entity types that support hover cards
-    const hoverTypes = ['person', 'organization', 'faction', 'location'];
+    const hoverTypes = ['person', 'organization', 'location'];
     
     const items = document.querySelectorAll('.entity-list-item');
     items.forEach(item => {

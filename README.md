@@ -1,11 +1,10 @@
 # Project Astra - Intelligence Dashboard
 
-A web-based intelligence dashboard for tracking narratives, factions, events, and entities. Built with vanilla JavaScript, D3.js visualizations, and a modular component architecture.
+A web-based intelligence dashboard for tracking narratives, events, and entities. Built with vanilla JavaScript, D3.js visualizations, and a modular component architecture.
 
 ## Features
 
 - **Narrative Tracking**: Monitor disinformation narratives with sentiment analysis and volume trends
-- **Faction Analysis**: Track faction activities, overlaps, and their engagement with narratives
 - **Entity Management**: Manage people, organizations, locations, and events
 - **Interactive Visualizations**: Network graphs, timelines, maps, and charts powered by D3.js
 - **Document Viewer**: View and annotate documents with highlights and comments
@@ -118,7 +117,6 @@ The app uses hash-based routing (`#/narrative/123`) for SPA navigation without a
 - `#/dashboard` - Main dashboard with aggregate stats
 - `#/narratives` - Narrative list
 - `#/narrative/:id` - Narrative detail page
-- `#/factions`, `#/faction/:id` - Faction views
 - `#/entities`, `#/person/:id`, `#/organization/:id` - Entity views
 - `#/documents`, `#/document/:id` - Document views
 
@@ -144,7 +142,7 @@ Development:
 ## Switching Datasets
 
 Click the avatar menu in the top-right corner to switch between:
-- **American Politics** - US political narratives and factions
+- **American Politics** - US political narratives and entities
 - **China Semiconductor** - Tech industry analysis
 - **Walmart Brand** - Brand perception tracking
 

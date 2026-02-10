@@ -291,7 +291,7 @@ export class BooleanParser {
     const terms = [];
     
     // Add entity references
-    ['personIds', 'organizationIds', 'factionIds', 'locationIds', 'eventIds'].forEach(key => {
+    ['personIds', 'organizationIds', 'locationIds', 'eventIds'].forEach(key => {
       const ids = scope[key] || [];
       ids.forEach(id => {
         terms.push(`@${id}`);

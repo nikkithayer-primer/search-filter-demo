@@ -1,6 +1,6 @@
 /**
  * DetailViewBase.js
- * Base class for detail views (entity, narrative, faction, topic, etc.)
+ * Base class for detail views (entity, narrative, topic, etc.)
  * Provides shared functionality for views that display entity details with cards
  */
 
@@ -30,7 +30,7 @@ export class DetailViewBase extends BaseView {
   /**
    * Initialize tag chips component for an entity
    * @param {Object} entity - The entity object (must have id property)
-   * @param {string} entityType - The entity type (e.g., 'narrative', 'faction', 'person')
+   * @param {string} entityType - The entity type (e.g., 'narrative', 'person')
    * @param {string} containerId - The DOM container ID for the tag chips (default: `${entityType}-tags-container`)
    */
   initTagChips(entity, entityType, containerId = null) {
@@ -57,7 +57,7 @@ export class DetailViewBase extends BaseView {
    * Set up card for Documents tab (full-width document table)
    * @param {Object} entity - The entity object
    * @param {Object} data - The fetched data containing documents array
-   * @param {string} prefix - Prefix for the card ID (e.g., 'narrative', 'faction')
+   * @param {string} prefix - Prefix for the card ID (e.g., 'narrative', 'person')
    */
   setupDocumentsCard(entity, data, prefix) {
     // Reset card manager for fresh setup
@@ -119,45 +119,6 @@ export class DetailViewBase extends BaseView {
   }
 
   /**
-   * Calculate faction sentiment from documents
-   * @param {Array} documents - Array of document objects
-   * @returns {Object} Object with factions array and factionOverlaps array
-   */
-  calculateFactionMentions(documents) {
-    const factionMentionMap = new Map();
-    
-    documents.forEach(doc => {
-      if (!doc.factionMentions) return;
-      Object.entries(doc.factionMentions).forEach(([factionId, mentions]) => {
-        if (!factionMentionMap.has(factionId)) {
-          factionMentionMap.set(factionId, { volume: 0, sentiment: 0, count: 0 });
-        }
-        const entry = factionMentionMap.get(factionId);
-        entry.volume += mentions.volume || 1;
-        entry.sentiment += mentions.sentiment || 0;
-        entry.count += 1;
-      });
-    });
-
-    const factions = [...factionMentionMap.entries()].map(([factionId, stats]) => {
-      const faction = DataService.getFaction(factionId);
-      if (!faction) return null;
-      return {
-        ...faction,
-        volume: stats.volume,
-        sentiment: stats.count > 0 ? stats.sentiment / stats.count : 0
-      };
-    }).filter(Boolean);
-
-    // Get overlaps for these factions
-    const factionIds = factions.map(f => f.id);
-    const factionOverlaps = (DataService.getFactionOverlaps ? DataService.getFactionOverlaps() : [])
-      .filter(o => o.factionIds.some(fid => factionIds.includes(fid)));
-
-    return { factions, factionOverlaps };
-  }
-
-  /**
    * Get volume data for a set of documents
    * @param {Array} documents - Array of document objects
    * @returns {Object} Object with volumeData, publisherData, and flags
@@ -167,9 +128,9 @@ export class DetailViewBase extends BaseView {
     const volumeResult = DataService.getVolumeDataForDocuments(docIds);
     
     return {
-      volumeData: volumeResult.byFaction,
+      volumeData: null,
       publisherData: volumeResult.byPublisher,
-      hasVolumeData: volumeResult.byFaction && volumeResult.byFaction.dates.length > 0,
+      hasVolumeData: false,
       hasPublisherData: volumeResult.byPublisher && volumeResult.byPublisher.dates.length > 0
     };
   }

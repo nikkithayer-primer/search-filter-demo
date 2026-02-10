@@ -80,7 +80,7 @@
   flex-shrink: 0;
 }
 
-.tooltip-faction {
+.tooltip-series {
   flex: 1;
   color: var(--text-secondary);
   white-space: nowrap;

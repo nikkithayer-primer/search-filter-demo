@@ -22,7 +22,6 @@ describe('idUtils', () => {
       expect(ID_PREFIXES['org-']).toBe('organization');
       expect(ID_PREFIXES['narr-']).toBe('narrative');
       expect(ID_PREFIXES['doc-']).toBe('document');
-      expect(ID_PREFIXES['faction-']).toBe('faction');
       expect(ID_PREFIXES['loc-']).toBe('location');
       expect(ID_PREFIXES['event-']).toBe('event');
       expect(ID_PREFIXES['tag-']).toBe('tag');
@@ -45,7 +44,6 @@ describe('idUtils', () => {
       expect(getEntityTypeFromId('monitor-001')).toBe('monitor');
       expect(getEntityTypeFromId('narr-003')).toBe('narrative');
       expect(getEntityTypeFromId('doc-123')).toBe('document');
-      expect(getEntityTypeFromId('faction-002')).toBe('faction');
       expect(getEntityTypeFromId('sub-001')).toBe('theme');
       expect(getEntityTypeFromId('tag-001')).toBe('tag');
     });
@@ -97,7 +95,6 @@ describe('idUtils', () => {
       expect(isViewableEntityId('org-002')).toBe(true);
       expect(isViewableEntityId('narr-003')).toBe(true);
       expect(isViewableEntityId('doc-004')).toBe(true);
-      expect(isViewableEntityId('faction-001')).toBe(true);
       expect(isViewableEntityId('loc-001')).toBe(true);
       expect(isViewableEntityId('event-001')).toBe(true);
       expect(isViewableEntityId('tag-001')).toBe(true);

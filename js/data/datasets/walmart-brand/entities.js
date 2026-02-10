@@ -12,18 +12,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-001',
     imageUrl: 'img/entities/walmart/person-001.png',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: [],
     relatedLocationIds: ['loc-001'],
     relatedEventIds: ['event-003'],
     documentIds: ['doc-004', 'doc-011', 'doc-023'],
-    factionSentiment: {
-      'faction-001': -0.72,
-      'faction-002': -0.45,
-      'faction-003': -0.68,
-      'faction-004': -0.35,
-      'faction-005': 0.42,
-      'faction-006': -0.25
-    }
   },
   {
     id: 'person-002',
@@ -33,18 +24,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-001',
     imageUrl: 'img/entities/walmart/person-002.jpg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: [],
     relatedLocationIds: ['loc-001'],
     relatedEventIds: ['event-003'],
     documentIds: ['doc-004'],
-    factionSentiment: {
-      'faction-001': -0.55,
-      'faction-002': -0.38,
-      'faction-003': -0.52,
-      'faction-004': -0.28,
-      'faction-005': 0.35,
-      'faction-006': -0.18
-    }
   },
 
   // Labor Advocates
@@ -56,18 +38,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-005',
     imageUrl: 'img/entities/walmart/person-003.jpg',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-003'],
     relatedLocationIds: ['loc-006'],
     relatedEventIds: ['event-007'],
     documentIds: ['doc-010'],
-    factionSentiment: {
-      'faction-001': 0.25,
-      'faction-002': 0.85,
-      'faction-003': 0.92,
-      'faction-004': 0.45,
-      'faction-005': 0.15,
-      'faction-006': 0.10
-    }
   },
   {
     id: 'person-004',
@@ -77,18 +50,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-006',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-003'],
     relatedLocationIds: ['loc-006'],
     relatedEventIds: ['event-007'],
     documentIds: ['doc-010'],
-    factionSentiment: {
-      'faction-001': 0.35,
-      'faction-002': 0.78,
-      'faction-003': 0.88,
-      'faction-004': 0.55,
-      'faction-005': 0.08,
-      'faction-006': 0.12
-    }
   },
   {
     id: 'person-005',
@@ -98,18 +62,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-001',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-002'],
     relatedLocationIds: [],
     relatedEventIds: ['event-006'],
     documentIds: ['doc-008'],
-    factionSentiment: {
-      'faction-001': 0.55,
-      'faction-002': 0.95,
-      'faction-003': 0.72,
-      'faction-004': 0.35,
-      'faction-005': -0.05,
-      'faction-006': 0.15
-    }
   },
 
   // Regulators
@@ -121,18 +76,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-007',
     imageUrl: 'img/entities/walmart/person-006.jpg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: [],
     relatedLocationIds: ['loc-007'],
     relatedEventIds: ['event-008', 'event-009'],
     documentIds: ['doc-012', 'doc-013'],
-    factionSentiment: {
-      'faction-001': 0.15,
-      'faction-002': 0.10,
-      'faction-003': 0.05,
-      'faction-004': 0.68,
-      'faction-005': 0.25,
-      'faction-006': 0.02
-    }
   },
 
   // Consumer Advocates
@@ -144,18 +90,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-008',
     imageUrl: 'img/entities/walmart/person-007.jpg',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-004'],
     relatedLocationIds: [],
     relatedEventIds: ['event-010'],
     documentIds: ['doc-014'],
-    factionSentiment: {
-      'faction-001': 0.72,
-      'faction-002': 0.45,
-      'faction-003': 0.58,
-      'faction-004': 0.95,
-      'faction-005': 0.32,
-      'faction-006': 0.18
-    }
   },
   {
     id: 'person-008',
@@ -165,18 +102,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-002',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-001'],
     relatedLocationIds: ['loc-002', 'loc-003'],
     relatedEventIds: ['event-002'],
     documentIds: ['doc-003'],
-    factionSentiment: {
-      'faction-001': 0.88,
-      'faction-002': 0.35,
-      'faction-003': 0.42,
-      'faction-004': 0.65,
-      'faction-005': 0.22,
-      'faction-006': 0.08
-    }
   },
 
   // Corporate/Other
@@ -188,18 +116,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-001',
     imageUrl: 'img/entities/walmart/person-009.png',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: [],
     relatedLocationIds: ['loc-001'],
     relatedEventIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-001': -0.48,
-      'faction-002': -0.32,
-      'faction-003': -0.45,
-      'faction-004': -0.22,
-      'faction-005': 0.38,
-      'faction-006': -0.15
-    }
   },
 
   // Analysts
@@ -211,18 +130,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-014',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-005'],
     relatedLocationIds: [],
     relatedEventIds: ['event-005'],
     documentIds: ['doc-007'],
-    factionSentiment: {
-      'faction-001': 0.10,
-      'faction-002': 0.08,
-      'faction-003': 0.05,
-      'faction-004': 0.12,
-      'faction-005': 0.85,
-      'faction-006': 0.15
-    }
   },
   {
     id: 'person-011',
@@ -232,18 +142,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-008',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-004'],
     relatedLocationIds: [],
     relatedEventIds: ['event-010'],
     documentIds: ['doc-014'],
-    factionSentiment: {
-      'faction-001': 0.65,
-      'faction-002': 0.38,
-      'faction-003': 0.48,
-      'faction-004': 0.92,
-      'faction-005': 0.28,
-      'faction-006': 0.12
-    }
   },
   {
     id: 'person-012',
@@ -253,18 +154,9 @@ export const persons = [
     affiliatedOrganizationId: null,
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-005'],
     relatedLocationIds: [],
     relatedEventIds: ['event-011'],
     documentIds: ['doc-017'],
-    factionSentiment: {
-      'faction-001': 0.15,
-      'faction-002': 0.12,
-      'faction-003': 0.08,
-      'faction-004': 0.18,
-      'faction-005': 0.78,
-      'faction-006': 0.10
-    }
   },
 
   // Competitors
@@ -276,18 +168,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-003',
     imageUrl: 'img/entities/walmart/person-013.jpg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: [],
     relatedEventIds: ['event-012'],
     documentIds: ['doc-018'],
-    factionSentiment: {
-      'faction-001': 0.05,
-      'faction-002': -0.02,
-      'faction-003': 0.02,
-      'faction-004': 0.08,
-      'faction-005': 0.45,
-      'faction-006': 0.82
-    }
   },
   {
     id: 'person-014',
@@ -297,18 +180,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-004',
     imageUrl: 'img/entities/walmart/person-014.jpg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: ['loc-008'],
     relatedEventIds: ['event-013'],
     documentIds: ['doc-019'],
-    factionSentiment: {
-      'faction-001': 0.08,
-      'faction-002': -0.05,
-      'faction-003': 0.00,
-      'faction-004': 0.05,
-      'faction-005': 0.52,
-      'faction-006': 0.88
-    }
   },
   {
     id: 'person-015',
@@ -318,18 +192,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-012',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: [],
     relatedEventIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-001': 0.02,
-      'faction-002': 0.00,
-      'faction-003': 0.05,
-      'faction-004': 0.12,
-      'faction-005': 0.38,
-      'faction-006': 0.75
-    }
   },
 
   // Rural Community
@@ -341,18 +206,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-013',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-001'],
     relatedLocationIds: ['loc-009'],
     relatedEventIds: ['event-014'],
     documentIds: ['doc-021', 'doc-023'],
-    factionSentiment: {
-      'faction-001': 0.78,
-      'faction-002': 0.55,
-      'faction-003': 0.48,
-      'faction-004': 0.42,
-      'faction-005': 0.18,
-      'faction-006': 0.10
-    }
   },
   {
     id: 'person-017',
@@ -362,18 +218,9 @@ export const persons = [
     affiliatedOrganizationId: null,
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-001'],
     relatedLocationIds: ['loc-009'],
     relatedEventIds: ['event-014'],
     documentIds: ['doc-022'],
-    factionSentiment: {
-      'faction-001': 0.85,
-      'faction-002': 0.42,
-      'faction-003': 0.38,
-      'faction-004': 0.35,
-      'faction-005': 0.12,
-      'faction-006': 0.05
-    }
   },
   {
     id: 'person-018',
@@ -383,14 +230,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-001',
     imageUrl: null,
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-007'],
     relatedLocationIds: ['loc-001'],
     relatedEventIds: ['event-022', 'event-023'],
     documentIds: ['doc-038', 'doc-040'],
-    factionSentiment: {
-      'faction-001': -0.55,
-      'faction-005': 0.42
-    }
   },
   {
     id: 'person-019',
@@ -400,14 +242,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-001',
     imageUrl: null,
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-008', 'faction-011'],
     relatedLocationIds: ['loc-001'],
     relatedEventIds: ['event-022', 'event-025'],
     documentIds: ['doc-038', 'doc-044'],
-    factionSentiment: {
-      'faction-001': -0.48,
-      'faction-005': 0.45
-    }
   },
   {
     id: 'person-020',
@@ -417,14 +254,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-016',
     imageUrl: null,
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-002', 'faction-003', 'faction-009', 'faction-015'],
     relatedLocationIds: ['loc-011', 'loc-012'],
     relatedEventIds: ['event-017', 'event-019', 'event-020', 'event-026'],
     documentIds: ['doc-027', 'doc-032', 'doc-035', 'doc-046'],
-    factionSentiment: {
-      'faction-002': 0.85,
-      'faction-003': 0.88
-    }
   },
   {
     id: 'person-021',
@@ -434,14 +266,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-017',
     imageUrl: null,
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-003', 'faction-010'],
     relatedLocationIds: ['loc-012'],
     relatedEventIds: [],
     documentIds: ['doc-028'],
-    factionSentiment: {
-      'faction-002': 0.78,
-      'faction-003': 0.85
-    }
   },
   {
     id: 'person-022',
@@ -451,15 +278,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-018',
     imageUrl: null,
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-004', 'faction-012'],
     relatedLocationIds: ['loc-006'],
     relatedEventIds: ['event-016', 'event-024'],
     documentIds: ['doc-026', 'doc-042'],
-    factionSentiment: {
-      'faction-001': 0.52,
-      'faction-004': 0.82,
-      'faction-005': -0.38
-    }
   },
   {
     id: 'person-023',
@@ -469,14 +290,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-019',
     imageUrl: null,
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-013'],
     relatedLocationIds: ['loc-001'],
     relatedEventIds: ['event-018', 'event-021'],
     documentIds: ['doc-029', 'doc-036', 'doc-037'],
-    factionSentiment: {
-      'faction-001': 0.45,
-      'faction-004': 0.52
-    }
   },
   {
     id: 'person-024',
@@ -486,13 +302,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-001',
     imageUrl: null,
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-005', 'faction-014'],
     relatedLocationIds: ['loc-001'],
     relatedEventIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-005': 0.65
-    }
   },
   {
     id: 'person-025',
@@ -502,14 +314,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-006',
     imageUrl: null,
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-003', 'faction-015'],
     relatedLocationIds: ['loc-011', 'loc-012'],
     relatedEventIds: ['event-020', 'event-026'],
     documentIds: ['doc-035', 'doc-046'],
-    factionSentiment: {
-      'faction-002': 0.78,
-      'faction-003': 0.85
-    }
   },
   {
     id: 'person-026',
@@ -519,13 +326,9 @@ export const persons = [
     affiliatedOrganizationId: null,
     imageUrl: null,
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-005', 'faction-016'],
     relatedLocationIds: [],
     relatedEventIds: [],
     documentIds: ['doc-043'],
-    factionSentiment: {
-      'faction-005': 0.72
-    }
   },
   {
     id: 'person-027',
@@ -535,13 +338,9 @@ export const persons = [
     affiliatedOrganizationId: 'org-011',
     imageUrl: null,
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-006', 'faction-011'],
     relatedLocationIds: [],
     relatedEventIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-006': 0.72
-    }
   }
 ];
 
@@ -554,17 +353,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/entities/walmart/org-001.svg',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: [],
     relatedLocationIds: ['loc-001', 'loc-002', 'loc-003', 'loc-004', 'loc-005'],
     documentIds: ['doc-001', 'doc-002', 'doc-003', 'doc-004', 'doc-005', 'doc-006', 'doc-008', 'doc-011', 'doc-012', 'doc-015', 'doc-017', 'doc-021'],
-    factionSentiment: {
-      'faction-001': -0.75,
-      'faction-002': -0.68,
-      'faction-003': -0.72,
-      'faction-004': -0.58,
-      'faction-005': 0.35,
-      'faction-006': -0.42
-    }
   },
 
   // Legal
@@ -575,13 +365,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-001'],
     relatedLocationIds: ['loc-002', 'loc-003'],
     documentIds: ['doc-003'],
-    factionSentiment: {
-      'faction-001': 0.65,
-      'faction-004': 0.48
-    }
   },
 
   // Competitors
@@ -592,14 +377,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/entities/walmart/org-003.png',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: [],
     documentIds: ['doc-018'],
-    factionSentiment: {
-      'faction-001': 0.15,
-      'faction-005': 0.52,
-      'faction-006': 0.68
-    }
   },
   {
     id: 'org-004',
@@ -608,14 +387,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/entities/walmart/org-004.png',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: ['loc-008'],
     documentIds: ['doc-019', 'doc-020'],
-    factionSentiment: {
-      'faction-001': 0.12,
-      'faction-005': 0.48,
-      'faction-006': 0.72
-    }
   },
 
   // Labor
@@ -626,15 +399,8 @@ export const organizations = [
     type: 'union',
     imageUrl: 'img/entities/walmart/org-005.svg',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-002', 'faction-003'],
     relatedLocationIds: ['loc-006'],
     documentIds: ['doc-009', 'doc-010'],
-    factionSentiment: {
-      'faction-001': 0.25,
-      'faction-002': 0.82,
-      'faction-003': 0.88,
-      'faction-004': 0.35
-    }
   },
   {
     id: 'org-006',
@@ -643,14 +409,8 @@ export const organizations = [
     type: 'nonprofit',
     imageUrl: 'img/entities/walmart/org-006.png',
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-003'],
     relatedLocationIds: ['loc-006'],
     documentIds: ['doc-010'],
-    factionSentiment: {
-      'faction-002': 0.75,
-      'faction-003': 0.85,
-      'faction-004': 0.42
-    }
   },
 
   // Regulators
@@ -661,13 +421,8 @@ export const organizations = [
     type: 'government',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: [],
     relatedLocationIds: ['loc-007'],
     documentIds: ['doc-012', 'doc-013'],
-    factionSentiment: {
-      'faction-001': -0.15,
-      'faction-004': 0.55
-    }
   },
 
   // Consumer Advocacy
@@ -678,14 +433,8 @@ export const organizations = [
     type: 'nonprofit',
     imageUrl: 'img/entities/walmart/org-008.png',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-004'],
     relatedLocationIds: [],
     documentIds: ['doc-014'],
-    factionSentiment: {
-      'faction-001': 0.55,
-      'faction-004': 0.85,
-      'faction-005': 0.42
-    }
   },
   {
     id: 'org-009',
@@ -694,13 +443,8 @@ export const organizations = [
     type: 'nonprofit',
     imageUrl: 'img/entities/walmart/org-009.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-004'],
     relatedLocationIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-001': 0.48,
-      'faction-004': 0.78
-    }
   },
 
   // Competitors (additional)
@@ -711,13 +455,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/entities/walmart/org-010.png',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: ['loc-009'],
     documentIds: ['doc-015', 'doc-016'],
-    factionSentiment: {
-      'faction-001': 0.22,
-      'faction-006': 0.62
-    }
   },
   {
     id: 'org-011',
@@ -726,13 +465,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/entities/walmart/org-011.png',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-001': 0.18,
-      'faction-006': 0.58
-    }
   },
   {
     id: 'org-012',
@@ -741,12 +475,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-006'],
     relatedLocationIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-006': 0.52
-    }
   },
 
   // Local Government
@@ -757,13 +487,8 @@ export const organizations = [
     type: 'government',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-005'],
-    affiliatedFactionIds: [],
     relatedLocationIds: ['loc-010'],
     documentIds: ['doc-021', 'doc-022', 'doc-023'],
-    factionSentiment: {
-      'faction-001': 0.35,
-      'faction-004': 0.42
-    }
   },
 
   // Financial/Analysis
@@ -774,12 +499,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-005'],
     relatedLocationIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-005': 0.65
-    }
   },
   {
     id: 'org-015',
@@ -788,12 +509,8 @@ export const organizations = [
     type: 'media',
     imageUrl: 'img/placeholders/avatar-default.svg',
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-005'],
     relatedLocationIds: [],
     documentIds: ['doc-007'],
-    factionSentiment: {
-      'faction-005': 0.58
-    }
   },
 
   // Labor Organizations (New)
@@ -804,13 +521,8 @@ export const organizations = [
     type: 'union',
     imageUrl: null,
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-002', 'faction-003', 'faction-007'],
     relatedLocationIds: ['loc-011', 'loc-012'],
     documentIds: ['doc-027', 'doc-032', 'doc-033', 'doc-035', 'doc-046', 'doc-047'],
-    factionSentiment: {
-      'faction-002': 0.85,
-      'faction-003': 0.88
-    }
   },
   {
     id: 'org-017',
@@ -819,13 +531,8 @@ export const organizations = [
     type: 'union',
     imageUrl: null,
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-003', 'faction-008'],
     relatedLocationIds: [],
     documentIds: ['doc-028'],
-    factionSentiment: {
-      'faction-002': 0.72,
-      'faction-003': 0.82
-    }
   },
 
   // Government (New)
@@ -836,14 +543,8 @@ export const organizations = [
     type: 'government',
     imageUrl: null,
     tagIds: ['tag-004'],
-    affiliatedFactionIds: ['faction-004', 'faction-009', 'faction-015'],
     relatedLocationIds: ['loc-006'],
     documentIds: ['doc-026', 'doc-042'],
-    factionSentiment: {
-      'faction-001': 0.48,
-      'faction-004': 0.78,
-      'faction-005': -0.32
-    }
   },
 
   // Healthcare (New)
@@ -854,13 +555,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: null,
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-010'],
     relatedLocationIds: ['loc-001', 'loc-009', 'loc-010'],
     documentIds: ['doc-029', 'doc-030', 'doc-031', 'doc-036', 'doc-037'],
-    factionSentiment: {
-      'faction-001': 0.55,
-      'faction-004': 0.48
-    }
   },
 
   // Additional Competitors (New)
@@ -871,13 +567,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: null,
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-006', 'faction-011'],
     relatedLocationIds: ['loc-009', 'loc-010'],
     documentIds: [],
-    factionSentiment: {
-      'faction-001': 0.35,
-      'faction-006': 0.58
-    }
   },
   {
     id: 'org-021',
@@ -886,12 +577,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: null,
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-012'],
     relatedLocationIds: [],
     documentIds: ['doc-031'],
-    factionSentiment: {
-      'faction-004': 0.45
-    }
   },
   {
     id: 'org-022',
@@ -900,12 +587,8 @@ export const organizations = [
     type: 'corporation',
     imageUrl: null,
     tagIds: ['tag-006'],
-    affiliatedFactionIds: ['faction-006', 'faction-013'],
     relatedLocationIds: [],
     documentIds: ['doc-043'],
-    factionSentiment: {
-      'faction-006': 0.62
-    }
   },
   {
     id: 'org-023',
@@ -914,11 +597,7 @@ export const organizations = [
     type: 'corporation',
     imageUrl: null,
     tagIds: ['tag-005'],
-    affiliatedFactionIds: ['faction-006', 'faction-014', 'faction-016'],
     relatedLocationIds: [],
     documentIds: [],
-    factionSentiment: {
-      'faction-006': 0.58
-    }
   }
 ];

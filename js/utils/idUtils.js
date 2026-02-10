@@ -19,7 +19,6 @@ export const ID_PREFIXES = {
   'mission-': 'mission',
   'narr-': 'narrative',
   'sub-': 'theme',
-  'faction-': 'faction',
   'loc-': 'location',
   'event-': 'event',
   'person-': 'person',
@@ -43,7 +42,7 @@ export const CONTEXT_PREFIXES = ['monitor-', 'workspace-', 'project-'];
  * Entity types that have detail views
  */
 export const VIEWABLE_ENTITY_TYPES = [
-  'narrative', 'theme', 'faction', 'location', 'event',
+  'narrative', 'theme', 'location', 'event',
   'person', 'organization', 'topic', 'document', 'tag'
 ];
 
@@ -207,7 +206,6 @@ export function getEntityTypeDisplayName(type) {
     'mission': 'Mission',
     'narrative': 'Narrative',
     'theme': 'Theme',
-    'faction': 'Faction',
     'location': 'Location',
     'event': 'Event',
     'person': 'Person',
@@ -235,7 +233,6 @@ export function getEntityTypePlural(type) {
   const plurals = {
     'narrative': 'narratives',
     'theme': 'themes',
-    'faction': 'factions',
     'location': 'locations',
     'event': 'events',
     'person': 'entities',

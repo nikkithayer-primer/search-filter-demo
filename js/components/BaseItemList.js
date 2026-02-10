@@ -90,7 +90,7 @@ export class BaseItemList extends BaseComponent {
   }
 
   /**
-   * Calculate total volume from documents (or legacy factionMentions)
+   * Calculate total volume from documents (or legacy publisherMentions)
    * Override in subclass if volume is calculated differently
    * @param {Object} item - The data item
    * @returns {number}
@@ -98,18 +98,18 @@ export class BaseItemList extends BaseComponent {
   calculateVolume(item) {
     // Use document-based aggregation for narratives/themes
     if (item.id?.startsWith('narr-')) {
-      const factionMentions = DataService.getAggregateFactionMentionsForNarrative(item.id);
-      return Object.values(factionMentions)
-        .reduce((sum, f) => sum + (f.volume || 0), 0);
+      const publisherMentions = DataService.getAggregatePublisherMentionsForNarrative(item.id);
+      return Object.values(publisherMentions)
+        .reduce((sum, p) => sum + (p.volume || 0), 0);
     }
     if (item.id?.startsWith('sub-')) {
-      const factionMentions = DataService.getAggregateFactionMentionsForTheme(item.id);
-      return Object.values(factionMentions)
-        .reduce((sum, f) => sum + (f.volume || 0), 0);
+      const publisherMentions = DataService.getAggregatePublisherMentionsForTheme(item.id);
+      return Object.values(publisherMentions)
+        .reduce((sum, p) => sum + (p.volume || 0), 0);
     }
     // Fallback for legacy data or other item types
-    return Object.values(item.factionMentions || {})
-      .reduce((sum, f) => sum + (f.volume || 0), 0);
+    return Object.values(item.publisherMentions || {})
+      .reduce((sum, p) => sum + (p.volume || 0), 0);
   }
 
   /**
@@ -123,19 +123,19 @@ export class BaseItemList extends BaseComponent {
     if (item.id?.startsWith('narr-')) {
       const volumeOverTime = DataService.getVolumeOverTimeForNarrative(item.id);
       return volumeOverTime.map(d =>
-        Object.values(d.factionVolumes || {}).reduce((a, b) => a + b, 0)
+        Object.values(d.publisherVolumes || {}).reduce((a, b) => a + b, 0)
       );
     }
     if (item.id?.startsWith('sub-')) {
       const volumeOverTime = DataService.getVolumeOverTimeForTheme(item.id);
       return volumeOverTime.map(d =>
-        Object.values(d.factionVolumes || {}).reduce((a, b) => a + b, 0)
+        Object.values(d.publisherVolumes || {}).reduce((a, b) => a + b, 0)
       );
     }
     // Fallback for legacy data or other item types
     if (!item.volumeOverTime || !item.volumeOverTime.length) return [];
     return item.volumeOverTime.map(d =>
-      Object.values(d.factionVolumes || {}).reduce((a, b) => a + b, 0)
+      Object.values(d.publisherVolumes || {}).reduce((a, b) => a + b, 0)
     );
   }
 

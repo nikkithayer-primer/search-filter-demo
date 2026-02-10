@@ -11,10 +11,8 @@ import {
   CardManager,
   BulletPointsCard,
   NetworkGraphCard,
-  VennDiagramCard,
   MapCard,
   NarrativeListCard,
-  SentimentChartCard,
   TimelineVolumeCompositeCard
 } from '../components/CardComponents.js';
 
@@ -155,37 +153,6 @@ export class TopicView extends DetailViewBase {
     });
     const hasNetwork = personIds.size > 0 || orgIds.size > 0;
 
-    // Get factions and sentiment from documents
-    const factionSentimentMap = new Map();
-    documents.forEach(doc => {
-      Object.entries(doc.factionMentions || {}).forEach(([factionId, data]) => {
-        if (!factionSentimentMap.has(factionId)) {
-          factionSentimentMap.set(factionId, { sum: 0, count: 0 });
-        }
-        const entry = factionSentimentMap.get(factionId);
-        if (data.sentiment !== undefined) {
-          entry.sum += data.sentiment;
-          entry.count += 1;
-        }
-      });
-    });
-
-    const factions = [...factionSentimentMap.keys()].map(id => DataService.getFaction(id)).filter(Boolean);
-    const sentimentFactions = factions.map(f => {
-      const entry = factionSentimentMap.get(f.id);
-      return {
-        ...f,
-        sentiment: entry.count > 0 ? entry.sum / entry.count : 0
-      };
-    });
-
-    // Compute faction overlaps
-    const factionOverlaps = factions.length >= 2
-      ? DataService.getFactionOverlapsFor(factions[0]?.id).filter(o =>
-          o.factionIds.every(fid => factions.some(f => f.id === fid))
-        )
-      : [];
-
     // Get locations from documents and events
     const locationIds = new Set();
     documents.forEach(doc => {
@@ -227,10 +194,7 @@ export class TopicView extends DetailViewBase {
       personIds: [...personIds],
       orgIds: [...orgIds],
       hasNetwork,
-      factions,
       narrativeDurations,
-      sentimentFactions,
-      factionOverlaps,
       locations,
       mapLocations,
       entities,
@@ -279,7 +243,7 @@ export class TopicView extends DetailViewBase {
     if (data.hasVolumeTimeline || hasDurationData) {
       this.cardManager.add(new TimelineVolumeCompositeCard(this, 'topic-volume-events', {
         title: 'Volume & Events',
-        volumeData: null, // No faction data for topics
+        volumeData: null,
         publisherData: data.publisherData,
         events: data.allEvents,
         narrativeDurations: hasDurationData ? data.narrativeDurations : null,
@@ -313,18 +277,7 @@ export class TopicView extends DetailViewBase {
       }));
     }
 
-    // 4. Faction Overlaps Venn Diagram - half-width
-    if (data.factions.length >= 2) {
-      this.cardManager.add(new VennDiagramCard(this, 'topic-venn', {
-        title: 'Faction Overlaps',
-        factions: data.factions,
-        overlaps: data.factionOverlaps,
-        halfWidth: true,
-        height: 300
-      }));
-    }
-
-    // 5. Locations & Events Map - half-width
+    // 4. Locations & Events Map - half-width
     if (data.locations.length > 0 || data.allEvents.length > 0) {
       this.cardManager.add(new MapCard(this, 'topic-map', {
         title: 'Locations & Events',
@@ -336,7 +289,7 @@ export class TopicView extends DetailViewBase {
       }));
     }
 
-    // 6. Related Narratives - half-width
+    // 5. Related Narratives - half-width
     if (data.narratives.length > 0) {
       this.cardManager.add(new NarrativeListCard(this, 'topic-narratives', {
         title: 'Related Narratives',
@@ -347,15 +300,6 @@ export class TopicView extends DetailViewBase {
       }));
     }
 
-    // 7. Sentiment by Faction - half-width
-    if (data.sentimentFactions.length > 0) {
-      this.cardManager.add(new SentimentChartCard(this, 'topic-sentiment', {
-        title: 'Sentiment by Faction',
-        factions: data.sentimentFactions,
-        halfWidth: true,
-        clickRoute: 'faction'
-      }));
-    }
   }
 
 }

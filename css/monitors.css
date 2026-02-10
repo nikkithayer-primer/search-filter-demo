@@ -416,11 +416,6 @@
   color: var(--badge-teal);
 }
 
-.alert-type-badge.faction {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--badge-amber);
-}
-
 .alert-description {
   color: var(--accent-primary);
   text-decoration: none;
