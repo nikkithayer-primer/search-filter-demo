@@ -78,11 +78,20 @@ export class TimeRangeFilter extends BaseComponent {
       return;
     }
 
-    const { width, height, margin, barColor, barOpacity, selectionColor, selectionOpacity } = this.options;
+    let { width, height, margin, barColor, barOpacity, selectionColor, selectionOpacity } = this.options;
     const { dates, volumes } = this.data;
+
+    // Re-read container width in case it was 0 at construction time (e.g. inside a modal)
+    if (this.container && this.container.clientWidth > 0) {
+      width = this.container.clientWidth;
+      this.options.width = width;
+    }
 
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
+
+    // Guard against zero / negative dimensions (container not yet laid out)
+    if (innerWidth <= 0 || innerHeight <= 0) return;
 
     this.clear();
 

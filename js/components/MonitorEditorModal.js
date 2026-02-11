@@ -24,8 +24,16 @@ export class MonitorEditorModal extends BaseModal {
     // ScopeSelector instance
     this.scopeSelector = null;
     
-    // Callback for when save completes
     this.onSaveCallback = null;
+    this.pendingScopeParams = null;
+  }
+
+  getMonitorScopeParams(scope) {
+    return {
+      repositoryIds: scope?.repositoryIds || [],
+      classifications: scope?.classifications || [],
+      timeRange: null
+    };
   }
 
   /**
@@ -80,14 +88,16 @@ export class MonitorEditorModal extends BaseModal {
       return;
     }
     
-    // Create ScopeSelector instance
     this.scopeSelector = new ScopeSelector(container, {
       showSaveFilter: true,
       showSearchFilters: true,
-      onChange: (newScope) => {
-        // Scope changes are handled internally by ScopeSelector
-        // We just need to get the scope when saving
-      }
+      showScopeSection: true,
+      showDateInScope: false,
+      initialScopeParams: this.getMonitorScopeParams(scope),
+      onScopeParamsChange: (params) => {
+        this.pendingScopeParams = params;
+      },
+      onChange: () => {}
     });
     
     // Set initial scope and render

@@ -8,6 +8,16 @@ import { DataService } from '../data/DataService.js';
 import { dataStore } from '../data/DataStore.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
 import { getEntityIcon } from '../utils/entityIcons.js';
+import { TimeRangeFilter } from './TimeRangeFilter.js';
+
+/** Classification levels for Scope section */
+const CLASSIFICATION_LEVELS = [
+  { id: 'U', name: 'Unclassified', short: 'U' },
+  { id: 'CUI', name: 'Controlled Unclassified', short: 'CUI' },
+  { id: 'C', name: 'Confidential', short: 'C' },
+  { id: 'S', name: 'Secret', short: 'S' },
+  { id: 'TS', name: 'Top Secret', short: 'TS' }
+];
 
 export class ScopeSelector {
   /**
@@ -17,14 +27,33 @@ export class ScopeSelector {
    * @param {Function} options.onChange - Callback when scope changes
    * @param {boolean} options.showSaveFilter - Whether to show the save filter button (default: true)
    * @param {boolean} options.showSearchFilters - Whether to show saved search filters accordion (default: true)
+   * @param {boolean} options.showScopeSection - Whether to show Scope block (Repositories, Classifications, optional Date) (default: false)
+   * @param {boolean} options.showDateInScope - Whether to show date range in Scope (only when showScopeSection; default: false, e.g. false for monitors)
+   * @param {Object} options.initialScopeParams - { repositoryIds: string[], classifications: string[], timeRange: { start, end } | null }
+   * @param {Function} options.onScopeParamsChange - Callback when scope params change: (params) => void
+   * @param {Function} options.getVolumeData - Optional; for date histogram when showDateInScope (() => volumeData)
    */
   constructor(container, options = {}) {
     this.container = container;
     this.options = {
       onChange: options.onChange || (() => {}),
       showSaveFilter: options.showSaveFilter !== false,
-      showSearchFilters: options.showSearchFilters !== false
+      showSearchFilters: options.showSearchFilters !== false,
+      showScopeSection: options.showScopeSection === true,
+      showDateInScope: options.showDateInScope === true,
+      initialScopeParams: options.initialScopeParams || { repositoryIds: [], classifications: [], timeRange: null },
+      onScopeParamsChange: options.onScopeParamsChange || (() => {}),
+      getVolumeData: options.getVolumeData || null
     };
+
+    const repos = this.options.initialScopeParams.repositoryIds || [];
+    const classifications = this.options.initialScopeParams.classifications || [];
+    this.scopeParams = {
+      repositoryIds: new Set(Array.isArray(repos) ? repos : []),
+      classifications: new Set(Array.isArray(classifications) ? classifications : []),
+      timeRange: this.options.initialScopeParams.timeRange ?? null
+    };
+    this.timeRangeFilter = null;
     
     this.scope = {
       personIds: [],
@@ -32,15 +61,29 @@ export class ScopeSelector {
       locationIds: [],
       keywords: [],
       documentTypes: [],
-      publisherIds: [],
-      authors: [],
       metadataFilters: {}  // { dimensionId: [selectedValues] }
     };
     
     this.filterText = '';
     this.expandedSections = new Set();
+    if (this.options.showScopeSection) this.expandedSections.add('scope');
     this.saveDialogOpen = false;
     this.saveFilterName = '';
+  }
+
+  getScopeParams() {
+    return {
+      repositoryIds: Array.from(this.scopeParams.repositoryIds),
+      classifications: Array.from(this.scopeParams.classifications),
+      timeRange: this.scopeParams.timeRange
+    };
+  }
+
+  setScopeParams(params) {
+    if (params.repositoryIds != null) this.scopeParams.repositoryIds = new Set(params.repositoryIds);
+    if (params.classifications != null) this.scopeParams.classifications = new Set(params.classifications);
+    if (params.timeRange !== undefined) this.scopeParams.timeRange = params.timeRange;
+    this.options.onScopeParamsChange(this.getScopeParams());
   }
 
   /**
@@ -58,7 +101,7 @@ export class ScopeSelector {
    */
   setScope(scope) {
     if (scope?.mode === 'advanced') {
-      this.scope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], publisherIds: [], authors: [], metadataFilters: {} };
+      this.scope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
     } else {
       this.scope = {
         personIds: [...(scope?.personIds || [])],
@@ -66,20 +109,17 @@ export class ScopeSelector {
         locationIds: [...(scope?.locationIds || [])],
         keywords: [...(scope?.keywords || [])],
         documentTypes: [...(scope?.documentTypes || [])],
-        publisherIds: [...(scope?.publisherIds || [])],
-        authors: [...(scope?.authors || [])],
         metadataFilters: scope?.metadataFilters ? JSON.parse(JSON.stringify(scope.metadataFilters)) : {}
       };
     }
     
     // Expand sections that have items (for simple mode)
     this.expandedSections = new Set();
+    if (this.options.showScopeSection) this.expandedSections.add('scope');
     if (this.scope.personIds.length > 0) this.expandedSections.add('persons');
     if (this.scope.organizationIds.length > 0) this.expandedSections.add('organizations');
     if (this.scope.locationIds.length > 0) this.expandedSections.add('locations');
     if (this.scope.documentTypes.length > 0) this.expandedSections.add('documentTypes');
-    if (this.scope.publisherIds.length > 0) this.expandedSections.add('publishers');
-    if (this.scope.authors.length > 0) this.expandedSections.add('authors');
     // Expand catalog sections that have selections
     for (const [dimId, vals] of Object.entries(this.scope.metadataFilters)) {
       if (vals?.length > 0) this.expandedSections.add('catalog_' + dimId);
@@ -133,20 +173,6 @@ export class ScopeSelector {
       }
     });
     
-    // Add publisher IDs (avoiding duplicates)
-    (filterScope.publisherIds || []).forEach(publisherId => {
-      if (!this.scope.publisherIds.includes(publisherId)) {
-        this.scope.publisherIds.push(publisherId);
-      }
-    });
-    
-    // Add authors (avoiding duplicates)
-    (filterScope.authors || []).forEach(author => {
-      if (!this.scope.authors.includes(author)) {
-        this.scope.authors.push(author);
-      }
-    });
-    
     // Merge metadata filters from saved filter
     const filterMetadataFilters = filterScope.metadataFilters || {};
     for (const [dimId, vals] of Object.entries(filterMetadataFilters)) {
@@ -165,8 +191,6 @@ export class ScopeSelector {
     if (this.scope.organizationIds.length > 0) this.expandedSections.add('organizations');
     if (this.scope.locationIds.length > 0) this.expandedSections.add('locations');
     if (this.scope.documentTypes.length > 0) this.expandedSections.add('documentTypes');
-    if (this.scope.publisherIds.length > 0) this.expandedSections.add('publishers');
-    if (this.scope.authors.length > 0) this.expandedSections.add('authors');
     for (const [dimId, vals] of Object.entries(this.scope.metadataFilters)) {
       if (vals?.length > 0) this.expandedSections.add('catalog_' + dimId);
     }
@@ -185,11 +209,10 @@ export class ScopeSelector {
       locationIds: [],
       keywords: [],
       documentTypes: [],
-      publisherIds: [],
-      authors: [],
       metadataFilters: {}
     };
     this.expandedSections = new Set();
+    if (this.options.showScopeSection) this.expandedSections.add('scope');
     this.render();
     this.notifyChange();
   }
@@ -238,31 +261,104 @@ export class ScopeSelector {
   }
 
   /**
-   * Get all publishers for filtering
-   */
-  getPublishers() {
-    return DataService.getPublishers() || [];
-  }
-
-  /**
-   * Get unique authors from documents
-   */
-  getAuthors() {
-    const documents = DataService.getDocuments() || [];
-    const authorSet = new Set();
-    documents.forEach(doc => {
-      if (doc.author && typeof doc.author === 'string' && doc.author.trim()) {
-        authorSet.add(doc.author.trim());
-      }
-    });
-    return Array.from(authorSet).sort().map(author => ({ id: author, name: author }));
-  }
-
-  /**
    * Get display text for an entity
    */
   getEntityText(entity) {
     return entity.name || entity.text || entity.headline || 'Unnamed';
+  }
+
+  /**
+   * Render the Scope section (Repositories, Classifications, optional Date range)
+   */
+  renderScopeSection() {
+    const repos = DataService.getRepositories();
+    const repoIds = Array.from(this.scopeParams.repositoryIds);
+    const allReposSelected = repos.length === 0 || repoIds.length === repos.length;
+    const classIds = Array.from(this.scopeParams.classifications);
+    const allClassSelected = classIds.length === 0 || classIds.length === CLASSIFICATION_LEVELS.length;
+    const isExpanded = this.expandedSections.has('scope');
+
+    const repoOptions = (repos || []).map(repo => {
+      const checked = allReposSelected || this.scopeParams.repositoryIds.has(repo.id);
+      return `
+        <label class="dropdown-option scope-scope-option">
+          <input type="checkbox" name="scope-repo" value="${this.escapeHtml(repo.id)}" ${checked ? 'checked' : ''} />
+          <span class="dropdown-option-name">${this.escapeHtml(repo.name)}</span>
+        </label>`;
+    }).join('');
+
+    const classOptions = CLASSIFICATION_LEVELS.map(level => {
+      const checked = allClassSelected || this.scopeParams.classifications.has(level.id);
+      return `
+        <label class="dropdown-option scope-scope-option">
+          <input type="checkbox" name="scope-classification" value="${this.escapeHtml(level.id)}" ${checked ? 'checked' : ''} />
+          <span class="dropdown-option-name">${this.escapeHtml(level.name)}</span>
+        </label>`;
+    }).join('');
+
+    const dateBlock = this.options.showDateInScope ? `
+      <div class="scope-scope-date">
+        <div class="scope-scope-date-header">
+          <span class="scope-scope-date-label">Date range</span>
+          <span class="scope-scope-date-value" id="scope-time-range-label">${this.scopeParams.timeRange ? this.formatScopeDate(this.scopeParams.timeRange.start) + ' – ' + this.formatScopeDate(this.scopeParams.timeRange.end) : 'All time'}</span>
+          <button type="button" class="btn-link text-sm scope-scope-date-clear ${this.scopeParams.timeRange ? '' : 'hidden'}" id="scope-time-range-clear">Clear</button>
+        </div>
+        <div id="scope-time-range-filter" class="scope-time-range-filter"></div>
+      </div>
+    ` : '';
+
+    return `
+      <div class="scope-entity-group scope-scope-group ${isExpanded ? 'expanded' : ''}" data-type="scope">
+        <button class="scope-entity-group-header" data-type="scope">
+          <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6l4 4 4-4"/>
+          </svg>
+          <span class="scope-group-label">Scope</span>
+        </button>
+        <div class="scope-entity-group-items">
+          <div class="scope-scope-repos">
+            <div class="scope-scope-sublabel">Repositories</div>
+            <label class="dropdown-option scope-scope-option scope-scope-select-all">
+              <input type="checkbox" id="scope-repo-select-all" ${allReposSelected ? 'checked' : ''} />
+              <span>All repositories</span>
+            </label>
+            <div class="scope-scope-options">${repoOptions || '<div class="scope-scope-empty">No repositories</div>'}</div>
+          </div>
+          <div class="scope-scope-classifications">
+            <div class="scope-scope-sublabel">Classifications</div>
+            <label class="dropdown-option scope-scope-option scope-scope-select-all">
+              <input type="checkbox" id="scope-classification-select-all" ${allClassSelected ? 'checked' : ''} />
+              <span>All classifications</span>
+            </label>
+            <div class="scope-scope-options">${classOptions}</div>
+          </div>
+          ${dateBlock}
+        </div>
+      </div>
+    `;
+  }
+
+  formatScopeDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  updateScopeTimeRangeLabel() {
+    const label = this.container.querySelector('#scope-time-range-label');
+    const clearBtn = this.container.querySelector('#scope-time-range-clear');
+    if (label) {
+      label.textContent = this.scopeParams.timeRange
+        ? this.formatScopeDate(this.scopeParams.timeRange.start) + ' – ' + this.formatScopeDate(this.scopeParams.timeRange.end)
+        : 'All time';
+    }
+    if (clearBtn) {
+      clearBtn.classList.toggle('hidden', !this.scopeParams.timeRange);
+    }
   }
 
   /**
@@ -277,6 +373,7 @@ export class ScopeSelector {
     this.container.innerHTML = `
       <div class="scope-selector">
         <div class="scope-mode-panel active" data-panel="simple">
+          ${this.options.showScopeSection ? this.renderScopeSection() : ''}
           <!-- Search Input -->
           <div class="scope-search-wrapper">
             <input 
@@ -373,42 +470,6 @@ export class ScopeSelector {
       }
     }
     
-    // Render publisher chips
-    const publishers = this.getPublishers();
-    for (const publisherId of this.scope.publisherIds || []) {
-      const publisher = publishers.find(p => p.id === publisherId);
-      if (publisher) {
-        chips.push(`
-          <span class="scope-chip scope-chip-docattr" data-id="${publisherId}" data-scope-key="publisherIds" data-type="publisher">
-            <span class="scope-chip-icon">
-              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="2" y="3" width="12" height="10" rx="1"/>
-                <path d="M5 6h6M5 9h4"/>
-              </svg>
-            </span>
-            <span class="scope-chip-label">${this.escapeHtml(publisher.name)}</span>
-            <button class="chip-remove" aria-label="Remove">&times;</button>
-          </span>
-        `);
-      }
-    }
-    
-    // Render author chips
-    for (const author of this.scope.authors || []) {
-      chips.push(`
-        <span class="scope-chip scope-chip-docattr" data-id="${this.escapeHtml(author)}" data-scope-key="authors" data-type="author">
-          <span class="scope-chip-icon">
-            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="8" cy="5" r="3"/>
-              <path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/>
-            </svg>
-          </span>
-          <span class="scope-chip-label">${this.escapeHtml(author)}</span>
-          <button class="chip-remove" aria-label="Remove">&times;</button>
-        </span>
-      `);
-    }
-    
     // Render filter catalog chips (metadataFilters)
     const catalog = DataService.getFilterCatalog();
     for (const [dimId, selectedValues] of Object.entries(this.scope.metadataFilters || {})) {
@@ -440,156 +501,28 @@ export class ScopeSelector {
    * Render entity groups with accordion headers
    */
   renderEntityGroups() {
-    const allEntities = this.getAllEntities();
-    const filterLower = this.filterText.toLowerCase();
-    let hasAnyResults = false;
-    
-    // Render search filters accordion first (if enabled and filters exist)
+    // Render the three filter accordion sections (Search Filters, Extractions, Metadata)
+    // Entity groups (Persons, Organizations, Locations) are now handled via the filter catalog.
     const searchFiltersHtml = this.options.showSearchFilters ? this.renderSearchFiltersAccordion() : '';
     
-    // Sort entity groups alphabetically by label
-    const sortedEntityEntries = Object.entries(allEntities).sort((a, b) => a[1].label.localeCompare(b[1].label));
+    if (!searchFiltersHtml.trim()) {
+      return '<div class="scope-entity-list-empty">No filter dimensions available</div>';
+    }
     
-    const groups = sortedEntityEntries.map(([type, { label, scopeKey, entities }]) => {
-      const selectedIds = this.scope[scopeKey] || [];
-      
-      // Filter entities by search text, exclude already selected
-      const filteredEntities = entities.filter(entity => {
-        if (selectedIds.includes(entity.id)) return false;
-        if (!filterLower) return true;
-        return this.getEntityText(entity).toLowerCase().includes(filterLower);
-      });
-      
-      // Sort alphabetically
-      filteredEntities.sort((a, b) => 
-        this.getEntityText(a).localeCompare(this.getEntityText(b))
-      );
-      
-      // Always show the group header, even if no matches (when filtering)
-      const totalAvailable = entities.filter(e => !selectedIds.includes(e.id)).length;
-      if (totalAvailable === 0 && !filterLower) {
-        return ''; // Hide if all selected and not filtering
+    if (this.filterText) {
+      // Check if anything matched
+      const hasContent = searchFiltersHtml.includes('scope-entity-item') || 
+                         searchFiltersHtml.includes('scope-filter-item') ||
+                         searchFiltersHtml.includes('scope-catalog-item');
+      if (!hasContent) {
+        return searchFiltersHtml + `<div class="scope-entity-list-hint">No matches found. Press Enter to add "${this.escapeHtml(this.filterText)}" as a keyword.</div>`;
       }
-      
-      hasAnyResults = hasAnyResults || filteredEntities.length > 0;
-      
-      const isExpanded = this.expandedSections.has(type);
-      const matchCount = filteredEntities.length;
-      
-      // Store filtered IDs for "Add all" functionality
-      const filteredIds = filteredEntities.map(e => e.id);
-      
-      return `
-        <div class="scope-entity-group ${isExpanded ? 'expanded' : ''}" data-type="${type}">
-          <button class="scope-entity-group-header" data-type="${type}">
-            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6l4 4 4-4"/>
-            </svg>
-            <span class="scope-group-label">${label}</span>
-            <span class="scope-group-count">${matchCount}${filterLower ? ' match' + (matchCount !== 1 ? 'es' : '') : ''}</span>
-            ${matchCount >= 1 ? `<span class="scope-add-all" data-scope-key="${scopeKey}" data-ids="${filteredIds.join(',')}">${matchCount === 1 ? 'Add' : 'Add all'}</span>` : ''}
-          </button>
-          <div class="scope-entity-group-items">
-            ${filteredEntities.length > 0 ? filteredEntities.map(entity => `
-              <button class="scope-entity-item" 
-                      data-id="${entity.id}" 
-                      data-scope-key="${scopeKey}"
-                      data-type="${type}">
-                <span class="scope-entity-item-icon">${getEntityIcon(type, 14)}</span>
-                <span class="scope-entity-item-name">${this.escapeHtml(this.getEntityText(entity))}</span>
-              </button>
-            `).join('') : `<div class="scope-entity-group-empty">No matching ${label.toLowerCase()}</div>`}
-          </div>
-        </div>
-      `;
-    }).join('');
-    
-    // Render document attribute sections
-    const documentAttributesHtml = this.renderDocumentAttributeGroups();
-    
-    const combinedGroups = searchFiltersHtml + groups + documentAttributesHtml;
-    
-    if (!combinedGroups.trim()) {
-      return '<div class="scope-entity-list-empty">All entities have been selected</div>';
     }
     
-    if (!hasAnyResults && this.filterText) {
-      return combinedGroups + `<div class="scope-entity-list-hint">No matches found. Press Enter to add "${this.escapeHtml(this.filterText)}" as a keyword.</div>`;
-    }
-    
-    return combinedGroups;
+    return searchFiltersHtml;
   }
 
-  /**
-   * Render document attribute filter groups (document types, publishers, authors),
-   * sorted alphabetically by label.
-   */
-  renderDocumentAttributeGroups() {
-    const filterLower = this.filterText.toLowerCase();
 
-    // Define attribute sections with consistent structure
-    // (Authors and Publishers have been moved into the Metadata accordion)
-    const sections = [
-      {
-        label: 'Document Types',
-        sectionType: 'documentTypes',
-        scopeKey: 'documentTypes',
-        itemType: 'documentType',
-        items: this.getDocumentTypes(),
-        selected: this.scope.documentTypes || [],
-        icon: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v3h3"/></svg>',
-        getId: item => item.id,
-        getName: item => item.name
-      }
-    ];
-
-    // Sort sections alphabetically by label
-    sections.sort((a, b) => a.label.localeCompare(b.label));
-
-    let html = '';
-
-    for (const section of sections) {
-      const filtered = section.items.filter(item => {
-        if (section.selected.includes(section.getId(item))) return false;
-        if (!filterLower) return true;
-        return section.getName(item).toLowerCase().includes(filterLower);
-      });
-
-      // Sort items alphabetically
-      filtered.sort((a, b) => section.getName(a).localeCompare(section.getName(b)));
-
-      if (filtered.length === 0 && section.selected.length >= section.items.length) continue;
-
-      const isExpanded = this.expandedSections.has(section.sectionType);
-      const filteredIds = filtered.map(item => section.getId(item));
-
-      html += `
-        <div class="scope-entity-group ${isExpanded ? 'expanded' : ''}" data-type="${section.sectionType}">
-          <button class="scope-entity-group-header" data-type="${section.sectionType}">
-            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6l4 4 4-4"/>
-            </svg>
-            <span class="scope-group-label">${section.label}</span>
-            <span class="scope-group-count">${filtered.length}</span>
-            ${filtered.length >= 1 ? `<span class="scope-add-all" data-scope-key="${section.scopeKey}" data-ids="${filteredIds.join(',')}">${filtered.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
-          </button>
-          <div class="scope-entity-group-items">
-            ${filtered.length > 0 ? filtered.map(item => `
-              <button class="scope-entity-item scope-docattr-item" 
-                      data-id="${this.escapeHtml(section.getId(item))}" 
-                      data-scope-key="${section.scopeKey}"
-                      data-type="${section.itemType}">
-                <span class="scope-entity-item-icon">${section.icon}</span>
-                <span class="scope-entity-item-name">${this.escapeHtml(section.getName(item))}</span>
-              </button>
-            `).join('') : `<div class="scope-entity-group-empty">No matching ${section.label.toLowerCase()}</div>`}
-          </div>
-        </div>
-      `;
-    }
-
-    return html;
-  }
 
 
   /**
@@ -732,7 +665,7 @@ export class ScopeSelector {
             <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 6l4 4 4-4"/>
             </svg>
-            <span class="scope-group-label">Search Filters</span>
+            <span class="scope-group-label">Saved Filters</span>
             <span class="scope-group-count">${countText}</span>
           </button>
           <div class="scope-entity-group-items">
@@ -766,89 +699,45 @@ export class ScopeSelector {
       }
     }
 
-    // Add Authors and Publishers into the Metadata section
-    const authors = this.getAuthors();
-    const selectedAuthors = this.scope.authors || [];
-    const filteredAuthors = authors.filter(a => {
-      if (selectedAuthors.includes(a.id)) return false;
+    // Add Document Types into the Metadata section
+    const documentTypes = this.getDocumentTypes();
+    const selectedDocTypes = this.scope.documentTypes || [];
+    const filteredDocTypes = documentTypes.filter(dt => {
+      if (selectedDocTypes.includes(dt.id)) return false;
       if (!filterLower) return true;
-      return a.name.toLowerCase().includes(filterLower);
+      return dt.name.toLowerCase().includes(filterLower);
     }).sort((a, b) => a.name.localeCompare(b.name));
 
-    if (filteredAuthors.length > 0 || selectedAuthors.length < authors.length) {
-      const isExpanded = this.expandedSections.has('authors');
-      const filteredAuthorIds = filteredAuthors.map(a => a.id);
+    if (filteredDocTypes.length > 0 || selectedDocTypes.length < documentTypes.length) {
+      const isExpanded = this.expandedSections.has('documentTypes');
+      const filteredDocTypeIds = filteredDocTypes.map(dt => dt.id);
       metadataItems.push({
-        sortName: 'Authors',
+        sortName: 'Document Types',
         html: `
-          <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="authors">
-            <button class="scope-entity-group-header" data-type="authors">
+          <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="documentTypes">
+            <button class="scope-entity-group-header" data-type="documentTypes">
               <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 6l4 4 4-4"/>
               </svg>
-              <span class="scope-group-label">Authors</span>
-              <span class="scope-group-count">${filteredAuthors.length}</span>
-              ${filteredAuthors.length >= 1 ? `<span class="scope-add-all" data-scope-key="authors" data-ids="${filteredAuthorIds.join(',')}">${filteredAuthors.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
+              <span class="scope-group-label">Document Types</span>
+              <span class="scope-group-count">${filteredDocTypes.length}</span>
+              ${filteredDocTypes.length >= 1 ? `<span class="scope-add-all" data-scope-key="documentTypes" data-ids="${filteredDocTypeIds.join(',')}">${filteredDocTypes.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
             </button>
             <div class="scope-entity-group-items">
-              ${filteredAuthors.length > 0 ? filteredAuthors.map(author => `
+              ${filteredDocTypes.length > 0 ? filteredDocTypes.map(dt => `
                 <button class="scope-entity-item scope-docattr-item"
-                        data-id="${this.escapeHtml(author.id)}"
-                        data-scope-key="authors"
-                        data-type="author">
+                        data-id="${dt.id}"
+                        data-scope-key="documentTypes"
+                        data-type="documentType">
                   <span class="scope-entity-item-icon">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <circle cx="8" cy="5" r="3"/>
-                      <path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/>
+                      <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
+                      <path d="M10 2v3h3"/>
                     </svg>
                   </span>
-                  <span class="scope-entity-item-name">${this.escapeHtml(author.name)}</span>
+                  <span class="scope-entity-item-name">${this.escapeHtml(dt.name)}</span>
                 </button>
-              `).join('') : `<div class="scope-entity-group-empty">No matching authors</div>`}
-            </div>
-          </div>
-        `
-      });
-    }
-
-    const publishers = this.getPublishers();
-    const selectedPublisherIds = this.scope.publisherIds || [];
-    const filteredPublishers = publishers.filter(pub => {
-      if (selectedPublisherIds.includes(pub.id)) return false;
-      if (!filterLower) return true;
-      return pub.name.toLowerCase().includes(filterLower);
-    }).sort((a, b) => a.name.localeCompare(b.name));
-
-    if (filteredPublishers.length > 0 || selectedPublisherIds.length < publishers.length) {
-      const isExpanded = this.expandedSections.has('publishers');
-      const filteredPubIds = filteredPublishers.map(p => p.id);
-      metadataItems.push({
-        sortName: 'Publishers',
-        html: `
-          <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="publishers">
-            <button class="scope-entity-group-header" data-type="publishers">
-              <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6l4 4 4-4"/>
-              </svg>
-              <span class="scope-group-label">Publishers</span>
-              <span class="scope-group-count">${filteredPublishers.length}</span>
-              ${filteredPublishers.length >= 1 ? `<span class="scope-add-all" data-scope-key="publisherIds" data-ids="${filteredPubIds.join(',')}">${filteredPublishers.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
-            </button>
-            <div class="scope-entity-group-items">
-              ${filteredPublishers.length > 0 ? filteredPublishers.map(pub => `
-                <button class="scope-entity-item scope-docattr-item"
-                        data-id="${pub.id}"
-                        data-scope-key="publisherIds"
-                        data-type="publisher">
-                  <span class="scope-entity-item-icon">
-                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <rect x="2" y="3" width="12" height="10" rx="1"/>
-                      <path d="M5 6h6M5 9h4"/>
-                    </svg>
-                  </span>
-                  <span class="scope-entity-item-name">${this.escapeHtml(pub.name)}</span>
-                </button>
-              `).join('') : `<div class="scope-entity-group-empty">No matching publishers</div>`}
+              `).join('') : `<div class="scope-entity-group-empty">No matching document types</div>`}
             </div>
           </div>
         `
@@ -909,9 +798,7 @@ export class ScopeSelector {
            (scope.organizationIds?.length || 0) +
            (scope.locationIds?.length || 0) +
            (scope.keywords?.length || 0) +
-           (scope.documentTypes?.length || 0) +
-           (scope.publisherIds?.length || 0) +
-           (scope.authors?.length || 0);
+           (scope.documentTypes?.length || 0);
     for (const vals of Object.values(scope.metadataFilters || {})) {
       count += (vals?.length || 0);
     }
@@ -1060,9 +947,7 @@ export class ScopeSelector {
            (this.scope.organizationIds?.length || 0) +
            (this.scope.locationIds?.length || 0) +
            (this.scope.keywords?.length || 0) +
-           (this.scope.documentTypes?.length || 0) +
-           (this.scope.publisherIds?.length || 0) +
-           (this.scope.authors?.length || 0);
+           (this.scope.documentTypes?.length || 0);
     // Count metadata filter selections
     for (const vals of Object.values(this.scope.metadataFilters || {})) {
       count += (vals?.length || 0);
@@ -1161,8 +1046,6 @@ export class ScopeSelector {
         locationIds: [...this.scope.locationIds],
         keywords: [...this.scope.keywords],
         documentTypes: [...(this.scope.documentTypes || [])],
-        publisherIds: [...(this.scope.publisherIds || [])],
-        authors: [...(this.scope.authors || [])],
         metadataFilters: JSON.parse(JSON.stringify(this.scope.metadataFilters || {}))
       }
     });
@@ -1174,6 +1057,89 @@ export class ScopeSelector {
    * Attach event listeners
    */
   attachEventListeners() {
+    // Scope section (Repositories, Classifications, Date)
+    if (this.options.showScopeSection) {
+      const repos = DataService.getRepositories();
+      const repoSelectAll = this.container.querySelector('#scope-repo-select-all');
+      if (repoSelectAll) {
+        repoSelectAll.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            this.scopeParams.repositoryIds = new Set(repos.map(r => r.id));
+          } else {
+            this.scopeParams.repositoryIds = new Set();
+          }
+          this.container.querySelectorAll('input[name="scope-repo"]').forEach(cb => { cb.checked = e.target.checked; });
+          this.options.onScopeParamsChange(this.getScopeParams());
+        });
+      }
+      this.container.querySelectorAll('input[name="scope-repo"]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = e.target.value;
+          if (e.target.checked) this.scopeParams.repositoryIds.add(id);
+          else this.scopeParams.repositoryIds.delete(id);
+          if (repoSelectAll) {
+            repoSelectAll.checked = this.scopeParams.repositoryIds.size === repos.length;
+            repoSelectAll.indeterminate = this.scopeParams.repositoryIds.size > 0 && this.scopeParams.repositoryIds.size < repos.length;
+          }
+          this.options.onScopeParamsChange(this.getScopeParams());
+        });
+      });
+
+      const classSelectAll = this.container.querySelector('#scope-classification-select-all');
+      if (classSelectAll) {
+        classSelectAll.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            this.scopeParams.classifications = new Set(CLASSIFICATION_LEVELS.map(l => l.id));
+          } else {
+            this.scopeParams.classifications = new Set();
+          }
+          this.container.querySelectorAll('input[name="scope-classification"]').forEach(cb => { cb.checked = e.target.checked; });
+          this.options.onScopeParamsChange(this.getScopeParams());
+        });
+      }
+      this.container.querySelectorAll('input[name="scope-classification"]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = e.target.value;
+          if (e.target.checked) this.scopeParams.classifications.add(id);
+          else this.scopeParams.classifications.delete(id);
+          if (classSelectAll) {
+            classSelectAll.checked = this.scopeParams.classifications.size === CLASSIFICATION_LEVELS.length;
+            classSelectAll.indeterminate = this.scopeParams.classifications.size > 0 && this.scopeParams.classifications.size < CLASSIFICATION_LEVELS.length;
+          }
+          this.options.onScopeParamsChange(this.getScopeParams());
+        });
+      });
+
+      const scopeTimeClear = this.container.querySelector('#scope-time-range-clear');
+      if (scopeTimeClear) {
+        scopeTimeClear.addEventListener('click', () => {
+          this.scopeParams.timeRange = null;
+          if (this.timeRangeFilter) this.timeRangeFilter.clearSelection();
+          this.updateScopeTimeRangeLabel();
+          this.options.onScopeParamsChange(this.getScopeParams());
+        });
+      }
+
+      if (this.options.showDateInScope && this.options.getVolumeData) {
+        const volumeData = this.options.getVolumeData();
+        const timeContainer = this.container.querySelector('#scope-time-range-filter');
+        if (timeContainer && volumeData?.dates?.length) {
+          this.timeRangeFilter = new TimeRangeFilter('scope-time-range-filter', {
+            height: 60,
+            onChange: (range) => {
+              this.scopeParams.timeRange = range;
+              this.updateScopeTimeRangeLabel();
+              this.options.onScopeParamsChange(this.getScopeParams());
+            }
+          });
+          this.timeRangeFilter.update(volumeData);
+          if (this.scopeParams.timeRange) {
+            this.timeRangeFilter.setSelection(this.scopeParams.timeRange.start, this.scopeParams.timeRange.end);
+          }
+        }
+      }
+    }
+
     // Search input
     const searchInput = this.container.querySelector('.scope-search-input');
     if (searchInput) {
@@ -1196,6 +1162,7 @@ export class ScopeSelector {
           }
         }
       });
+      searchInput.focus();
     }
     
     // Save filter button
@@ -1225,10 +1192,7 @@ export class ScopeSelector {
             }
           } else if (chip.dataset.id && chip.dataset.scopeKey) {
             const scopeKey = chip.dataset.scopeKey;
-            // Handle authors specially since they store the actual value, not an ID
-            if (scopeKey === 'authors') {
-              this.scope.authors = this.scope.authors.filter(a => a !== chip.dataset.id);
-            } else {
+            if (this.scope[scopeKey]) {
               this.scope[scopeKey] = this.scope[scopeKey].filter(id => id !== chip.dataset.id);
             }
           }
@@ -1394,6 +1358,10 @@ export class ScopeSelector {
    * Destroy the component and clean up
    */
   destroy() {
+    if (this.timeRangeFilter) {
+      this.timeRangeFilter.destroy?.();
+      this.timeRangeFilter = null;
+    }
     if (this.container) {
       this.container.innerHTML = '';
     }

@@ -6,9 +6,7 @@
 import { BaseView } from './BaseView.js';
 import { DataService } from '../data/DataService.js';
 import { dataStore } from '../data/DataStore.js';
-import { TimeRangeFilter } from '../components/TimeRangeFilter.js';
-import { ScopeSelector } from '../components/ScopeSelector.js';
-import { PageHeader } from '../utils/PageHeader.js';
+import { SearchScopeModal } from '../components/SearchScopeModal.js';
 import { formatDate } from '../utils/formatters.js';
 
 export class SearchView extends BaseView {
@@ -21,13 +19,17 @@ export class SearchView extends BaseView {
     this.selectedRepositories = new Set();
     // Time range filter
     this.timeRange = null;
-    this.timeRangeFilter = null;
-    // ScopeSelector instance
-    this.scopeSelector = null;
-    // Filter panel expanded state
-    this.filtersExpanded = false;
+    // Scope (entities/keywords/metadata filters)
+    this.searchScope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
+    // Modal for editing filters
+    this.filterModal = new SearchScopeModal();
     // Classification filter (set of selected classifications, empty = all)
     this.selectedClassifications = new Set();
+  }
+
+  /** Get the current scope */
+  getScope() {
+    return this.searchScope;
   }
 
   /**
@@ -65,39 +67,32 @@ export class SearchView extends BaseView {
       this.initializeRepositories();
     }
 
-    // Check if we have scope from ScopeSelector (preserve during re-renders)
-    const currentScope = this.scopeSelector?.getScope();
-    const hasScope = currentScope && this.hasAnyScope(currentScope);
+    const currentScope = this.getScope();
+    const hasScope = this.hasAnyScope(currentScope);
     const hasQuery = this.searchQuery.trim().length >= 2;
     const canSearch = hasScope || hasQuery;
     const scopeItemCount = hasScope ? this.getScopeItemCount(currentScope) : 0;
 
-    const headerHtml = PageHeader.render({
-      breadcrumbs: [
-        { label: 'Monitors', href: '#/monitors' },
-        'Search'
-      ],
-      title: 'Search',
-      description: 'Search documents to create a workspace'
-    });
+    const currentUser = DataService.getCurrentUser();
+    const userName = currentUser?.displayName || currentUser?.name || 'User';
 
     this.container.innerHTML = `
-      ${headerHtml}
-      
       <div class="content-area">
         <div class="search-page-container">
-          <!-- Text Search Input -->
-          <div class="search-bar-row">
-            <div class="search-input-wrapper search-input-large">
-              <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="var(--text-muted)" stroke-width="1.5" class="search-icon">
-                <circle cx="7" cy="7" r="4.5"/>
-                <path d="M10.5 10.5L14 14"/>
-              </svg>
+          <!-- Welcome Section -->
+          <div class="search-welcome">
+            <h1 class="search-welcome-title">Welcome back, ${this.escapeHtml(userName)}</h1>
+            <p class="search-welcome-subtitle">Converse naturally to search relevant documents, review cited summaries, and continue exploring.</p>
+          </div>
+
+          <!-- Search Card -->
+          <div class="search-card">
+            <div class="search-card-input-area">
               <input 
                 type="text" 
                 id="search-input"
-                class="search-input" 
-                placeholder="Search documents..." 
+                class="search-card-input" 
+                placeholder='Ask a question like "What is the role of the B-52 in air operations and strategy?"'
                 value="${this.escapeHtml(this.searchQuery)}"
               />
               <button class="btn-icon search-clear-btn ${this.searchQuery ? '' : 'hidden'}" id="search-clear">
@@ -106,110 +101,52 @@ export class SearchView extends BaseView {
                 </svg>
               </button>
             </div>
-          </div>
-          
-          <!-- Filters and Repositories Row -->
-          <div class="search-controls-row">
-            <!-- Filters Toggle Button -->
-            <button class="btn btn-secondary filters-toggle-btn ${this.filtersExpanded ? 'expanded' : ''}" id="filters-toggle">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M2 4h12M4 8h8M6 12h4"/>
-              </svg>
-              <span>Filters</span>
-              ${scopeItemCount > 0 ? `<span class="filters-badge">${scopeItemCount}</span>` : ''}
-              <svg class="toggle-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M4 6l4 4 4-4"/>
-              </svg>
-            </button>
-            
-            <!-- Classification Dropdown -->
-            <div class="filter-dropdown-wrapper">
-              <button class="btn btn-secondary filter-dropdown-btn" id="classification-dropdown-toggle">
-                <span>${this.getClassificationButtonLabel()}</span>
-                <svg class="dropdown-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M4 6l4 4 4-4"/>
+            <div class="search-card-controls">
+              <div class="search-card-buttons">
+                <!-- Filters Toggle Button -->
+                <button class="search-card-pill" id="filters-toggle">
+                  <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1.0663409,1.6418284c.1482999-.3866299.51956-.64185.93366-.64185h11.9999599c.4140997,0,.7854004.2552201.9336996.64185.1483002.3866301.0430002.8246701-.2648993,1.1016099l-4.5973005,4.1355503v7.1209898c0,.3830996-.2189398.7326002-.5636702.8998003-.3447294.1672001-.7546797.1226997-1.0555401-.1145l-2.1428494-1.6897001c-.24049-.1896-.3808303-.4790001-.3808303-.7853003v-5.4312897L1.3312209,2.7434384c-.30786-.2769399-.413191-.7149799-.2648799-1.1016099ZM6.9285708,6.4334783v5.8768001l2.1428604,1.6897001v-7.5665002L13.9999609,1.9999784H2.000001l4.9285698,4.4334998Z" stroke-width="0"/>
+                  </svg>
+                  <span>Filters</span>
+                  ${scopeItemCount > 0 ? `<span class="filters-badge">${scopeItemCount}</span>` : ''}
+                </button>
+              </div>
+              
+              <!-- Search Button -->
+              <button class="search-card-submit ${canSearch ? '' : 'disabled'}" id="search-execute">
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="7" cy="7" r="4.5"/>
+                  <path d="M10.5 10.5L14 14"/>
                 </svg>
               </button>
-              <div class="filter-dropdown-popover" id="classification-dropdown-popover">
-                <div class="filter-dropdown-header">
-                  <label class="dropdown-option dropdown-select-all">
-                    <input type="checkbox" id="classification-select-all" ${this.areAllClassificationsSelected() ? 'checked' : ''} />
-                    <span>All Classifications</span>
-                  </label>
-                </div>
-                <div class="filter-dropdown-divider"></div>
-                <div class="filter-dropdown-list">
-                  ${this.renderClassificationOptions()}
-                </div>
-              </div>
-            </div>
-            
-            <!-- Repositories Dropdown -->
-            <div class="filter-dropdown-wrapper">
-              <button class="btn btn-secondary filter-dropdown-btn" id="repo-dropdown-toggle">
-                <span>${this.getRepositoryButtonLabel()}</span>
-                <svg class="dropdown-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M4 6l4 4 4-4"/>
-                </svg>
-              </button>
-              <div class="filter-dropdown-popover" id="repo-dropdown-popover">
-                <div class="filter-dropdown-header">
-                  <label class="dropdown-option dropdown-select-all">
-                    <input type="checkbox" id="repo-select-all" ${this.areAllRepositoriesSelected() ? 'checked' : ''} />
-                    <span>All Repositories</span>
-                  </label>
-                </div>
-                <div class="filter-dropdown-divider"></div>
-                <div class="filter-dropdown-list">
-                  ${this.renderRepositoryOptions()}
-                </div>
-              </div>
             </div>
           </div>
-          
-          <!-- Collapsible Scope Selector for Filters -->
-          <div class="search-scope-section ${this.filtersExpanded ? 'expanded' : ''}" id="filters-panel">
-            <div id="search-scope-selector"></div>
+
+          <!-- AI Hint -->
+          <div class="search-ai-hint">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" class="search-ai-hint-icon">
+              <path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5z"/>
+            </svg>
+            <span>Each query is interpreted by AI, so results may vary slightly.</span>
           </div>
           
-          <!-- Selected Filters Display (shown when panel is collapsed) -->
-          <div class="search-selected-filters ${!this.filtersExpanded && hasScope ? '' : 'hidden'}" id="selected-filters-display">
+          <!-- Selected Filters Display -->
+          <div class="search-selected-filters ${hasScope ? '' : 'hidden'}" id="selected-filters-display">
             ${this.renderSelectedScopeChips(currentScope)}
           </div>
           
-          <div class="search-time-section">
-            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs);">
-              <span class="text-secondary text-sm">Date Range:</span>
-              <span class="text-sm" id="time-range-label">${this.timeRange ? `${formatDate(this.timeRange.start)} - ${formatDate(this.timeRange.end)}` : 'All Time'}</span>
-              <button class="btn-link text-sm ${this.timeRange ? '' : 'hidden'}" id="clear-time-range">Clear</button>
-            </div>
-            <div id="search-time-filter"></div>
-          </div>
-          
-          <!-- Search Action -->
-          <div class="search-action-row">
-            <div class="search-match-count ${canSearch ? '' : 'hidden'}" id="match-count">
+          <!-- Match Count -->
+          <div class="search-match-row ${canSearch ? '' : 'hidden'}" id="match-count-row">
+            <div class="search-match-count" id="match-count">
               ${this.renderMatchCount()}
             </div>
-            <button class="btn btn-primary search-execute-btn ${canSearch ? '' : 'hidden'}" id="search-execute">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="7" cy="7" r="4.5"/>
-                <path d="M10.5 10.5L14 14"/>
-              </svg>
-              Create Workspace
-            </button>
           </div>
         </div>
       </div>
     `;
 
     this.setupEventHandlers();
-    this.initTimeRangeFilter();
-    
-    // Only init ScopeSelector if expanded
-    if (this.filtersExpanded) {
-      this.initScopeSelector(currentScope);
-    }
     
     // Focus the search input
     const input = document.getElementById('search-input');
@@ -227,61 +164,58 @@ export class SearchView extends BaseView {
            (scope.keywords?.length > 0) ||
            (scope.documentTypes?.length > 0) ||
            (scope.publisherIds?.length > 0) ||
-           (scope.authors?.length > 0);
+           (scope.authors?.length > 0) ||
+           (scope.metadataFilters && Object.keys(scope.metadataFilters).length > 0);
   }
 
   /**
-   * Initialize the ScopeSelector component
+   * Open the filters modal
    */
-  initScopeSelector(previousScope) {
-    const container = document.getElementById('search-scope-selector');
-    if (!container) return;
-    
-    // Create ScopeSelector with save filter and search filters enabled
-    this.scopeSelector = new ScopeSelector(container, {
-      showSaveFilter: true,
-      showSearchFilters: true,
-      onChange: (scope) => {
-        this.onScopeChange(scope);
+  openFiltersModal() {
+    this.filterModal.open({
+      scope: { ...this.searchScope },
+      scopeParams: {
+        repositoryIds: Array.from(this.selectedRepositories),
+        classifications: Array.from(this.selectedClassifications),
+        timeRange: this.timeRange
+      },
+      getVolumeData: () => this.getDocumentVolumeData(),
+      onApply: (scope, scopeParams) => {
+        // Apply scope (entities, keywords, metadataFilters)
+        this.searchScope = scope || this.searchScope;
+        // Apply scope params (repos, classifications, timeRange)
+        if (scopeParams) {
+          this.selectedRepositories = new Set(scopeParams.repositoryIds || []);
+          this.selectedClassifications = new Set(scopeParams.classifications || []);
+          this.timeRange = scopeParams.timeRange ?? null;
+        }
+        this.updateSearchUI();
+        this.updateSelectedFiltersDisplay();
+        this.updateMatchCount();
+        this.debounceSearch();
       }
     });
-    
-    // Restore previous scope if any, or just render empty
-    if (previousScope && this.hasAnyScope(previousScope)) {
-      this.scopeSelector.setScope(previousScope);
-    } else {
-      // Must call render() to show the UI
-      this.scopeSelector.render();
-    }
-  }
-
-  /**
-   * Handle scope changes from ScopeSelector
-   */
-  onScopeChange(scope) {
-    this.updateSearchUI();
-    this.debounceSearch();
   }
 
   /**
    * Update search UI elements based on current state
    */
   updateSearchUI() {
-    const scope = this.scopeSelector?.getScope();
+    const scope = this.getScope();
     const hasScope = this.hasAnyScope(scope);
     const hasQuery = this.searchQuery.trim().length >= 2;
     const canSearch = hasScope || hasQuery;
     
-    // Update search button visibility
+    // Update search button state
     const searchBtn = document.getElementById('search-execute');
     if (searchBtn) {
-      searchBtn.classList.toggle('hidden', !canSearch);
+      searchBtn.classList.toggle('disabled', !canSearch);
     }
-    
+
     // Update match count visibility
-    const matchCount = document.getElementById('match-count');
-    if (matchCount) {
-      matchCount.classList.toggle('hidden', !canSearch);
+    const matchCountRow = document.getElementById('match-count-row');
+    if (matchCountRow) {
+      matchCountRow.classList.toggle('hidden', !canSearch);
     }
     
     // Update filters badge
@@ -292,11 +226,9 @@ export class SearchView extends BaseView {
       
       if (scopeItemCount > 0) {
         if (!badge) {
-          // Insert badge before the chevron
-          const chevron = filtersToggle.querySelector('.toggle-chevron');
           badge = document.createElement('span');
           badge.className = 'filters-badge';
-          filtersToggle.insertBefore(badge, chevron);
+          filtersToggle.appendChild(badge);
         }
         badge.textContent = scopeItemCount;
       } else if (badge) {
@@ -327,188 +259,6 @@ export class SearchView extends BaseView {
     return { dates, volumes };
   }
 
-  /**
-   * Initialize the time range filter histogram
-   */
-  initTimeRangeFilter() {
-    const container = document.getElementById('search-time-filter');
-    if (!container) return;
-    
-    const volumeData = this.getDocumentVolumeData();
-    if (!volumeData || !volumeData.dates || volumeData.dates.length === 0) {
-      container.innerHTML = '<div class="text-muted text-sm">No date data available</div>';
-      return;
-    }
-    
-    // Create time range filter
-    this.timeRangeFilter = new TimeRangeFilter('search-time-filter', {
-      height: 60,
-      onChange: (range) => this.onTimeRangeChanged(range)
-    });
-    
-    this.timeRangeFilter.update(volumeData);
-    
-    // Restore previous selection if exists
-    if (this.timeRange) {
-      this.timeRangeFilter.setSelection(this.timeRange.start, this.timeRange.end);
-    }
-  }
-
-  /**
-   * Handle time range selection change
-   */
-  onTimeRangeChanged(range) {
-    this.timeRange = range;
-    this.updateTimeRangeLabel();
-    this.updateMatchCount();
-  }
-
-  /**
-   * Update the time range label display
-   */
-  updateTimeRangeLabel() {
-    const label = document.getElementById('time-range-label');
-    const clearBtn = document.getElementById('clear-time-range');
-    
-    if (label) {
-      if (this.timeRange) {
-        label.textContent = `${formatDate(this.timeRange.start)} - ${formatDate(this.timeRange.end)}`;
-      } else {
-        label.textContent = 'All Time';
-      }
-    }
-    
-    if (clearBtn) {
-      clearBtn.classList.toggle('hidden', !this.timeRange);
-    }
-  }
-
-  /**
-   * Get the label for the classification dropdown button
-   */
-  getClassificationButtonLabel() {
-    const levels = this.getClassificationLevels();
-    const selectedCount = this.selectedClassifications.size;
-    
-    if (selectedCount === 0 || selectedCount === levels.length) {
-      return 'All Classifications';
-    } else if (selectedCount === 1) {
-      const selectedId = Array.from(this.selectedClassifications)[0];
-      const level = levels.find(l => l.id === selectedId);
-      return level ? level.short : '1 classification';
-    } else {
-      return `${selectedCount} classifications`;
-    }
-  }
-
-  /**
-   * Check if all classifications are selected
-   */
-  areAllClassificationsSelected() {
-    const levels = this.getClassificationLevels();
-    return this.selectedClassifications.size === 0 || this.selectedClassifications.size === levels.length;
-  }
-
-  /**
-   * Get the label for the repository dropdown button
-   */
-  getRepositoryButtonLabel() {
-    const repositories = DataService.getRepositories();
-    const totalCount = repositories.length;
-    const selectedCount = this.selectedRepositories.size;
-    
-    if (selectedCount === 0) {
-      return 'No repositories';
-    } else if (selectedCount === totalCount) {
-      return 'All Repositories';
-    } else if (selectedCount === 1) {
-      const selectedId = Array.from(this.selectedRepositories)[0];
-      const repo = repositories.find(r => r.id === selectedId);
-      return repo ? repo.code : '1 repository';
-    } else {
-      return `${selectedCount} repositories`;
-    }
-  }
-
-  /**
-   * Check if all repositories are selected
-   */
-  areAllRepositoriesSelected() {
-    const repositories = DataService.getRepositories();
-    return this.selectedRepositories.size === repositories.length;
-  }
-
-  /**
-   * Render classification options for the dropdown
-   */
-  renderClassificationOptions() {
-    const levels = this.getClassificationLevels();
-    return levels.map(level => {
-      const isChecked = this.selectedClassifications.size === 0 || this.selectedClassifications.has(level.id);
-      return `
-        <label class="dropdown-option">
-          <input 
-            type="checkbox" 
-            name="classification-option" 
-            value="${level.id}" 
-            ${isChecked ? 'checked' : ''}
-          />
-          <span class="dropdown-option-name">${this.escapeHtml(level.name)}</span>
-        </label>
-      `;
-    }).join('');
-  }
-
-  /**
-   * Render repository options for the dropdown
-   */
-  renderRepositoryOptions() {
-    const repositories = DataService.getRepositories();
-    if (!repositories || repositories.length === 0) {
-      return '<div class="dropdown-empty">No repositories available</div>';
-    }
-    
-    return repositories.map(repo => {
-      const isChecked = this.selectedRepositories.has(repo.id);
-      return `
-        <label class="dropdown-option">
-          <input 
-            type="checkbox" 
-            name="repo-option" 
-            value="${repo.id}" 
-            ${isChecked ? 'checked' : ''}
-          />
-          <span class="dropdown-option-name">${this.escapeHtml(repo.name)}</span>
-        </label>
-      `;
-    }).join('');
-  }
-
-  /**
-   * Update the repository dropdown button label
-   */
-  updateRepositoryButtonLabel() {
-    const btn = document.getElementById('repo-dropdown-toggle');
-    if (btn) {
-      const labelSpan = btn.querySelector('span:not(.dropdown-chevron)');
-      if (labelSpan) {
-        labelSpan.textContent = this.getRepositoryButtonLabel();
-      }
-    }
-  }
-
-  /**
-   * Update the classification dropdown button label
-   */
-  updateClassificationButtonLabel() {
-    const btn = document.getElementById('classification-dropdown-toggle');
-    if (btn) {
-      const labelSpan = btn.querySelector('span:not(.dropdown-chevron):not(.classification-badge)');
-      if (labelSpan) {
-        labelSpan.textContent = this.getClassificationButtonLabel();
-      }
-    }
-  }
 
   /**
    * Render the match count display
@@ -683,11 +433,11 @@ export class SearchView extends BaseView {
     const displayContainer = document.getElementById('selected-filters-display');
     if (!displayContainer) return;
     
-    const scope = this.scopeSelector?.getScope();
+    const scope = this.getScope();
     const hasScope = this.hasAnyScope(scope);
     
-    // Show/hide based on panel state and whether we have scope
-    displayContainer.classList.toggle('hidden', this.filtersExpanded || !hasScope);
+    // Show/hide based on whether we have scope
+    displayContainer.classList.toggle('hidden', !hasScope);
     
     // Update content
     displayContainer.innerHTML = this.renderSelectedScopeChips(scope);
@@ -715,9 +465,7 @@ export class SearchView extends BaseView {
    * Remove an item from the scope
    */
   removeFromScope(type, id) {
-    if (!this.scopeSelector) return;
-    
-    const scope = this.scopeSelector.getScope();
+    const scope = this.searchScope;
     
     switch (type) {
       case 'person':
@@ -742,9 +490,6 @@ export class SearchView extends BaseView {
         scope.authors = (scope.authors || []).filter(a => a !== id);
         break;
     }
-    
-    // Update the ScopeSelector
-    this.scopeSelector.setScope(scope);
     
     // Update UI
     this.updateSearchUI();
@@ -796,179 +541,14 @@ export class SearchView extends BaseView {
       });
     }
     
-    // Filters toggle button
+    // Filters toggle button opens the modal
     const filtersToggle = document.getElementById('filters-toggle');
-    const filtersPanel = document.getElementById('filters-panel');
-    if (filtersToggle && filtersPanel) {
+    if (filtersToggle) {
       this.addListener(filtersToggle, 'click', () => {
-        this.filtersExpanded = !this.filtersExpanded;
-        filtersToggle.classList.toggle('expanded', this.filtersExpanded);
-        filtersPanel.classList.toggle('expanded', this.filtersExpanded);
-        
-        // Initialize ScopeSelector when first expanded
-        if (this.filtersExpanded && !this.scopeSelector) {
-          this.initScopeSelector();
-        }
-        
-        // Update the selected filters display when collapsing
-        this.updateSelectedFiltersDisplay();
+        this.openFiltersModal();
       });
     }
 
-    // Classification dropdown handlers
-    const classDropdownToggle = document.getElementById('classification-dropdown-toggle');
-    const classDropdownPopover = document.getElementById('classification-dropdown-popover');
-    
-    if (classDropdownToggle && classDropdownPopover) {
-      // Toggle dropdown
-      this.addListener(classDropdownToggle, 'click', (e) => {
-        e.stopPropagation();
-        classDropdownPopover.classList.toggle('open');
-        // Close other dropdowns
-        document.getElementById('repo-dropdown-popover')?.classList.remove('open');
-      });
-      
-      // Close dropdown when clicking outside
-      this.addListener(document, 'click', (e) => {
-        if (!e.target.closest('.filter-dropdown-wrapper')) {
-          classDropdownPopover.classList.remove('open');
-        }
-      });
-      
-      // Select All checkbox
-      const selectAllCheckbox = document.getElementById('classification-select-all');
-      if (selectAllCheckbox) {
-        this.addListener(selectAllCheckbox, 'change', (e) => {
-          const levels = this.getClassificationLevels();
-          if (e.target.checked) {
-            // Select all (empty set means all)
-            this.selectedClassifications = new Set();
-          } else {
-            // Deselect all
-            this.selectedClassifications = new Set();
-          }
-          // Update individual checkboxes
-          const classCheckboxes = classDropdownPopover.querySelectorAll('input[name="classification-option"]');
-          classCheckboxes.forEach(cb => {
-            cb.checked = e.target.checked;
-          });
-          this.updateClassificationButtonLabel();
-          this.updateMatchCount();
-        });
-      }
-      
-      // Individual classification checkboxes
-      const classCheckboxes = classDropdownPopover.querySelectorAll('input[name="classification-option"]');
-      classCheckboxes.forEach(checkbox => {
-        this.addListener(checkbox, 'change', (e) => {
-          const classId = e.target.value;
-          const levels = this.getClassificationLevels();
-          
-          // If currently "all" (empty set), initialize with all levels first
-          if (this.selectedClassifications.size === 0) {
-            levels.forEach(l => this.selectedClassifications.add(l.id));
-          }
-          
-          if (e.target.checked) {
-            this.selectedClassifications.add(classId);
-          } else {
-            this.selectedClassifications.delete(classId);
-          }
-          
-          // If all are selected, reset to empty (meaning "all")
-          if (this.selectedClassifications.size === levels.length) {
-            this.selectedClassifications = new Set();
-          }
-          
-          // Update "Select All" checkbox state
-          if (selectAllCheckbox) {
-            const allSelected = this.selectedClassifications.size === 0;
-            const noneSelected = this.selectedClassifications.size === 0 && !e.target.checked;
-            selectAllCheckbox.checked = allSelected;
-            selectAllCheckbox.indeterminate = this.selectedClassifications.size > 0 && 
-                                               this.selectedClassifications.size < levels.length;
-          }
-          this.updateClassificationButtonLabel();
-          this.updateMatchCount();
-        });
-      });
-    }
-
-    // Repository dropdown handlers
-    const repoDropdownToggle = document.getElementById('repo-dropdown-toggle');
-    const repoDropdownPopover = document.getElementById('repo-dropdown-popover');
-    
-    if (repoDropdownToggle && repoDropdownPopover) {
-      // Toggle dropdown
-      this.addListener(repoDropdownToggle, 'click', (e) => {
-        e.stopPropagation();
-        repoDropdownPopover.classList.toggle('open');
-      });
-      
-      // Close dropdown when clicking outside
-      this.addListener(document, 'click', (e) => {
-        if (!e.target.closest('.filter-dropdown-wrapper')) {
-          repoDropdownPopover.classList.remove('open');
-        }
-      });
-      
-      // Select All checkbox
-      const selectAllCheckbox = document.getElementById('repo-select-all');
-      if (selectAllCheckbox) {
-        this.addListener(selectAllCheckbox, 'change', (e) => {
-          const repositories = DataService.getRepositories();
-          if (e.target.checked) {
-            // Select all
-            this.selectedRepositories = new Set(repositories.map(r => r.id));
-          } else {
-            // Deselect all
-            this.selectedRepositories = new Set();
-          }
-          // Update individual checkboxes
-          const repoCheckboxes = repoDropdownPopover.querySelectorAll('input[name="repo-option"]');
-          repoCheckboxes.forEach(cb => {
-            cb.checked = e.target.checked;
-          });
-          this.updateRepositoryButtonLabel();
-          this.updateMatchCount();
-        });
-      }
-      
-      // Individual repository checkboxes
-      const repoCheckboxes = repoDropdownPopover.querySelectorAll('input[name="repo-option"]');
-      repoCheckboxes.forEach(checkbox => {
-        this.addListener(checkbox, 'change', (e) => {
-          const repoId = e.target.value;
-          if (e.target.checked) {
-            this.selectedRepositories.add(repoId);
-          } else {
-            this.selectedRepositories.delete(repoId);
-          }
-          // Update "Select All" checkbox state
-          const repositories = DataService.getRepositories();
-          if (selectAllCheckbox) {
-            selectAllCheckbox.checked = this.selectedRepositories.size === repositories.length;
-            selectAllCheckbox.indeterminate = this.selectedRepositories.size > 0 && 
-                                               this.selectedRepositories.size < repositories.length;
-          }
-          this.updateRepositoryButtonLabel();
-          this.updateMatchCount();
-        });
-      });
-    }
-    
-    // Clear time range button
-    const clearTimeBtn = document.getElementById('clear-time-range');
-    if (clearTimeBtn) {
-      this.addListener(clearTimeBtn, 'click', () => {
-        this.timeRange = null;
-        if (this.timeRangeFilter) {
-          this.timeRangeFilter.clearSelection();
-        }
-        this.updateTimeRangeLabel();
-        this.updateMatchCount();
-      });
-    }
   }
 
   /**
@@ -990,7 +570,7 @@ export class SearchView extends BaseView {
     const query = this.searchQuery.trim();
     const countContainer = document.getElementById('match-count');
     const hasQuery = query.length >= 2;
-    const scope = this.scopeSelector?.getScope();
+    const scope = this.getScope();
     const hasScope = this.hasAnyScope(scope);
     
     if (!hasQuery && !hasScope) {
@@ -1030,7 +610,7 @@ export class SearchView extends BaseView {
   createWorkspaceFromSearch() {
     const query = this.searchQuery.trim();
     const hasQuery = query.length >= 2;
-    const scope = this.scopeSelector?.getScope();
+    const scope = this.getScope();
     const hasScope = this.hasAnyScope(scope);
     
     // Need either a query or scope to create workspace
@@ -1157,13 +737,8 @@ export class SearchView extends BaseView {
    * Clean up resources when view is destroyed
    */
   destroy() {
-    if (this.scopeSelector) {
-      this.scopeSelector.destroy();
-      this.scopeSelector = null;
-    }
-    if (this.timeRangeFilter) {
-      this.timeRangeFilter.destroy();
-      this.timeRangeFilter = null;
+    if (this.filterModal) {
+      this.filterModal.close();
     }
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
