@@ -170,6 +170,23 @@
   pointer-events: none;
 }
 
+.scope-group-count[data-tooltip] {
+  cursor: default;
+}
+
+.data-tooltip-popup {
+  position: fixed;
+  padding: 4px 8px;
+  background: var(--bg-primary, #1a1a2e);
+  color: var(--text-primary, #e0e0e0);
+  border: 1px solid var(--border-color, #333);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 10000;
+  pointer-events: none;
+}
+
 .scope-chip-keyword {
   font-style: italic;
 }
@@ -232,12 +249,16 @@
 }
 .scope-catalog-row-label {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
   font-size: var(--text-base);
   margin-left: 20px;
+}
+.scope-catalog-row-label--extraction {
+  margin-left: 0;
+  overflow: visible;
 }
 .scope-catalog-row-actions {
   display: flex;
@@ -590,16 +611,37 @@ input.form-input.scope-search-input:focus {
   min-height: 0;
 }
 
-/* Chips container with save button */
+/* Chips container with logic toggle */
 .scope-chips-container {
   display: flex;
   gap: var(--space-sm);
-  align-items: flex-start;
-  padding-bottom: var(--space-md);
+  align-items: stretch;
+  padding-bottom: var(--space-sm);
 }
 
 .scope-chips-container .scope-chips {
   flex: 1;
+}
+
+.scope-chips-container .scope-logic-segmented {
+  align-self: stretch;
+  display: flex;
+}
+
+.scope-chips-container .scope-logic-segmented.hidden {
+  display: none;
+}
+
+.scope-chips-container .scope-logic-btn {
+  display: flex;
+  align-items: center;
+}
+
+/* Save filter row (below chips) */
+.scope-save-filter-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-sm);
 }
 
 /* Save filter button */
@@ -653,6 +695,12 @@ input.form-input.scope-search-input:focus {
 
 .scope-filter-group > .scope-entity-group-header > .scope-group-chevron {
   color: var(--text-secondary);
+}
+
+.scope-filter-group > .scope-entity-group-items > .scope-nested-group {
+  padding-left: var(--space-xl);
+  margin-left: var(--space-xl);
+  border-left: 4px solid var(--border-subtle);
 }
 
 /* Filter item wrapper for tooltip positioning */
@@ -956,6 +1004,89 @@ input.form-input.scope-search-input:focus {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+}
+
+/* Date Histogram Filter (inside scope selector) */
+.scope-date-histogram-wrapper {
+  padding: 8px 12px 4px;
+}
+
+.scope-date-histogram {
+  width: 100%;
+  min-width: 0;
+  height: 56px;
+  overflow: visible;
+}
+
+.scope-date-histogram .time-range-filter {
+  display: block;
+}
+
+.scope-date-histogram .histogram-bar {
+  transition: fill-opacity 0.15s ease;
+}
+
+.scope-date-histogram .histogram-bar:hover {
+  fill-opacity: 0.9;
+}
+
+.scope-date-histogram .brush .selection {
+  fill: var(--accent-primary);
+  fill-opacity: 0.25;
+  stroke: var(--accent-primary);
+  stroke-width: 1;
+}
+
+.scope-date-histogram .brush .handle {
+  fill: var(--accent-primary);
+  stroke: var(--bg-secondary);
+  stroke-width: 1;
+}
+
+.scope-date-histogram .brush .overlay {
+  cursor: crosshair;
+}
+
+.scope-date-histogram .time-axis text {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-mono);
+}
+
+.scope-date-range-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding: 0 2px;
+}
+
+.scope-date-range-label {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.scope-date-clear {
+  font-size: var(--text-xs);
+  color: var(--accent-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+.scope-date-clear:hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Date chip in scope selector */
+.scope-chip-date .scope-chip-icon {
+  color: var(--accent-primary);
 }
 
 /* Responsive adjustments */

@@ -203,6 +203,63 @@
   border-radius: 8px;
 }
 
+.workspace-filters-bar {
+  padding: 0;
+}
+
+.scope-logic-segmented {
+  display: inline-flex;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.scope-logic-segmented.hidden {
+  display: none;
+}
+
+.scope-logic-btn {
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.scope-logic-btn:not(:last-child) {
+  border-right: 1px solid var(--border-color);
+}
+
+.scope-logic-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.scope-logic-btn.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.workspace-filters-bar .search-selected-filters {
+  margin-top: var(--space-md);
+}
+
+.filters-show-toggle {
+  font-size: var(--text-xs);
+}
+
+.filters-show-toggle.active {
+  color: var(--accent-primary);
+}
+
+.filters-show-toggle.hidden {
+  display: none;
+}
+
 /* Search Submit Button (circular) */
 .search-card-submit {
   display: flex;
@@ -294,6 +351,11 @@
   color: var(--text-muted);
   text-align: center;
   padding-top: var(--space-sm);
+}
+
+/* Hide mode label on the search screen (only show on chat) */
+body.search-view #si-mode-btn {
+  display: none;
 }
 
 /* Search Mode Dropdown */
@@ -561,7 +623,7 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-primary);
   position: relative;
 }

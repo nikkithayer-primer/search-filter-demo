@@ -115,6 +115,37 @@
 }
 
 /* Scratchpad button */
+/* Nav links within the right side of navbar — same style as left-side nav links */
+.navbar-right > .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--space-lg);
+  height: var(--navbar-height);
+  color: var(--text-strong);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 400;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.navbar-right > .nav-link:hover {
+  color: var(--text-strong);
+}
+
+.navbar-right > .nav-link.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+  font-weight: 500;
+}
+
+.navbar-right > .nav-link.active .nav-icon {
+  stroke: var(--accent-primary);
+  opacity: 1;
+}
+
 .navbar-scratchpad-btn {
   display: inline-flex;
   align-items: center;

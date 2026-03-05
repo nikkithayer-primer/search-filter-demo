@@ -98,13 +98,13 @@ export class BaseItemList extends BaseComponent {
   calculateVolume(item) {
     // Use document-based aggregation for narratives/themes
     if (item.id?.startsWith('narr-')) {
-      const publisherMentions = DataService.getAggregatePublisherMentionsForNarrative(item.id);
-      return Object.values(publisherMentions)
+      const publisherVolumes = DataService.getAggregatePublisherVolumesForNarrative(item.id);
+      return Object.values(publisherVolumes)
         .reduce((sum, p) => sum + (p.volume || 0), 0);
     }
     if (item.id?.startsWith('sub-')) {
-      const publisherMentions = DataService.getAggregatePublisherMentionsForTheme(item.id);
-      return Object.values(publisherMentions)
+      const publisherVolumes = DataService.getAggregatePublisherVolumesForTheme(item.id);
+      return Object.values(publisherVolumes)
         .reduce((sum, p) => sum + (p.volume || 0), 0);
     }
     // Fallback for legacy data or other item types

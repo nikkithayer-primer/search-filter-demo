@@ -7,6 +7,7 @@
 import { SearchScopeModal } from './SearchScopeModal.js';
 import { DataService } from '../data/DataService.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
+import { hasAnyScope, getScopeItemCount } from '../utils/scopeUtils.js';
 
 export class SearchInput {
   /**
@@ -49,36 +50,11 @@ export class SearchInput {
 
   /** Total count of active scope filter items */
   getScopeItemCount() {
-    const scope = this.searchScope;
-    if (!scope) return 0;
-    let count = (scope.personIds?.length || 0) +
-      (scope.organizationIds?.length || 0) +
-      (scope.locationIds?.length || 0) +
-      (scope.keywords?.length || 0) +
-      (scope.documentTypes?.length || 0) +
-      (scope.publisherIds?.length || 0) +
-      (scope.authors?.length || 0);
-    for (const v of Object.values(scope.metadataFilters || {})) {
-      if (Array.isArray(v)) { count += v.length; continue; }
-      count += (v?.include?.length || 0) + (v?.exclude?.length || 0);
-    }
-    return count;
+    return getScopeItemCount(this.searchScope);
   }
 
   hasAnyScope() {
-    const scope = this.searchScope;
-    if (!scope) return false;
-    return (scope.personIds?.length > 0) ||
-      (scope.organizationIds?.length > 0) ||
-      (scope.locationIds?.length > 0) ||
-      (scope.keywords?.length > 0) ||
-      (scope.documentTypes?.length > 0) ||
-      (scope.publisherIds?.length > 0) ||
-      (scope.authors?.length > 0) ||
-      (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => {
-        if (Array.isArray(v)) return v.length > 0;
-        return (v?.include?.length > 0) || (v?.exclude?.length > 0);
-      }));
+    return hasAnyScope(this.searchScope);
   }
 
   /** Render into the container element */
@@ -146,7 +122,7 @@ export class SearchInput {
               <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M1.0663409,1.6418284c.1482999-.3866299.51956-.64185.93366-.64185h11.9999599c.4140997,0,.7854004.2552201.9336996.64185.1483002.3866301.0430002.8246701-.2648993,1.1016099l-4.5973005,4.1355503v7.1209898c0,.3830996-.2189398.7326002-.5636702.8998003-.3447294.1672001-.7546797.1226997-1.0555401-.1145l-2.1428494-1.6897001c-.24049-.1896-.3808303-.4790001-.3808303-.7853003v-5.4312897L1.3312209,2.7434384c-.30786-.2769399-.413191-.7149799-.2648799-1.1016099ZM6.9285708,6.4334783v5.8768001l2.1428604,1.6897001v-7.5665002L13.9999609,1.9999784H2.000001l4.9285698,4.4334998Z" stroke-width="0"/>
               </svg>
-              <span>Search Filters</span>
+              <span>Filters</span>
               ${scopeCount > 0 ? `<span class="filters-badge">${scopeCount}</span>` : ''}
             </button>
             ` : ''}
@@ -154,7 +130,7 @@ export class SearchInput {
               <svg height="1em" role="presentation" viewBox="0 0 16 16" width="1em" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3,1c-1.1,0-2,.9-2,2v2.5c0,.3000002.2.5.5.5s.5-.1999998.5-.5v-2.5c0-.5999999.4000001-1,1-1h2.5c.3000002,0,.5-.2.5-.5s-.1999998-.5-.5-.5h-2.5ZM13.8999996,13.1000004l-2.6999998-2.6999998c.5-.6000004.8000002-1.500001.8000002-2.4000006,0-2.1999998-1.8000002-4-4-4s-4,1.8000002-4,4,1.8000002,4,4,4c.8999996,0,1.8000002-.3000002,2.5-.8000002l2.6999998,2.6999998c.1999998.1999998.5.1999998.6999998,0s.1000004-.5999994,0-.7999992ZM8,11c-1.6999998,0-3-1.3000002-3-3s1.3000002-3,3-3,3,1.3000002,3,3-1.3000002,3-3,3ZM3,15c-1.1,0-2-.8999996-2-2v-2.5c0-.3000002.2-.5.5-.5s.5.1999998.5.5v2.5c0,.6000004.4000001,1,1,1h2.5c.3000002,0,.5.1999998.5.5s-.1999998.5-.5.5h-2.5ZM15,3c0-1.1-.8999996-2-2-2h-2.5c-.3000002,0-.5.2-.5.5s.1999998.5.5.5h2.5c.6000004,0,1,.4000001,1,1v2.5c0,.3000002.1999998.5.5.5s.5-.1999998.5-.5v-2.5Z" stroke-width="0"/>
               </svg>
-              <span>Advanced Search</span>
+              <span>Advanced</span>
             </button>
           </div>
           <button class="search-card-submit ${canSubmit ? '' : 'disabled'}" id="si-submit">

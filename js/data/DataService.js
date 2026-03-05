@@ -230,12 +230,27 @@ const matchDocumentToScope = (doc, scope) => {
     for (const [dimensionId, filterVal] of Object.entries(scope.metadataFilters)) {
       if (!filterVal) continue;
 
+      const dimension = catalog.find(d => d.id === dimensionId);
+      if (!dimension) continue;
+
+      // Handle date range filters
+      if (dimension.type === 'date' && filterVal.dateRange) {
+        const { start, end } = filterVal.dateRange;
+        if (start && end && dimension.metadataKey) {
+          const docDateVal = doc[dimension.metadataKey] || doc.metadata?.[dimension.metadataKey];
+          if (docDateVal) {
+            const docDate = new Date(docDateVal);
+            matchResults.push(docDate >= new Date(start) && docDate <= new Date(end));
+          } else {
+            matchResults.push(false);
+          }
+        }
+        continue;
+      }
+
       const includeVals = Array.isArray(filterVal) ? filterVal : (filterVal.include || []);
       const excludeVals = Array.isArray(filterVal) ? [] : (filterVal.exclude || []);
       if (includeVals.length === 0 && excludeVals.length === 0) continue;
-
-      const dimension = catalog.find(d => d.id === dimensionId);
-      if (!dimension) continue;
 
       const docMatchesValue = (val) => {
         if (dimension.type === 'mapped' && dimension.docMapping) {
@@ -552,6 +567,9 @@ export const DataService = {
     const docs = docIds.map(id => findById('documents', id)).filter(Boolean);
 
     return catalog.map(dim => {
+      // Date dimensions always pass through (histogram data is pre-aggregated)
+      if (dim.type === 'date') return dim;
+
       let relevantOptions;
 
       if (dim.docMapping) {
@@ -1534,6 +1552,49 @@ export const DataService = {
   },
 
   /**
+   * Get aggregate publisher volumes for a theme from its linked documents.
+   * @param {string} themeId - The theme ID
+   * @param {string[]|null} scopeDocIds - Optional document ID scope
+   * @returns {Object} { publisherId: { volume, sentiment }, ... }
+   */
+  getAggregatePublisherVolumesForTheme: (themeId, scopeDocIds = null) => {
+    const theme = dataStore.data.themes.find(t => t.id === themeId);
+    if (!theme || !theme.documentIds) return {};
+
+    const docIds = intersectDocumentIds(theme.documentIds, scopeDocIds);
+    const documents = docIds
+      .map(id => dataStore.data.documents.find(d => d.id === id))
+      .filter(Boolean);
+
+    const publisherStats = new Map();
+
+    documents.forEach(doc => {
+      if (!doc.publisherId) return;
+
+      if (!publisherStats.has(doc.publisherId)) {
+        publisherStats.set(doc.publisherId, { count: 0, sentimentSum: 0, sentimentCount: 0 });
+      }
+      const stats = publisherStats.get(doc.publisherId);
+      stats.count += 1;
+
+      if (typeof doc.sentiment === 'number') {
+        stats.sentimentSum += doc.sentiment;
+        stats.sentimentCount += 1;
+      }
+    });
+
+    const result = {};
+    publisherStats.forEach((stats, publisherId) => {
+      result[publisherId] = {
+        volume: stats.count,
+        sentiment: stats.sentimentCount > 0 ? stats.sentimentSum / stats.sentimentCount : 0
+      };
+    });
+
+    return result;
+  },
+
+  /**
    * UNIFIED: Get volume data for a set of documents.
    * This is the preferred method for getting volume data - works directly from documents.
    * Returns publisher breakdown in the format TimelineVolumeComposite expects.
@@ -2364,11 +2425,27 @@ export const DataService = {
             let matchedInclude = false;
             for (const [dimId, filterVal] of Object.entries(scope.metadataFilters)) {
               if (!filterVal) continue;
+              const dimension = catalog.find(d => d.id === dimId);
+              if (!dimension) continue;
+
+              // Handle date range filters
+              if (dimension.type === 'date' && filterVal.dateRange) {
+                const { start, end } = filterVal.dateRange;
+                if (start && end && dimension.metadataKey) {
+                  const docDateVal = doc[dimension.metadataKey] || doc.metadata?.[dimension.metadataKey];
+                  if (docDateVal) {
+                    const docDate = new Date(docDateVal);
+                    const inRange = docDate >= new Date(start) && docDate <= new Date(end);
+                    hasInclude = true;
+                    if (inRange) matchedInclude = true;
+                  }
+                }
+                continue;
+              }
+
               const includeVals = Array.isArray(filterVal) ? filterVal : (filterVal.include || []);
               const excludeVals = Array.isArray(filterVal) ? [] : (filterVal.exclude || []);
               if (includeVals.length === 0 && excludeVals.length === 0) continue;
-              const dimension = catalog.find(d => d.id === dimId);
-              if (!dimension) continue;
               const docMatchesVal = (val) => {
                 if (dimension.type === 'mapped' && dimension.docMapping) {
                   return dimension.docMapping[val]?.includes(doc.id);

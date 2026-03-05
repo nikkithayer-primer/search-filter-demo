@@ -7,7 +7,10 @@
 import { DataService } from '../data/DataService.js';
 import { dataStore } from '../data/DataStore.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
-import { getEntityIcon } from '../utils/entityIcons.js';
+import { getEntityIcon, getExtractionIcon, getExtractionColorClass } from '../utils/entityIcons.js';
+import { formatDate } from '../utils/formatters.js';
+import { TimeRangeFilter } from './TimeRangeFilter.js';
+import { countMetadataSelections, getScopeItemCount as _getScopeItemCount } from '../utils/scopeUtils.js';
 
 export class ScopeSelector {
   /**
@@ -34,13 +37,15 @@ export class ScopeSelector {
       locationIds: [],
       keywords: [],
       documentTypes: [],
-      metadataFilters: {}  // { dimensionId: { include: [], exclude: [] } }
+      metadataFilters: {},  // { dimensionId: { include: [], exclude: [] } }
+      logic: 'OR'
     };
     
     this.filterText = '';
     this.expandedSections = new Set();
     this.saveDialogOpen = false;
     this.saveFilterName = '';
+    this.dateHistogramInstances = {};
   }
 
   /**
@@ -58,7 +63,7 @@ export class ScopeSelector {
    */
   setScope(scope) {
     if (scope?.mode === 'advanced') {
-      this.scope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
+      this.scope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {}, logic: 'OR' };
     } else {
       this.scope = {
         personIds: [...(scope?.personIds || [])],
@@ -66,7 +71,8 @@ export class ScopeSelector {
         locationIds: [...(scope?.locationIds || [])],
         keywords: [...(scope?.keywords || [])],
         documentTypes: [...(scope?.documentTypes || [])],
-        metadataFilters: scope?.metadataFilters ? JSON.parse(JSON.stringify(scope.metadataFilters)) : {}
+        metadataFilters: scope?.metadataFilters ? JSON.parse(JSON.stringify(scope.metadataFilters)) : {},
+        logic: scope?.logic || 'OR'
       };
     }
     
@@ -131,6 +137,11 @@ export class ScopeSelector {
     // Merge metadata filters from saved filter
     const filterMetadataFilters = filterScope.metadataFilters || {};
     for (const [dimId, filterVal] of Object.entries(filterMetadataFilters)) {
+      // Date range filters replace rather than merge
+      if (filterVal?.dateRange) {
+        this.scope.metadataFilters[dimId] = { dateRange: { ...filterVal.dateRange } };
+        continue;
+      }
       const target = this.getDimFilter(dimId);
       // Normalize saved filter (may be old array format)
       const srcInclude = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
@@ -167,7 +178,8 @@ export class ScopeSelector {
       locationIds: [],
       keywords: [],
       documentTypes: [],
-      metadataFilters: {}
+      metadataFilters: {},
+      logic: 'OR'
     };
     this.expandedSections = new Set();
     this.render();
@@ -182,6 +194,7 @@ export class ScopeSelector {
       .some(k => {
         if (k === 'metadataFilters') {
           return Object.values(this.scope.metadataFilters || {}).some(v => {
+            if (v?.dateRange?.start && v?.dateRange?.end) return true;
             if (Array.isArray(v)) return v.length > 0;
             return (v?.include?.length > 0) || (v?.exclude?.length > 0);
           });
@@ -223,18 +236,14 @@ export class ScopeSelector {
 
   /** Count total metadata filter selections */
   countMetadataSelections(filters) {
-    let count = 0;
-    for (const v of Object.values(filters || {})) {
-      if (Array.isArray(v)) { count += v.length; continue; }
-      count += (v?.include?.length || 0) + (v?.exclude?.length || 0);
-    }
-    return count;
+    return countMetadataSelections(filters);
   }
 
   /** Check if a dimension has any selections */
   dimHasSelections(dimId) {
     const f = this.scope.metadataFilters[dimId];
     if (!f) return false;
+    if (f.dateRange) return !!(f.dateRange.start && f.dateRange.end);
     if (Array.isArray(f)) return f.length > 0;
     return (f.include?.length > 0) || (f.exclude?.length > 0);
   }
@@ -304,24 +313,24 @@ export class ScopeSelector {
           </div>
           <p class="scope-search-hint">Type to filter entities or press Enter to add as keyword</p>
           
-          <!-- Selected Items (chips) with save button -->
+          <!-- Selected Items (chips) with logic toggle -->
           <div class="scope-chips-container">
             <div class="scope-chips">
               ${this.renderSelectedChips()}
             </div>
-            ${this.options.showSaveFilter ? `
-              <button 
-                class="btn-icon scope-save-filter-btn" 
-                title="Save as search filter"
-                ${this.hasScope() ? '' : 'disabled'}
-              >
-                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M3 2a1 1 0 00-1 1v11.5l6-3 6 3V3a1 1 0 00-1-1H3z"/>
-                  <path d="M8 5v4M6 7h4" stroke-linecap="round"/>
-                </svg>
-              </button>
-            ` : ''}
+            <div class="scope-logic-segmented ${this.getScopeItemCount() > 1 ? '' : 'hidden'}" id="scope-logic-toggle">
+              <button class="scope-logic-btn ${(this.scope.logic || 'OR') === 'OR' ? 'active' : ''}" data-logic="OR">OR</button>
+              <button class="scope-logic-btn ${this.scope.logic === 'AND' ? 'active' : ''}" data-logic="AND">AND</button>
+            </div>
           </div>
+          ${this.options.showSaveFilter ? `
+            <div class="scope-save-filter-row">
+              <button 
+                class="btn btn-ghost btn-small scope-save-filter-btn" 
+                ${this.hasScope() ? '' : 'disabled'}
+              >Save Filter</button>
+            </div>
+          ` : ''}
           
           <!-- Entity List -->
           <div class="scope-entity-list">
@@ -395,34 +404,76 @@ export class ScopeSelector {
     for (const [dimId, filterVal] of Object.entries(this.scope.metadataFilters || {})) {
       const dimension = catalog.find(d => d.id === dimId);
       const dimName = dimension?.name || dimId;
+      const isExtraction = dimName.toLowerCase().startsWith('extracted');
+
+      // Date range chip
+      if (filterVal?.dateRange?.start && filterVal?.dateRange?.end) {
+        const rangeText = `${formatDate(filterVal.dateRange.start)} – ${formatDate(filterVal.dateRange.end)}`;
+        chips.push(`
+          <span class="scope-chip scope-chip-catalog scope-chip-date" data-dimension-id="${this.escapeHtml(dimId)}" data-filter-mode="dateRange" data-tooltip="${this.escapeHtml(dimName)}">
+            <span class="scope-chip-icon">
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="2.5" width="12" height="11.5" rx="1"/>
+                <path d="M2 6h12M5 0.5v3M11 0.5v3"/>
+              </svg>
+            </span>
+            <span class="scope-chip-label">${this.escapeHtml(rangeText)}</span>
+            <button class="chip-remove" aria-label="Remove">&times;</button>
+          </span>
+        `);
+        continue;
+      }
+
       // Normalize legacy array format
       const include = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
       const exclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
       for (const val of include) {
-        chips.push(`
-          <span class="scope-chip scope-chip-catalog" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="include" data-tooltip="${this.escapeHtml(dimName)}">
-            <span class="scope-chip-icon">
-              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
-              </svg>
+        if (isExtraction) {
+          const colorClass = getExtractionColorClass(dimName);
+          chips.push(`
+            <span class="scope-chip scope-chip-catalog extraction-chip extraction-chip--ghost ${colorClass}" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="include" data-tooltip="${this.escapeHtml(dimName)}">
+              <span class="scope-chip-icon extraction-chip-icon">${getExtractionIcon(dimName, 12)}</span>
+              <span class="scope-chip-label extraction-chip-label">${this.escapeHtml(val)}</span>
+              <button class="chip-remove" aria-label="Remove">&times;</button>
             </span>
-            <span class="scope-chip-label">${this.escapeHtml(val)}</span>
-            <button class="chip-remove" aria-label="Remove">&times;</button>
-          </span>
-        `);
+          `);
+        } else {
+          chips.push(`
+            <span class="scope-chip scope-chip-catalog" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="include" data-tooltip="${this.escapeHtml(dimName)}">
+              <span class="scope-chip-icon">
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
+                </svg>
+              </span>
+              <span class="scope-chip-label">${this.escapeHtml(val)}</span>
+              <button class="chip-remove" aria-label="Remove">&times;</button>
+            </span>
+          `);
+        }
       }
       for (const val of exclude) {
-        chips.push(`
-          <span class="scope-chip scope-chip-catalog scope-chip-excluded" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="exclude" data-tooltip="Exclude: ${this.escapeHtml(dimName)}">
-            <span class="scope-chip-icon">
-              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 8h10"/>
-              </svg>
+        if (isExtraction) {
+          const colorClass = getExtractionColorClass(dimName);
+          chips.push(`
+            <span class="scope-chip scope-chip-catalog scope-chip-excluded extraction-chip extraction-chip--ghost ${colorClass}" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="exclude" data-tooltip="Exclude: ${this.escapeHtml(dimName)}">
+              <span class="scope-chip-icon extraction-chip-icon">${getExtractionIcon(dimName, 12)}</span>
+              <span class="scope-chip-label extraction-chip-label">${this.escapeHtml(val)}</span>
+              <button class="chip-remove" aria-label="Remove">&times;</button>
             </span>
-            <span class="scope-chip-label">${this.escapeHtml(val)}</span>
-            <button class="chip-remove" aria-label="Remove">&times;</button>
-          </span>
-        `);
+          `);
+        } else {
+          chips.push(`
+            <span class="scope-chip scope-chip-catalog scope-chip-excluded" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="exclude" data-tooltip="Exclude: ${this.escapeHtml(dimName)}">
+              <span class="scope-chip-icon">
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 8h10"/>
+                </svg>
+              </span>
+              <span class="scope-chip-label">${this.escapeHtml(val)}</span>
+              <button class="chip-remove" aria-label="Remove">&times;</button>
+            </span>
+          `);
+        }
       }
     }
     
@@ -500,6 +551,7 @@ export class ScopeSelector {
     const dimId = dimension.id;
     const accordionKey = 'catalog_' + dimId;
     const allOptions = dimension.options || [];
+    const isExtraction = dimension.name.toLowerCase().startsWith('extracted');
 
     const nameMatches = filterLower && displayName.toLowerCase().includes(filterLower);
 
@@ -517,9 +569,44 @@ export class ScopeSelector {
     const hasValueMatches = filterLower && !nameMatches && totalFiltered > 0;
     const isExpanded = this.expandedSections.has(accordionKey) || hasValueMatches;
 
+    const extractionColorClass = isExtraction ? getExtractionColorClass(dimension.name) : '';
+
+    const renderRowLabel = (opt) => {
+      if (isExtraction) {
+        return `<span class="scope-catalog-row-label scope-catalog-row-label--extraction">
+          <span class="extraction-chip extraction-chip--ghost ${extractionColorClass}">
+            <span class="extraction-chip-icon">${getExtractionIcon(dimension.name, 12)}</span>
+            <span class="extraction-chip-label">${this.escapeHtml(opt)}</span>
+          </span>
+        </span>`;
+      }
+      return `<span class="scope-catalog-row-label">${this.escapeHtml(opt)}</span>`;
+    };
+
+    // Compute filtered document count from docMapping when available
+    const isFiltering = filterLower && !nameMatches;
+    let filteredDocCount = dimension.documentCount || 0;
+    if (isFiltering && dimension.docMapping) {
+      const docIdSet = new Set();
+      for (const opt of filteredOptions) {
+        (dimension.docMapping[opt] || []).forEach(id => docIdSet.add(id));
+      }
+      filteredDocCount = docIdSet.size;
+    }
+
+    const totalCount = allOptions.length;
+    const countLabel = isFiltering
+      ? `${totalFiltered} of ${totalCount} value${totalCount !== 1 ? 's' : ''}`
+      : `${totalCount} value${totalCount !== 1 ? 's' : ''}`;
+    const tooltipText = isFiltering
+      ? `${totalFiltered} matching value${totalFiltered !== 1 ? 's' : ''} of ${totalCount} total · ${filteredDocCount} document${filteredDocCount !== 1 ? 's' : ''}`
+      : `${totalCount} filterable value${totalCount !== 1 ? 's' : ''} indexing ${dimension.documentCount || 0} document${(dimension.documentCount || 0) !== 1 ? 's' : ''}`;
+
     return {
       sortName: displayName,
       totalOptions: allOptions.length,
+      filteredValues: totalFiltered,
+      filteredDocCount,
       html: `
         <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="${accordionKey}">
           <button class="scope-entity-group-header" data-type="${accordionKey}">
@@ -527,14 +614,14 @@ export class ScopeSelector {
               <path d="M4 6l4 4 4-4"/>
             </svg>
             <span class="scope-group-label">${this.escapeHtml(displayName)}</span>
-            <span class="scope-group-count" title="${allOptions.length} attribute${allOptions.length !== 1 ? 's' : ''} indexing ${dimension.documentCount || 0} document${(dimension.documentCount || 0) !== 1 ? 's' : ''}">${allOptions.length} value${allOptions.length !== 1 ? 's' : ''}</span>
+            <span class="scope-group-count" data-tooltip="${tooltipText}">${countLabel}</span>
           </button>
           <div class="scope-entity-group-items">
             ${visibleOptions.length > 0 ? visibleOptions.map(opt => `
               <div class="scope-catalog-row"
                    data-dimension-id="${this.escapeHtml(dimId)}"
                    data-value="${this.escapeHtml(opt)}">
-                <span class="scope-catalog-row-label">${this.escapeHtml(opt)}</span>
+                ${renderRowLabel(opt)}
                 <span class="scope-catalog-row-actions">
                   <button class="scope-catalog-or scope-filter-apply" title="Include (OR)" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg> Add</button>
                   <button class="scope-catalog-not scope-filter-apply scope-filter-exclude" title="Exclude (NOT)" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.97853 13.2672C0.746592 11.86 0 10.0172 0 8C0 3.58172 3.58172 0 8 0C10.0172 0 11.86 0.746592 13.2672 1.97853L13.2797 1.96602L14.034 2.72026L14.0215 2.73277C15.2534 4.13997 16 5.9828 16 8C16 12.4183 12.4183 16 8 16C5.9828 16 4.13997 15.2534 2.73277 14.0215L2.72027 14.034L2.34925 13.6629C2.34518 13.6589 2.34111 13.6548 2.33705 13.6508L1.96602 13.2797L1.97853 13.2672ZM3.48895 13.2653C4.7015 14.3051 6.27739 14.9333 8 14.9333C11.8292 14.9333 14.9333 11.8292 14.9333 8C14.9333 6.27739 14.3051 4.7015 13.2653 3.48895L3.48895 13.2653ZM12.511 2.7347L2.7347 12.511C1.69488 11.2985 1.06667 9.72261 1.06667 8C1.06667 4.17083 4.17083 1.06667 8 1.06667C9.72261 1.06667 11.2985 1.69488 12.511 2.7347Z" fill="currentColor"/></svg> Exclude</button>
@@ -542,6 +629,51 @@ export class ScopeSelector {
               </div>
             `).join('') : `<div class="scope-entity-group-empty">No matching options</div>`}
             ${isTruncated ? `<div class="scope-entity-group-hint">Showing ${VISIBLE_LIMIT} of ${totalFiltered} — type to narrow results</div>` : ''}
+          </div>
+        </div>
+      `
+    };
+  }
+
+  /**
+   * Render a date-type catalog dimension as an accordion with an inline histogram date picker.
+   * @param {Object} dimension - catalog dimension object with dateHistogram
+   * @param {string} displayName - name to show in the header
+   * @param {string} filterLower - lowercase search text
+   * @returns {{ sortName: string, html: string } | null}
+   */
+  renderDateDimensionAccordion(dimension, displayName, filterLower) {
+    const dimId = dimension.id;
+    const accordionKey = 'catalog_' + dimId;
+
+    if (filterLower && !displayName.toLowerCase().includes(filterLower)) return null;
+
+    const isExpanded = this.expandedSections.has(accordionKey) || this.dimHasSelections(dimId);
+    const currentRange = this.scope.metadataFilters[dimId]?.dateRange;
+    const rangeLabel = currentRange?.start && currentRange?.end
+      ? `${formatDate(currentRange.start)} – ${formatDate(currentRange.end)}`
+      : 'All time';
+
+    return {
+      sortName: displayName,
+      totalOptions: 0,
+      html: `
+        <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="${accordionKey}">
+          <button class="scope-entity-group-header" data-type="${accordionKey}">
+            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
+            <span class="scope-group-label">${this.escapeHtml(displayName)}</span>
+            <span class="scope-group-count">${this.escapeHtml(rangeLabel)}</span>
+          </button>
+          <div class="scope-entity-group-items">
+            <div class="scope-date-histogram-wrapper">
+              <div class="scope-date-histogram" data-dimension-id="${this.escapeHtml(dimId)}"></div>
+              <div class="scope-date-range-footer">
+                <span class="scope-date-range-label" data-dimension-id="${this.escapeHtml(dimId)}">${this.escapeHtml(rangeLabel)}</span>
+                ${currentRange?.start ? `<button class="scope-date-clear" data-dimension-id="${this.escapeHtml(dimId)}">Clear</button>` : ''}
+              </div>
+            </div>
           </div>
         </div>
       `
@@ -592,7 +724,9 @@ export class ScopeSelector {
           }).join('')
         : `<div class="scope-entity-group-empty">No matching filters</div>`;
 
-      const countText = `${allSavedFilters.length} saved filter${allSavedFilters.length !== 1 ? 's' : ''}`;
+      const countText = filterLower && matchedSavedFilters.length !== allSavedFilters.length
+        ? `${matchedSavedFilters.length} of ${allSavedFilters.length} saved filter${allSavedFilters.length !== 1 ? 's' : ''}`
+        : `${allSavedFilters.length} saved filter${allSavedFilters.length !== 1 ? 's' : ''}`;
 
       html += `
         <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="searchFilters">
@@ -618,6 +752,8 @@ export class ScopeSelector {
     const metadataItems = [];
     let extractionTotalValues = 0;
     let extractionTotalDocs = 0;
+    let extractionFilteredValues = 0;
+    let extractionFilteredDocs = 0;
 
     for (const dimension of catalog) {
       const isExtraction = dimension.name.toLowerCase().startsWith('extracted');
@@ -631,10 +767,15 @@ export class ScopeSelector {
         extractionTotalDocs += (dimension.documentCount || 0);
       }
 
-      const item = this.renderCatalogDimensionAccordion(dimension, displayName, filterLower);
+      // Route date dimensions to the histogram renderer
+      const item = dimension.type === 'date'
+        ? this.renderDateDimensionAccordion(dimension, displayName, filterLower)
+        : this.renderCatalogDimensionAccordion(dimension, displayName, filterLower);
       if (!item) continue;
 
       if (isExtraction) {
+        extractionFilteredValues += (item.filteredValues ?? item.totalOptions ?? 0);
+        extractionFilteredDocs += (item.filteredDocCount ?? 0);
         extractionItems.push(item);
       } else {
         metadataItems.push(item);
@@ -653,6 +794,11 @@ export class ScopeSelector {
     if (filteredDocTypes.length > 0 || selectedDocTypes.length < documentTypes.length) {
       const isExpanded = this.expandedSections.has('documentTypes');
       const filteredDocTypeIds = filteredDocTypes.map(dt => dt.id);
+      const dtTotal = documentTypes.length;
+      const dtFiltered = filteredDocTypes.length;
+      const dtCountLabel = filterLower
+        ? `${dtFiltered} of ${dtTotal} value${dtTotal !== 1 ? 's' : ''}`
+        : `${dtTotal} value${dtTotal !== 1 ? 's' : ''}`;
       metadataItems.push({
         sortName: 'Document Types',
         html: `
@@ -662,7 +808,7 @@ export class ScopeSelector {
                 <path d="M4 6l4 4 4-4"/>
               </svg>
               <span class="scope-group-label">Document Types</span>
-              <span class="scope-group-count">${documentTypes.length} value${documentTypes.length !== 1 ? 's' : ''}</span>
+              <span class="scope-group-count">${dtCountLabel}</span>
               ${filteredDocTypes.length >= 1 ? `<span class="scope-add-all" data-scope-key="documentTypes" data-ids="${filteredDocTypeIds.join(',')}">${filteredDocTypes.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
             </button>
             <div class="scope-entity-group-items">
@@ -694,6 +840,15 @@ export class ScopeSelector {
     if (extractionItems.length > 0) {
       const hasChildValueMatches = filterLower && extractionItems.some(item => item.html.includes('class="scope-entity-group scope-nested-group expanded"'));
       const isExpanded = this.expandedSections.has('extractionFilters') || hasChildValueMatches;
+
+      const isFiltering = !!filterLower;
+      const extCountLabel = isFiltering
+        ? `${extractionFilteredValues} of ${extractionTotalValues} value${extractionTotalValues !== 1 ? 's' : ''}`
+        : `${extractionTotalValues} value${extractionTotalValues !== 1 ? 's' : ''}`;
+      const extTooltip = isFiltering
+        ? `${extractionFilteredValues} matching value${extractionFilteredValues !== 1 ? 's' : ''} of ${extractionTotalValues} total · ${extractionFilteredDocs} document${extractionFilteredDocs !== 1 ? 's' : ''}`
+        : `${extractionTotalValues} filterable value${extractionTotalValues !== 1 ? 's' : ''} indexing ${extractionTotalDocs} document${extractionTotalDocs !== 1 ? 's' : ''}`;
+
       html += `
         <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="extractionFilters">
           <button class="scope-entity-group-header" data-type="extractionFilters">
@@ -701,7 +856,7 @@ export class ScopeSelector {
               <path d="M4 6l4 4 4-4"/>
             </svg>
             <span class="scope-group-label">Extractions</span>
-            <span class="scope-group-count" title="${extractionTotalValues} attribute${extractionTotalValues !== 1 ? 's' : ''} indexing ${extractionTotalDocs} document${extractionTotalDocs !== 1 ? 's' : ''}">${extractionTotalValues} value${extractionTotalValues !== 1 ? 's' : ''}</span>
+            <span class="scope-group-count" data-tooltip="${extTooltip}">${extCountLabel}</span>
           </button>
           <div class="scope-entity-group-items">
             ${extractionItems.map(item => item.html).join('')}
@@ -722,14 +877,7 @@ export class ScopeSelector {
    * Get the total item count for a filter
    */
   getFilterItemCount(filter) {
-    const scope = filter.scope || {};
-    let count = (scope.personIds?.length || 0) +
-           (scope.organizationIds?.length || 0) +
-           (scope.locationIds?.length || 0) +
-           (scope.keywords?.length || 0) +
-           (scope.documentTypes?.length || 0);
-    count += this.countMetadataSelections(scope.metadataFilters);
-    return count;
+    return _getScopeItemCount(filter.scope);
   }
 
   /**
@@ -780,10 +928,16 @@ export class ScopeSelector {
     // Add metadata filter dimensions
     const catalog = DataService.getFilterCatalog();
     for (const [dimId, filterVal] of Object.entries(scope.metadataFilters || {})) {
-      const include = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
-      const exclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
       const dimension = catalog.find(d => d.id === dimId);
       const dimName = dimension?.name || dimId;
+      // Handle date range entries
+      if (filterVal?.dateRange?.start && filterVal?.dateRange?.end) {
+        const rangeText = `${formatDate(filterVal.dateRange.start)} – ${formatDate(filterVal.dateRange.end)}`;
+        contents.push({ label: dimName, items: [rangeText] });
+        continue;
+      }
+      const include = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
+      const exclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
       if (include.length > 0) {
         contents.push({ label: dimName, items: [...include] });
       }
@@ -872,13 +1026,7 @@ export class ScopeSelector {
    * Get the total item count in current scope
    */
   getScopeItemCount() {
-    let count = (this.scope.personIds?.length || 0) +
-           (this.scope.organizationIds?.length || 0) +
-           (this.scope.locationIds?.length || 0) +
-           (this.scope.keywords?.length || 0) +
-           (this.scope.documentTypes?.length || 0);
-    count += this.countMetadataSelections(this.scope.metadataFilters);
-    return count;
+    return _getScopeItemCount(this.scope);
   }
 
   /**
@@ -895,6 +1043,149 @@ export class ScopeSelector {
     if (group) {
       group.classList.toggle('expanded', this.expandedSections.has(type));
     }
+
+    // When expanding a date histogram accordion, the container transitions from
+    // display:none to visible. Re-render the histogram after layout completes.
+    if (this.expandedSections.has(type) && type.startsWith('catalog_')) {
+      const dimId = type.replace('catalog_', '');
+      const instance = this.dateHistogramInstances[dimId];
+      if (instance) {
+        requestAnimationFrame(() => instance.resize());
+      }
+    }
+  }
+
+  _showTooltip(target) {
+    this._hideTooltip();
+    const text = target.getAttribute('data-tooltip');
+    if (!text) return;
+    const el = document.createElement('div');
+    el.className = 'data-tooltip-popup';
+    el.textContent = text;
+    document.body.appendChild(el);
+    this._tooltipEl = el;
+
+    const rect = target.getBoundingClientRect();
+    const pad = 4;
+    let left = rect.left + rect.width / 2 - el.offsetWidth / 2;
+    left = Math.max(pad, Math.min(left, window.innerWidth - el.offsetWidth - pad));
+    el.style.left = `${left}px`;
+    el.style.top = `${rect.bottom + 6}px`;
+  }
+
+  _hideTooltip() {
+    if (this._tooltipEl) {
+      this._tooltipEl.remove();
+      this._tooltipEl = null;
+    }
+  }
+
+  /**
+   * Initialize TimeRangeFilter instances for all date-type histogram containers in the DOM.
+   * Must be called after the entity list HTML is in the document.
+   */
+  initDateHistograms() {
+    const containers = this.container.querySelectorAll('.scope-date-histogram[data-dimension-id]');
+    const catalog = this.getCatalog();
+
+    for (const el of containers) {
+      const dimId = el.dataset.dimensionId;
+      const dimension = catalog.find(d => d.id === dimId);
+      if (!dimension?.dateHistogram) continue;
+
+      const filter = new TimeRangeFilter(el, {
+        height: 56,
+        margin: { top: 2, right: 8, bottom: 16, left: 8 },
+        barColor: 'var(--accent-primary)',
+        barOpacity: 0.5,
+        onChange: (range) => {
+          if (range) {
+            this.scope.metadataFilters[dimId] = {
+              dateRange: { start: range.start.toISOString(), end: range.end.toISOString() }
+            };
+          } else {
+            delete this.scope.metadataFilters[dimId];
+          }
+          this.refreshChips();
+          this.updateDateRangeUI(dimId);
+          this.notifyChange();
+        }
+      });
+
+      filter.update(dimension.dateHistogram);
+
+      // If the container is currently visible (accordion expanded), the render
+      // may still have gotten 0 width if layout hasn't flushed. Schedule a
+      // follow-up resize so it draws once the browser has laid out the element.
+      requestAnimationFrame(() => {
+        if (el.clientWidth > 0) {
+          filter.resize();
+        }
+      });
+
+      // Restore previous selection
+      const saved = this.scope.metadataFilters[dimId]?.dateRange;
+      if (saved?.start && saved?.end) {
+        requestAnimationFrame(() => filter.setSelection(saved.start, saved.end));
+      }
+
+      this.dateHistogramInstances[dimId] = filter;
+    }
+  }
+
+  /**
+   * Destroy all date histogram instances and clean up DOM references.
+   */
+  destroyDateHistograms() {
+    for (const [dimId, instance] of Object.entries(this.dateHistogramInstances)) {
+      instance.destroy();
+    }
+    this.dateHistogramInstances = {};
+  }
+
+  /**
+   * Update the date range label and clear button for a dimension after brush change.
+   */
+  updateDateRangeUI(dimId) {
+    const range = this.scope.metadataFilters[dimId]?.dateRange;
+    const label = this.container.querySelector(`.scope-date-range-label[data-dimension-id="${dimId}"]`);
+    const countEl = this.container.querySelector(`.scope-entity-group[data-type="catalog_${dimId}"] .scope-group-count`);
+    if (label) {
+      label.textContent = range?.start ? `${formatDate(range.start)} – ${formatDate(range.end)}` : 'All time';
+    }
+    if (countEl) {
+      countEl.textContent = range?.start ? `${formatDate(range.start)} – ${formatDate(range.end)}` : 'All time';
+    }
+    // Toggle clear button visibility
+    const footer = label?.closest('.scope-date-range-footer');
+    if (footer) {
+      const existing = footer.querySelector('.scope-date-clear');
+      if (range?.start && !existing) {
+        const btn = document.createElement('button');
+        btn.className = 'scope-date-clear';
+        btn.dataset.dimensionId = dimId;
+        btn.textContent = 'Clear';
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.clearDateSelection(dimId);
+        });
+        footer.appendChild(btn);
+      } else if (!range?.start && existing) {
+        existing.remove();
+      }
+    }
+  }
+
+  /**
+   * Clear the date range selection for a dimension.
+   */
+  clearDateSelection(dimId) {
+    const instance = this.dateHistogramInstances[dimId];
+    if (instance) instance.clearSelection();
+    delete this.scope.metadataFilters[dimId];
+    this.refreshChips();
+    this.updateDateRangeUI(dimId);
+    this.notifyChange();
   }
 
   /**
@@ -911,16 +1202,24 @@ export class ScopeSelector {
     if (saveBtn) {
       saveBtn.disabled = !this.hasScope();
     }
+
+    // Show/hide logic toggle based on item count
+    const logicToggle = this.container.querySelector('#scope-logic-toggle');
+    if (logicToggle) {
+      logicToggle.classList.toggle('hidden', this.getScopeItemCount() < 2);
+    }
   }
 
   /**
    * Refresh the entity list
    */
   refreshEntityList() {
+    this.destroyDateHistograms();
     const listContainer = this.container.querySelector('.scope-entity-list');
     if (listContainer) {
       listContainer.innerHTML = this.renderEntityGroups();
     }
+    this.initDateHistograms();
   }
 
   /**
@@ -1022,6 +1321,20 @@ export class ScopeSelector {
     if (saveBtn) {
       saveBtn.addEventListener('click', () => this.openSaveDialog());
     }
+
+    // Logic toggle (AND/OR)
+    const logicToggle = this.container.querySelector('#scope-logic-toggle');
+    if (logicToggle) {
+      logicToggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('.scope-logic-btn');
+        if (!btn) return;
+        this.scope.logic = btn.dataset.logic;
+        logicToggle.querySelectorAll('.scope-logic-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.logic === this.scope.logic);
+        });
+        this.notifyChange();
+      });
+    }
     
     // Chip remove clicks
     this.container.querySelector('.scope-chips')?.addEventListener('click', (e) => {
@@ -1034,6 +1347,14 @@ export class ScopeSelector {
             this.scope.keywords = this.scope.keywords.filter(k => k !== chip.dataset.keyword);
           } else if (chip.dataset.dimensionId !== undefined) {
             const dimId = chip.dataset.dimensionId;
+            // Handle date range chip removal
+            if (chip.dataset.filterMode === 'dateRange') {
+              this.clearDateSelection(dimId);
+              this.refreshChips();
+              this.refreshEntityList();
+              this.notifyChange();
+              return;
+            }
             const val = chip.dataset.value;
             const entry = this.scope.metadataFilters[dimId];
             if (entry) {
@@ -1059,8 +1380,22 @@ export class ScopeSelector {
       }
     });
     
-    // Filter tooltip positioning
+    // data-tooltip hover popup (fixed position, escapes overflow)
+    this._tooltipEl = null;
     const entityList = this.container.querySelector('.scope-entity-list');
+    if (entityList) {
+      entityList.addEventListener('mouseenter', (e) => {
+        const target = e.target.closest('[data-tooltip]');
+        if (!target || !entityList.contains(target)) return;
+        this._showTooltip(target);
+      }, true);
+      entityList.addEventListener('mouseleave', (e) => {
+        const target = e.target.closest('[data-tooltip]');
+        if (target) this._hideTooltip();
+      }, true);
+    }
+
+    // Filter tooltip positioning
     if (entityList) {
       entityList.addEventListener('mouseenter', (e) => {
         const wrapper = e.target.closest('.scope-filter-item-wrapper');
@@ -1092,6 +1427,15 @@ export class ScopeSelector {
     
     // Entity list clicks
     this.container.querySelector('.scope-entity-list')?.addEventListener('click', (e) => {
+      // Handle date histogram clear button
+      const dateClearBtn = e.target.closest('.scope-date-clear');
+      if (dateClearBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.clearDateSelection(dateClearBtn.dataset.dimensionId);
+        return;
+      }
+
       // Handle "Add all" click (must be before header check)
       const addAllBtn = e.target.closest('.scope-add-all');
       if (addAllBtn) {
@@ -1213,6 +1557,10 @@ export class ScopeSelector {
         }
       });
     }
+
+    // Initialize date histogram pickers
+    this.destroyDateHistograms();
+    this.initDateHistograms();
   }
 
   /**
@@ -1226,6 +1574,8 @@ export class ScopeSelector {
    * Destroy the component and clean up
    */
   destroy() {
+    this.destroyDateHistograms();
+    this._hideTooltip();
     if (this.container) {
       this.container.innerHTML = '';
     }

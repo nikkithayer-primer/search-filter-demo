@@ -417,7 +417,7 @@ export class DocumentTableCard extends BaseCardComponent {
     super(view, containerId);
     this.options = options;
     this.documents = options.documents || [];
-    this.title = options.title || 'documents';
+    this.title = options.title ?? 'documents';
     this.maxItems = options.maxItems || 10;
     this.showCount = options.showCount !== false;
     this.halfWidth = options.halfWidth || false;
@@ -500,7 +500,7 @@ export class DocumentTableCard extends BaseCardComponent {
     
     const filteredDocs = this.getFilteredDocuments();
     const docCount = filteredDocs.length;
-    const titleText = `${docCount} ${this.title}`;
+    const titleText = this.showCount ? `${docCount} ${this.title}` : this.title;
     
     return CardBuilder.create(titleText, this.containerId, {
       noPadding: true,

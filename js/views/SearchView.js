@@ -8,6 +8,8 @@ import { DataService } from '../data/DataService.js';
 import { dataStore } from '../data/DataStore.js';
 import { SearchInput } from '../components/SearchInput.js';
 import { formatDate, formatDateTime } from '../utils/formatters.js';
+import { hasAnyScope, getScopeItemCount, removeFromScope } from '../utils/scopeUtils.js';
+import { renderScopeChips, attachScopeChipHandlers } from '../components/ScopeChips.js';
 
 export class SearchView extends BaseView {
   constructor(container, options = {}) {
@@ -47,7 +49,7 @@ export class SearchView extends BaseView {
 
   async render() {
     const currentScope = this.getScope();
-    const hasScope = this.hasAnyScope(currentScope);
+    const hasScope = hasAnyScope(currentScope);
     const hasQuery = this.searchQuery.trim().length >= 2;
     const canSearch = hasScope || hasQuery;
 
@@ -78,7 +80,7 @@ export class SearchView extends BaseView {
           
           <!-- Selected Filters Display -->
           <div class="search-selected-filters ${hasScope ? '' : 'hidden'}" id="selected-filters-display">
-            ${this.renderSelectedScopeChips(currentScope)}
+            ${renderScopeChips(currentScope)}
           </div>
           
           <!-- Match Count -->
@@ -124,7 +126,7 @@ export class SearchView extends BaseView {
     }
 
     // Attach chip remove handlers for the initially rendered chips
-    this.attachChipRemoveHandlers();
+    attachScopeChipHandlers(this.container, '.selected-scope-chips', (type, id) => this.removeFromScope(type, id), (el, evt, fn) => this.addListener(el, evt, fn));
     
     // Focus the search input
     if (this.searchInput) this.searchInput.focus();
@@ -168,29 +170,11 @@ export class SearchView extends BaseView {
   }
 
   /**
-   * Check if a scope has any selected items
-   */
-  hasAnyScope(scope) {
-    if (!scope) return false;
-    return (scope.personIds?.length > 0) ||
-           (scope.organizationIds?.length > 0) ||
-           (scope.locationIds?.length > 0) ||
-           (scope.keywords?.length > 0) ||
-           (scope.documentTypes?.length > 0) ||
-           (scope.publisherIds?.length > 0) ||
-           (scope.authors?.length > 0) ||
-           (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => {
-             if (Array.isArray(v)) return v.length > 0;
-             return (v?.include?.length > 0) || (v?.exclude?.length > 0);
-           }));
-  }
-
-  /**
    * Update search UI elements based on current state
    */
   updateSearchUI() {
     const scope = this.getScope();
-    const hasScope = this.hasAnyScope(scope);
+    const hasScope = hasAnyScope(scope);
     const hasQuery = this.searchQuery.trim().length >= 2;
     const canSearch = hasScope || hasQuery;
 
@@ -212,185 +196,6 @@ export class SearchView extends BaseView {
   }
 
   /**
-   * Render selected scope items as chips (shown when filter panel is collapsed)
-   */
-  renderSelectedScopeChips(scope) {
-    if (!scope) return '';
-    
-    const chips = [];
-    
-    // People
-    if (scope.personIds?.length > 0) {
-      scope.personIds.forEach(id => {
-        const person = DataService.getPerson(id);
-        if (person) {
-          chips.push({
-            type: 'person',
-            id: id,
-            label: person.name,
-            tooltip: 'Person',
-            icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="8" cy="5" r="3"/>
-              <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
-            </svg>`
-          });
-        }
-      });
-    }
-    
-    // Organizations
-    if (scope.organizationIds?.length > 0) {
-      scope.organizationIds.forEach(id => {
-        const org = DataService.getOrganization(id);
-        if (org) {
-          chips.push({
-            type: 'organization',
-            id: id,
-            label: org.name,
-            tooltip: 'Organization',
-            icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="2" y="4" width="12" height="10" rx="1"/>
-              <path d="M5 4V2h6v2M5 8h6M5 11h6"/>
-            </svg>`
-          });
-        }
-      });
-    }
-    
-    // Locations
-    if (scope.locationIds?.length > 0) {
-      scope.locationIds.forEach(id => {
-        const location = DataService.getLocation(id);
-        if (location) {
-          chips.push({
-            type: 'location',
-            id: id,
-            label: location.name,
-            tooltip: 'Location',
-            icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z"/>
-              <circle cx="8" cy="6" r="2"/>
-            </svg>`
-          });
-        }
-      });
-    }
-    
-    // Keywords
-    if (scope.keywords?.length > 0) {
-      scope.keywords.forEach(keyword => {
-        chips.push({
-          type: 'keyword',
-          id: keyword,
-          label: keyword,
-          tooltip: 'Keyword',
-          icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M2 5h12M2 8h8M2 11h10"/>
-          </svg>`
-        });
-      });
-    }
-    
-    // Document Types
-    if (scope.documentTypes?.length > 0) {
-      const docTypeLabels = {
-        'news_article': 'News Article',
-        'social_post': 'Social Post',
-        'internal_report': 'Internal Report',
-        'intelligence_report': 'Intelligence Report',
-        'memo': 'Memo',
-        'transcript': 'Transcript',
-        'internal': 'Internal',
-        'corporate_record': 'Corporate Record',
-        'watchlist_match': 'Watchlist Match',
-        'political_finance': 'Political Finance',
-        'event_attendance': 'Event Attendance'
-      };
-      scope.documentTypes.forEach(docType => {
-        chips.push({
-          type: 'documentType',
-          id: docType,
-          label: docTypeLabels[docType] || docType,
-          tooltip: 'Document Type',
-          icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
-            <path d="M10 2v3h3"/>
-          </svg>`
-        });
-      });
-    }
-    
-    // Publishers
-    if (scope.publisherIds?.length > 0) {
-      scope.publisherIds.forEach(publisherId => {
-        const publisher = DataService.getPublisher(publisherId);
-        if (publisher) {
-          chips.push({
-            type: 'publisher',
-            id: publisherId,
-            label: publisher.name,
-            tooltip: 'Publisher',
-            icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="2" y="3" width="12" height="10" rx="1"/>
-              <path d="M5 6h6M5 9h4"/>
-            </svg>`
-          });
-        }
-      });
-    }
-    
-    // Authors
-    if (scope.authors?.length > 0) {
-      scope.authors.forEach(author => {
-        chips.push({
-          type: 'author',
-          id: author,
-          label: author,
-          tooltip: 'Author',
-          icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="8" cy="5" r="3"/>
-            <path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/>
-          </svg>`
-        });
-      });
-    }
-
-    // Metadata filters (include + exclude)
-    const catalog = DataService.getFilterCatalog();
-    for (const [dimId, filterVal] of Object.entries(scope.metadataFilters || {})) {
-      const dimension = catalog.find(d => d.id === dimId);
-      const dimName = dimension?.name || dimId;
-      const include = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
-      const exclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
-      const filterIcon = `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/></svg>`;
-      include.forEach(val => {
-        chips.push({ type: 'metadata', id: `${dimId}::${val}`, label: val, tooltip: dimName, icon: filterIcon, mode: 'include' });
-      });
-      exclude.forEach(val => {
-        chips.push({ type: 'metadata', id: `${dimId}::${val}`, label: val, tooltip: `Exclude: ${dimName}`, icon: filterIcon, mode: 'exclude' });
-      });
-    }
-    
-    if (chips.length === 0) return '';
-    
-    return `
-      <div class="selected-scope-chips">
-        ${chips.map(chip => `
-          <span class="scope-chip scope-chip-${chip.type}${chip.mode === 'exclude' ? ' scope-chip-excluded' : ''}" data-type="${chip.type}" data-id="${this.escapeHtml(chip.id)}"${chip.tooltip ? ` data-tooltip="${this.escapeHtml(chip.tooltip)}"` : ''}>
-            ${chip.icon}
-            <span class="chip-label">${this.escapeHtml(chip.label)}</span>
-            <button class="chip-remove" data-type="${chip.type}" data-id="${this.escapeHtml(chip.id)}" title="Remove">
-              <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4l8 8M12 4l-8 8"/>
-              </svg>
-            </button>
-          </span>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  /**
    * Update the selected filters display
    */
   updateSelectedFiltersDisplay() {
@@ -398,31 +203,11 @@ export class SearchView extends BaseView {
     if (!displayContainer) return;
     
     const scope = this.getScope();
-    const hasScope = this.hasAnyScope(scope);
+    const active = hasAnyScope(scope);
     
-    // Show/hide based on whether we have scope
-    displayContainer.classList.toggle('hidden', !hasScope);
-    
-    // Update content
-    displayContainer.innerHTML = this.renderSelectedScopeChips(scope);
-    
-    // Attach remove handlers
-    this.attachChipRemoveHandlers();
-  }
-
-  /**
-   * Attach event handlers for chip remove buttons
-   */
-  attachChipRemoveHandlers() {
-    const removeButtons = this.container.querySelectorAll('.selected-scope-chips .chip-remove');
-    removeButtons.forEach(btn => {
-      this.addListener(btn, 'click', (e) => {
-        e.stopPropagation();
-        const type = btn.dataset.type;
-        const id = btn.dataset.id;
-        this.removeFromScope(type, id);
-      });
-    });
+    displayContainer.classList.toggle('hidden', !active);
+    displayContainer.innerHTML = renderScopeChips(scope);
+    attachScopeChipHandlers(this.container, '.selected-scope-chips', (type, id) => this.removeFromScope(type, id), (el, evt, fn) => this.addListener(el, evt, fn));
   }
 
   /**
@@ -432,51 +217,8 @@ export class SearchView extends BaseView {
     const scope = this.searchInput?.searchScope;
     if (!scope) return;
     
-    switch (type) {
-      case 'person':
-        scope.personIds = scope.personIds.filter(i => i !== id);
-        break;
-      case 'organization':
-        scope.organizationIds = scope.organizationIds.filter(i => i !== id);
-        break;
-      case 'location':
-        scope.locationIds = scope.locationIds.filter(i => i !== id);
-        break;
-      case 'keyword':
-        scope.keywords = scope.keywords.filter(k => k !== id);
-        break;
-      case 'documentType':
-        scope.documentTypes = (scope.documentTypes || []).filter(dt => dt !== id);
-        break;
-      case 'publisher':
-        scope.publisherIds = (scope.publisherIds || []).filter(p => p !== id);
-        break;
-      case 'author':
-        scope.authors = (scope.authors || []).filter(a => a !== id);
-        break;
-      case 'metadata': {
-        // id format: "dimId::value"
-        const sep = id.indexOf('::');
-        if (sep > 0) {
-          const dimId = id.substring(0, sep);
-          const val = id.substring(sep + 2);
-          const entry = scope.metadataFilters?.[dimId];
-          if (entry) {
-            if (Array.isArray(entry)) {
-              scope.metadataFilters[dimId] = entry.filter(v => v !== val);
-              if (scope.metadataFilters[dimId].length === 0) delete scope.metadataFilters[dimId];
-            } else {
-              entry.include = (entry.include || []).filter(v => v !== val);
-              entry.exclude = (entry.exclude || []).filter(v => v !== val);
-              if (entry.include.length === 0 && entry.exclude.length === 0) delete scope.metadataFilters[dimId];
-            }
-          }
-        }
-        break;
-      }
-    }
+    removeFromScope(scope, type, id);
     
-    // Update UI (sync the component's badge, then update external elements)
     if (this.searchInput) this.searchInput._updateFiltersBadge();
     this.updateSearchUI();
     this.updateSelectedFiltersDisplay();
@@ -506,7 +248,7 @@ export class SearchView extends BaseView {
     const countContainer = document.getElementById('match-count');
     const hasQuery = query.length >= 2;
     const scope = this.getScope();
-    const hasScope = this.hasAnyScope(scope);
+    const hasScope = hasAnyScope(scope);
     
     if (!hasQuery && !hasScope) {
       this.matchCount = 0;
@@ -547,7 +289,7 @@ export class SearchView extends BaseView {
     const query = this.searchQuery.trim();
     const hasQuery = query.length >= 2;
     const scope = this.getScope();
-    const hasScope = this.hasAnyScope(scope);
+    const hasScope = hasAnyScope(scope);
     
     // Need either a query or scope to create workspace
     if (!hasQuery && !hasScope) return;
@@ -580,7 +322,7 @@ export class SearchView extends BaseView {
     let description;
     
     // Count items in scope for description
-    const scopeItemCount = hasScope ? this.getScopeItemCount(scope) : 0;
+    const scopeItemCount = hasScope ? getScopeItemCount(scope) : 0;
     
     if (hasScope && hasQuery) {
       workspaceName = query;
@@ -626,25 +368,6 @@ export class SearchView extends BaseView {
 
     // Navigate to the new workspace
     window.location.hash = `#/${workspaceId}/`;
-  }
-
-  /**
-   * Get the count of items in a scope
-   */
-  getScopeItemCount(scope) {
-    if (!scope) return 0;
-    let count = (scope.personIds?.length || 0) +
-           (scope.organizationIds?.length || 0) +
-           (scope.locationIds?.length || 0) +
-           (scope.keywords?.length || 0) +
-           (scope.documentTypes?.length || 0) +
-           (scope.publisherIds?.length || 0) +
-           (scope.authors?.length || 0);
-    for (const v of Object.values(scope.metadataFilters || {})) {
-      if (Array.isArray(v)) { count += v.length; continue; }
-      count += (v?.include?.length || 0) + (v?.exclude?.length || 0);
-    }
-    return count;
   }
 
   /**

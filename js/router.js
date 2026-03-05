@@ -32,6 +32,8 @@ import { ProjectsView } from './views/ProjectsView.js';
 import { ProjectView } from './views/ProjectView.js';
 import { TopicView } from './views/TopicView.js';
 import { ActivityFeedView } from './views/ActivityFeedView.js';
+import { SearchFiltersView } from './views/SearchFiltersView.js';
+import { SearchFilterDetailView } from './views/SearchFilterDetailView.js';
 import { TimeRangeFilter } from './components/TimeRangeFilter.js';
 import { DataService } from './data/DataService.js';
 import { dataStore } from './data/DataStore.js';
@@ -52,11 +54,12 @@ const ENTITY_VIEW_MAP = {
   'document': { view: DocumentView, listType: 'documents' },
   'topic': { view: TopicView, listType: 'topics' },
   'workspace': { view: WorkspaceView, listType: 'workspaces' },
-  'project': { view: ProjectView, listType: 'projects' }
+  'project': { view: ProjectView, listType: 'projects' },
+  'searchFilter': { view: SearchFilterDetailView, listType: 'searchFilters' }
 };
 
 // Top-level routes that don't follow the ID-based pattern
-const TOP_LEVEL_ROUTES = ['workspaces', 'monitors', 'search', 'projects', 'activity', 'documents'];
+const TOP_LEVEL_ROUTES = ['workspaces', 'monitors', 'search', 'projects', 'activity', 'documents', 'search-filters'];
 
 export class Router {
   constructor(containerId) {
@@ -650,13 +653,18 @@ export class Router {
     const parsed = this.parseIdBasedRoute(hash);
 
     // COP removed: redirect COP-scoped routes to monitors
+    // Exception: allow searchFilter entities to be viewed without a context
     if (parsed.contextType === 'cop' && !parsed.topLevelRoute) {
-      window.location.hash = '#/monitors';
-      return;
+      if (parsed.entityType !== 'searchFilter') {
+        window.location.hash = '#/monitors';
+        return;
+      }
     }
 
     // Determine the primary route for nav link highlighting
-    this.currentRoute = parsed.topLevelRoute || parsed.contextType || 'monitors';
+    this.currentRoute = parsed.topLevelRoute || 
+      (parsed.entityType === 'searchFilter' ? 'searchFilter' : null) ||
+      parsed.contextType || 'monitors';
     this.currentContext = this.resolveContextScope(parsed.contextId, parsed.projectChain || []);
 
     // Clear page header slot and reset its height variable
@@ -678,8 +686,9 @@ export class Router {
     }
     this.currentView = null;
 
-    // Toggle search-view class to hide chat on the search screen
-    document.body.classList.toggle('search-view', this.currentRoute === 'search');
+    // Toggle search-view class to hide chat on search and search-filters screens
+    const hideChatRoutes = ['search', 'search-filters', 'searchFilter'];
+    document.body.classList.toggle('search-view', hideChatRoutes.includes(this.currentRoute));
 
     // Update active nav link
     try {
@@ -785,6 +794,17 @@ export class Router {
       case 'documents':
         this.currentView = new DocumentsView(this.container, filterOptions);
         break;
+      
+      case 'search-filters': {
+        const sfHash = (window.location.hash.slice(2) || '').split('?')[0];
+        const sfSegments = sfHash.split('/').filter(s => s);
+        if (sfSegments[1] === 'new') {
+          this.currentView = new SearchFilterDetailView(this.container, 'new', filterOptions);
+        } else {
+          this.currentView = new SearchFiltersView(this.container, filterOptions);
+        }
+        break;
+      }
         
       default:
         // Unknown top-level route - redirect to default
@@ -869,7 +889,8 @@ export class Router {
         linkRoute === route ||
         linkRoute === 'monitors' && (route === 'monitors' || route === 'monitor') ||
         linkRoute === 'workspaces' && (route === 'workspaces' || route === 'workspace') ||
-        linkRoute === 'projects' && (route === 'projects' || route === 'project');
+        linkRoute === 'projects' && (route === 'projects' || route === 'project') ||
+        linkRoute === 'search-filters' && (route === 'search-filters' || route === 'searchFilter');
       
       if (matches) {
         link.classList.add('active');

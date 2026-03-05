@@ -464,6 +464,9 @@ class App {
         showFilters: true,
         onSubmit: (query) => {
           this.sendChatMessage(query);
+        },
+        onScopeChange: (scope) => {
+          this.syncScopeToCurrentView(scope);
         }
       });
       this.chatSearchInput.render();
@@ -894,6 +897,29 @@ class App {
       chatPanel?.classList.remove('open');
       chatToggle?.classList.remove('active');
       document.body.classList.remove('chat-open');
+    }
+  }
+
+  /**
+   * Sync scope from the chat sidebar's SearchInput to the current view's filter state.
+   * Called when the user changes filters in the chat input.
+   */
+  syncScopeToCurrentView(scope) {
+    const view = this.router?.currentView;
+    if (view && typeof view.searchScope !== 'undefined' && typeof view.applyFilters === 'function') {
+      view.searchScope = JSON.parse(JSON.stringify(scope));
+      view.applyFilters();
+    }
+  }
+
+  /**
+   * Sync scope from the current view back to the chat sidebar's SearchInput.
+   * Called by views when their filters change independently (e.g. from the documents Filters button).
+   */
+  syncScopeFromCurrentView(scope) {
+    if (this.chatSearchInput) {
+      this.chatSearchInput.searchScope = JSON.parse(JSON.stringify(scope));
+      this.chatSearchInput._updateFiltersBadge();
     }
   }
 

@@ -327,14 +327,15 @@ const SCHEMAS = {
   filterCatalog: {
     idPrefix: null,
     required: ['id', 'name', 'type', 'source'],
-    optional: ['metadataKey', 'documentCount', 'filterableCount', 'options', 'docMapping'],
+    optional: ['metadataKey', 'documentCount', 'filterableCount', 'options', 'docMapping', 'dateHistogram'],
     types: {
       name: 'string',
       type: 'string',
       source: 'string',
       documentCount: 'number',
       filterableCount: 'number',
-      options: 'array'
+      options: 'array',
+      dateHistogram: 'object'
     }
   }
 };

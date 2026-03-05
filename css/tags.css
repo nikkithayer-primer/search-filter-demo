@@ -274,9 +274,9 @@
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border: 1px solid transparent;
+  border: none;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.4;
   white-space: nowrap;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -321,7 +321,6 @@
 
 .extraction-chip--colored {
   background: var(--extraction-bg);
-  border-color: var(--extraction-bg);
   color: var(--text-primary);
 }
 
@@ -333,7 +332,6 @@
 
 .extraction-chip--ghost {
   background: transparent;
-  border-color: var(--border-subtle);
   color: var(--text-primary);
 }
 
@@ -345,8 +343,6 @@
 
 .extraction-chip--dashed {
   background: transparent;
-  border-style: dashed;
-  border-color: #D8DDE3;
   color: #66778C;
 }
 

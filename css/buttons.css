@@ -55,6 +55,7 @@
 }
 
 .btn-secondary {
+  background: transparent;
   color: var(--text-secondary);
 }
 
@@ -81,7 +82,8 @@
 }
 
 .btn-ghost:hover {
-  background: var(--bg-hover);
+  background: transparent;
+  border-color: transparent;
   color: var(--text-primary);
 }
 
