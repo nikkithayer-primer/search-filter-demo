@@ -36,6 +36,12 @@
   border-radius: var(--border-radius);
 }
 
+.btn-lg {
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--text-base);
+  border-radius: 8px;
+}
+
 /* Color Variants */
 .btn-primary {
   background: var(--accent-primary);

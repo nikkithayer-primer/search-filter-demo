@@ -49,16 +49,17 @@
   --font-mono: 'SF Mono', Consolas, monospace;
   
   --text-xs: 12px;
-  --text-sm: 13px;
-  --text-base: 14px;
-  --text-lg: 15px;
-  --text-xl: 16px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
   
   --line-height: 1.4;
   
   /* Layout */
   --navbar-height: 48px;
   --header-height: 32px;
+  --page-header-slot-height: 0px;
   
   /* Border radius scale */
   --radius-xs: 2px;

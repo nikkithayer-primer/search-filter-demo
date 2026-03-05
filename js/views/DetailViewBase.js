@@ -9,7 +9,6 @@ import { DataService } from '../data/DataService.js';
 import { initAllCardToggles } from '../utils/cardWidthToggle.js';
 import { TagChips } from '../components/TagChips.js';
 import { getTagPicker } from '../components/TagPickerModal.js';
-import { StatCards } from '../components/StatCards.js';
 import {
   CardManager,
   DocumentTableCard
@@ -23,7 +22,6 @@ export class DetailViewBase extends BaseView {
   constructor(container, options = {}) {
     super(container, options);
     this.cardManager = new CardManager(this);
-    this._statDropdowns = null;
     this.tagChips = null;
   }
 
@@ -65,9 +63,8 @@ export class DetailViewBase extends BaseView {
 
     if (data.documents && data.documents.length > 0) {
       this.cardManager.add(new DocumentTableCard(this, `${prefix}-documents`, {
-        title: 'Source Documents',
+        title: 'documents',
         documents: data.documents,
-        showCount: true,
         fullWidth: true,
         maxItems: 50,
         enableViewerMode: true
@@ -87,21 +84,6 @@ export class DetailViewBase extends BaseView {
       const tabSuffix = this.isDocumentsTab() ? '-docs' : '';
       initAllCardToggles(contentGrid, `${entityType}-${entityId}${tabSuffix}`, defaults);
     }
-  }
-
-  /**
-   * Initialize stat card dropdowns
-   * @param {string|null} contextId - The parent context ID for the dropdowns
-   * @param {string|null} currentEntityId - The current entity ID being viewed (for documents tab route)
-   * @returns {Array} Array of dropdown instances
-   */
-  initStatDropdowns(contextId = null, currentEntityId = null) {
-    const ctxId = contextId ?? this.context?.id ?? null;
-    this._statDropdowns = StatCards.initDropdowns(this.container, { 
-      contextId: ctxId,
-      currentEntityId: currentEntityId
-    });
-    return this._statDropdowns;
   }
 
   /**
@@ -150,22 +132,9 @@ export class DetailViewBase extends BaseView {
   }
 
   /**
-   * Clean up stat dropdowns
-   */
-  cleanupStatDropdowns() {
-    if (this._statDropdowns) {
-      this._statDropdowns.forEach(d => d.destroy && d.destroy());
-      this._statDropdowns = null;
-    }
-  }
-
-  /**
    * Clean up resources on view destruction
    */
   destroy() {
-    // Clean up stat dropdowns
-    this.cleanupStatDropdowns();
-    
     // Clean up tag chips
     if (this.tagChips) {
       this.tagChips = null;

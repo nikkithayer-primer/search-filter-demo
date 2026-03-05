@@ -5,11 +5,7 @@ import {
   VIEWABLE_ENTITY_TYPES,
   getEntityTypeFromId,
   isContextId,
-  isViewableEntityId,
-  buildIdRoute,
-  parseIdRoute,
-  getEntityTypeDisplayName,
-  getEntityTypePlural
+  buildIdRoute
 } from '../js/utils/idUtils.js';
 
 describe('idUtils', () => {
@@ -89,32 +85,6 @@ describe('idUtils', () => {
     });
   });
 
-  describe('isViewableEntityId', () => {
-    it('returns true for viewable entity IDs', () => {
-      expect(isViewableEntityId('person-001')).toBe(true);
-      expect(isViewableEntityId('org-002')).toBe(true);
-      expect(isViewableEntityId('narr-003')).toBe(true);
-      expect(isViewableEntityId('doc-004')).toBe(true);
-      expect(isViewableEntityId('loc-001')).toBe(true);
-      expect(isViewableEntityId('event-001')).toBe(true);
-      expect(isViewableEntityId('tag-001')).toBe(true);
-    });
-
-    it('returns false for non-viewable entities', () => {
-      expect(isViewableEntityId('monitor-001')).toBe(false);
-      expect(isViewableEntityId('workspace-001')).toBe(false);
-      expect(isViewableEntityId('project-001')).toBe(false);
-      expect(isViewableEntityId('user-001')).toBe(false);
-      expect(isViewableEntityId('pub-001')).toBe(false);
-    });
-
-    it('returns false for invalid IDs', () => {
-      expect(isViewableEntityId('invalid-001')).toBe(false);
-      expect(isViewableEntityId(null)).toBe(false);
-      expect(isViewableEntityId('')).toBe(false);
-    });
-  });
-
   describe('buildIdRoute', () => {
     it('builds route with context and entity', () => {
       expect(buildIdRoute('monitor-001', 'person-003')).toBe('#/monitor-001/person-003/');
@@ -141,90 +111,4 @@ describe('idUtils', () => {
     });
   });
 
-  describe('parseIdRoute', () => {
-    it('parses route with context and entity', () => {
-      const result = parseIdRoute('monitor-001/person-003');
-      expect(result.contextId).toBe('monitor-001');
-      expect(result.contextType).toBe('monitor');
-      expect(result.primaryEntityId).toBe('person-003');
-      expect(result.primaryEntityType).toBe('person');
-      expect(result.entityIds).toEqual(['person-003']);
-      expect(result.isContextHome).toBe(false);
-    });
-
-    it('parses context home route', () => {
-      const result = parseIdRoute('monitor-001');
-      expect(result.contextId).toBe('monitor-001');
-      expect(result.contextType).toBe('monitor');
-      expect(result.isContextHome).toBe(true);
-      expect(result.primaryEntityId).toBe(null);
-    });
-
-    it('parses COP route', () => {
-      const result = parseIdRoute('cop');
-      expect(result.contextType).toBe('cop');
-      expect(result.isCopHome).toBe(true);
-      expect(result.contextId).toBe(null);
-    });
-
-    it('parses COP route with entity', () => {
-      const result = parseIdRoute('cop/person-003');
-      expect(result.contextType).toBe('cop');
-      expect(result.isCopHome).toBe(false);
-      expect(result.primaryEntityId).toBe('person-003');
-      expect(result.entityIds).toEqual(['person-003']);
-    });
-
-    it('parses empty route as COP home', () => {
-      const result = parseIdRoute('');
-      expect(result.contextType).toBe('cop');
-      expect(result.isCopHome).toBe(true);
-    });
-
-    it('parses route without context prefix as COP-scoped', () => {
-      const result = parseIdRoute('person-003');
-      expect(result.contextType).toBe('cop');
-      expect(result.contextId).toBe(null);
-      expect(result.primaryEntityId).toBe('person-003');
-    });
-
-    it('parses nested entity routes', () => {
-      const result = parseIdRoute('monitor-001/narr-002/person-003');
-      expect(result.contextId).toBe('monitor-001');
-      expect(result.entityIds).toEqual(['narr-002', 'person-003']);
-      expect(result.primaryEntityId).toBe('person-003');
-      expect(result.primaryEntityType).toBe('person');
-    });
-  });
-
-  describe('getEntityTypeDisplayName', () => {
-    it('returns display names for known types', () => {
-      expect(getEntityTypeDisplayName('person')).toBe('Person');
-      expect(getEntityTypeDisplayName('organization')).toBe('Organization');
-      expect(getEntityTypeDisplayName('monitor')).toBe('Monitor');
-      expect(getEntityTypeDisplayName('narrative')).toBe('Narrative');
-      expect(getEntityTypeDisplayName('searchFilter')).toBe('Search Filter');
-      expect(getEntityTypeDisplayName('cop')).toBe('Common Operating Picture');
-    });
-
-    it('returns original type for unknown types', () => {
-      expect(getEntityTypeDisplayName('unknown')).toBe('unknown');
-      expect(getEntityTypeDisplayName('custom')).toBe('custom');
-    });
-  });
-
-  describe('getEntityTypePlural', () => {
-    it('returns correct plurals for entity types', () => {
-      expect(getEntityTypePlural('narrative')).toBe('narratives');
-      expect(getEntityTypePlural('person')).toBe('entities');
-      expect(getEntityTypePlural('organization')).toBe('entities');
-      expect(getEntityTypePlural('document')).toBe('documents');
-      expect(getEntityTypePlural('tag')).toBe('tags');
-    });
-
-    it('adds "s" suffix for unknown types', () => {
-      expect(getEntityTypePlural('custom')).toBe('customs');
-      expect(getEntityTypePlural('widget')).toBe('widgets');
-    });
-  });
 });

@@ -5,7 +5,6 @@
  */
 
 import { CardBuilder } from '../utils/CardBuilder.js';
-import { DragDropManager } from '../utils/DragDropManager.js';
 import { DataService } from '../data/DataService.js';
 import { dataStore } from '../data/DataStore.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
@@ -18,7 +17,6 @@ import { DocumentTable } from './DocumentTable.js';
 import { ColumnFilter } from './ColumnFilter.js';
 import { MapView } from './MapView.js';
 import { TimelineVolumeComposite } from './TimelineVolumeComposite.js';
-import { StackedAreaChart } from './StackedAreaChart.js';
 import { renderVerticalTimeline } from '../utils/verticalTimeline.js';
 
 // Standard column configuration for document tables
@@ -419,7 +417,7 @@ export class DocumentTableCard extends BaseCardComponent {
     super(view, containerId);
     this.options = options;
     this.documents = options.documents || [];
-    this.title = options.title || 'Source Documents';
+    this.title = options.title || 'documents';
     this.maxItems = options.maxItems || 10;
     this.showCount = options.showCount !== false;
     this.halfWidth = options.halfWidth || false;
@@ -428,6 +426,8 @@ export class DocumentTableCard extends BaseCardComponent {
     this.enableSelection = options.enableSelection !== false; // Enable by default
     this.showColumnFilter = options.showColumnFilter !== false; // Show filter by default
     this.showTypeFilter = options.showTypeFilter !== false; // Show type filter by default
+    this.showExpandData = options.showExpandData !== false; // Show expand data by default
+    this.extraActions = options.extraActions || '';
     this.columns = options.columns || [...DOCUMENT_DEFAULT_COLUMNS];
     this.availableColumns = options.availableColumns || DOCUMENT_AVAILABLE_COLUMNS;
     this.columnFilterId = `${containerId}-column-filter`;
@@ -475,11 +475,12 @@ export class DocumentTableCard extends BaseCardComponent {
       return `<option value="${key}" ${selected}>${label}</option>`;
     }).join('');
     
-    // Build actions HTML with expand data button, type filter, and column filter
+    // Build actions HTML with optional expand data button, type filter, and column filter
     let actionsHtml = '';
     
-    // Expand data button (placeholder)
-    actionsHtml += `<button class="btn btn-secondary btn-small" id="${this.containerId}-expand-data-btn">Expand data</button>`;
+    if (this.showExpandData) {
+      actionsHtml += `<button class="btn btn-secondary btn-small" id="${this.containerId}-expand-data-btn">Expand data</button>`;
+    }
     
     // Only show type filter if there are multiple types
     if (this.showTypeFilter && Object.keys(typeOptions).length > 2) {
@@ -498,13 +499,15 @@ export class DocumentTableCard extends BaseCardComponent {
     }
     
     const filteredDocs = this.getFilteredDocuments();
+    const docCount = filteredDocs.length;
+    const titleText = `${docCount} ${this.title}`;
     
-    return CardBuilder.create(this.title, this.containerId, {
-      count: this.showCount ? filteredDocs.length : undefined,
+    return CardBuilder.create(titleText, this.containerId, {
       noPadding: true,
       halfWidth: this.halfWidth,
       fullWidth: this.fullWidth,
       actions: actionsHtml,
+      prefixHtml: this.extraActions || '',
       noFullscreen: true
     });
   }
@@ -568,8 +571,9 @@ export class DocumentTableCard extends BaseCardComponent {
     // Attach type filter listener
     this.attachTypeFilterListener();
     
-    // Attach expand data button listener
-    this.attachExpandDataListener();
+    if (this.showExpandData) {
+      this.attachExpandDataListener();
+    }
 
     return this.component;
   }
@@ -596,12 +600,12 @@ export class DocumentTableCard extends BaseCardComponent {
         this.documentTypeFilter = e.target.value;
         const filteredDocs = this.getFilteredDocuments();
         
-        // Update document count in card header
+        // Update document count in card title
         const card = document.getElementById(this.containerId)?.closest('.card');
         if (card) {
-          const countEl = card.querySelector('.card-count');
-          if (countEl) {
-            countEl.textContent = filteredDocs.length;
+          const titleEl = card.querySelector('.card-title');
+          if (titleEl) {
+            titleEl.textContent = `${filteredDocs.length} ${this.title}`;
           }
         }
         
@@ -1070,56 +1074,6 @@ export class TimelineVolumeCompositeCard extends BaseCardComponent {
 }
 
 /**
- * Stacked Area Chart Card Component
- * For volume over time visualization
- */
-export class StackedAreaChartCard extends BaseCardComponent {
-  constructor(view, containerId, options = {}) {
-    super(view, containerId);
-    this.options = options;
-    this.chartData = options.chartData || null; // { dates, series, publishers }
-    this.title = options.title || 'Volume Over Time';
-    this.height = options.height || 250;
-    this.showLegend = options.showLegend !== false;
-    this.showCount = options.showCount || false;
-    this.count = options.count || null;
-  }
-
-  hasData() {
-    return this.chartData && 
-           this.chartData.dates && 
-           this.chartData.dates.length > 0 &&
-           this.chartData.series &&
-           this.chartData.series.length > 0;
-  }
-
-  getCardHtml() {
-    if (!this.hasData()) return '';
-    return CardBuilder.create(this.title, this.containerId, {
-      count: this.showCount ? this.count : undefined,
-      fullWidth: this.options.fullWidth || false,
-      halfWidth: this.options.halfWidth || false
-    });
-  }
-
-  initialize() {
-    if (!this.hasData()) return null;
-
-    this.component = new StackedAreaChart(this.containerId, {
-      height: this.height,
-      showLegend: this.showLegend
-    });
-    this.component.update(this.chartData);
-    
-    if (this.options.enableAutoResize !== false) {
-      this.component.enableAutoResize();
-    }
-
-    return this.component;
-  }
-}
-
-/**
  * Bullet Points Card Component
  * Displays a list of key points or bullet items
  */
@@ -1175,9 +1129,6 @@ export class CardManager {
   constructor(view, options = {}) {
     this.view = view;
     this.cards = [];
-    this.dragDropManager = null;
-    this.enableDragDrop = options.enableDragDrop !== false;
-    this.containerSelector = options.containerSelector || '.content-grid';
   }
 
   /**
@@ -1215,58 +1166,13 @@ export class CardManager {
       }
     }
     
-    // Initialize drag-and-drop after cards are rendered
-    if (this.enableDragDrop) {
-      this.initDragDrop();
-    }
-    
     return components;
-  }
-
-  /**
-   * Initialize drag-and-drop functionality
-   */
-  initDragDrop() {
-    // Use setTimeout to ensure DOM is ready
-    setTimeout(() => {
-      const container = document.querySelector(this.containerSelector);
-      if (container) {
-        this.dragDropManager = new DragDropManager({
-          containerSelector: this.containerSelector,
-          onOrderChange: (order) => {
-            // Optional: callback when card order changes
-            if (this.view && this.view.onCardOrderChange) {
-              this.view.onCardOrderChange(order);
-            }
-          }
-        });
-        this.dragDropManager.init(container);
-      }
-    }, 0);
-  }
-
-  /**
-   * Reset card order for current view
-   */
-  resetCardOrder() {
-    if (this.dragDropManager) {
-      this.dragDropManager.resetOrder();
-      // Reload the page to restore default order
-      window.location.reload();
-    }
   }
 
   /**
    * Destroy all card components
    */
   destroyAll() {
-    // Destroy drag-drop manager
-    if (this.dragDropManager) {
-      this.dragDropManager.destroy();
-      this.dragDropManager = null;
-    }
-    
-    // Destroy card components
     for (const card of this.cards) {
       card.destroy();
     }
@@ -1486,7 +1392,6 @@ export default {
   DocumentTableCard,
   MapCard,
   TimelineVolumeCompositeCard,
-  StackedAreaChartCard,
   BulletPointsCard,
   QuotesTableCard,
   ActivitiesTableCard,

@@ -4,7 +4,6 @@
  */
 
 import { TagChips } from '../components/TagChips.js';
-import { StatCards } from '../components/StatCards.js';
 
 export const PageHeader = {
   /**
@@ -22,9 +21,6 @@ export const PageHeader = {
    * @param {string} [config.descriptionLink] - Link HTML to append to description
    * @param {Array} [config.tags] - Array of tag objects to display
    * @param {string} [config.tagsContainerId] - ID for tags container (enables interactive editing)
-   * @param {Array} [config.stats] - Array of stat configs [{type, value, href?, label?, items?}] for StatCards
-   * @param {string} [config.statsMode] - 'cards' (default) or 'dropdowns' for rendering mode
-   * @param {string} [config.statsContextId] - Context ID for dropdown routes
    * @param {Array} [config.tabs] - Array of tab items [{id, label, href}]
    * @param {string} [config.activeTab] - ID of the active tab
    * @returns {string} Page header HTML string
@@ -43,15 +39,11 @@ export const PageHeader = {
       descriptionLink,
       tags,
       tagsContainerId,
-      stats,
-      statsMode = 'cards',
-      statsContextId = null,
       actions,
       tabs,
       activeTab
     } = config;
 
-    const hasStats = stats && stats.length > 0;
     const hasTabs = tabs && tabs.length > 0;
     
     const breadcrumbHtml = this.renderBreadcrumbs(breadcrumbs);
@@ -60,34 +52,18 @@ export const PageHeader = {
     const subtitleHtml = subtitle ? `<p class="subtitle">${subtitle}</p>` : '';
     const descriptionHtml = this.renderDescription(description, descriptionLink);
     const tagsHtml = this.renderTags(tags, tagsContainerId);
-    const statsHtml = this.renderStats(stats, statsMode, statsContextId);
     const tabsHtml = this.renderTabs(tabs, activeTab);
 
-    // Build CSS classes
     const classes = ['page-header'];
     if (hasTabs) classes.push('page-header-with-tabs');
-    if (hasStats) classes.push('page-header-with-stats');
-
-    // Build content - use wrapper only when stats are present
-    const contentHtml = hasStats
-      ? `<div class="page-header-main">
-          <div class="page-header-content">
-            ${titleRowHtml}
-            ${subtitleHtml}
-            ${descriptionHtml}
-            ${tagsHtml}
-          </div>
-          ${statsHtml}
-        </div>`
-      : `${titleRowHtml}
-        ${subtitleHtml}
-        ${descriptionHtml}
-        ${tagsHtml}`;
 
     return `
       <div class="${classes.join(' ')}">
         ${breadcrumbHtml}
-        ${contentHtml}
+        ${titleRowHtml}
+        ${subtitleHtml}
+        ${descriptionHtml}
+        ${tagsHtml}
         ${tabsHtml}
       </div>
     `;
@@ -244,19 +220,6 @@ export const PageHeader = {
         ${tabItems}
       </div>
     `;
-  },
-
-  /**
-   * Render stats grid using StatCards component (dropdowns only)
-   * @param {Array} stats - Array of stat configs [{type, value, items}]
-   * @param {string} mode - Ignored, always uses dropdowns
-   * @param {string} contextId - Context ID for dropdown routes
-   * @returns {string} Stats HTML
-   */
-  renderStats(stats, mode = 'dropdowns', contextId = null) {
-    if (!stats || stats.length === 0) return '';
-    
-    return StatCards.renderDropdowns(stats, { contextId });
   }
 };
 

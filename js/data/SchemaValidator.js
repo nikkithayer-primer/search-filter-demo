@@ -323,13 +323,6 @@ const SCHEMAS = {
     }
   },
 
-  // Non-prefixed collections
-  publisherCategories: {
-    idPrefix: null,
-    required: ['id', 'name'],
-    optional: ['color'],
-    types: { name: 'string' }
-  },
 
   filterCatalog: {
     idPrefix: null,

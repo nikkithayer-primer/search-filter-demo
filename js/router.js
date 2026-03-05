@@ -23,9 +23,8 @@ import { PersonView } from './views/PersonView.js';
 import { OrganizationView } from './views/OrganizationView.js';
 import { DocumentView } from './views/DocumentView.js';
 import { DocumentsView } from './views/DocumentsView.js';
-import { ListView } from './views/ListView.js';
+
 import { MonitorsView } from './views/MonitorsView.js';
-import { MonitorView } from './views/MonitorView.js';
 import { WorkspacesView } from './views/WorkspacesView.js';
 import { WorkspaceView } from './views/WorkspaceView.js';
 import { SearchView } from './views/SearchView.js';
@@ -33,16 +32,13 @@ import { ProjectsView } from './views/ProjectsView.js';
 import { ProjectView } from './views/ProjectView.js';
 import { TopicView } from './views/TopicView.js';
 import { ActivityFeedView } from './views/ActivityFeedView.js';
-import { initStickyHeader, destroyStickyHeader } from './utils/stickyHeader.js';
 import { TimeRangeFilter } from './components/TimeRangeFilter.js';
 import { DataService } from './data/DataService.js';
 import { dataStore } from './data/DataStore.js';
 import { formatDate } from './utils/formatters.js';
 import { 
   getEntityTypeFromId, 
-  isContextId, 
-  parseIdRoute,
-  getEntityTypeDisplayName 
+  isContextId 
 } from './utils/idUtils.js';
 
 // View classes mapped by entity type (derived from ID prefix)
@@ -55,13 +51,12 @@ const ENTITY_VIEW_MAP = {
   'organization': { view: OrganizationView, listType: 'entities' },
   'document': { view: DocumentView, listType: 'documents' },
   'topic': { view: TopicView, listType: 'topics' },
-  'monitor': { view: MonitorView, listType: 'monitors' },
   'workspace': { view: WorkspaceView, listType: 'workspaces' },
   'project': { view: ProjectView, listType: 'projects' }
 };
 
 // Top-level routes that don't follow the ID-based pattern
-const TOP_LEVEL_ROUTES = ['workspaces', 'monitors', 'search', 'projects', 'activity', 'documents', 'settings', 'status'];
+const TOP_LEVEL_ROUTES = ['workspaces', 'monitors', 'search', 'projects', 'activity', 'documents'];
 
 export class Router {
   constructor(containerId) {
@@ -664,13 +659,13 @@ export class Router {
     this.currentRoute = parsed.topLevelRoute || parsed.contextType || 'monitors';
     this.currentContext = this.resolveContextScope(parsed.contextId, parsed.projectChain || []);
 
-    // Destroy current view and clean up sticky header
-    try {
-      destroyStickyHeader();
-    } catch (e) {
-      console.error('Router: Error destroying sticky header:', e);
+    // Clear page header slot and reset its height variable
+    const headerSlot = document.getElementById('page-header-slot');
+    if (headerSlot) {
+      headerSlot.innerHTML = '';
+      document.documentElement.style.setProperty('--page-header-slot-height', '0px');
     }
-    
+
     // Clean up COP filters if navigating away from COP
     this.cleanupDashboardFilters();
     
@@ -683,6 +678,9 @@ export class Router {
     }
     this.currentView = null;
 
+    // Toggle search-view class to hide chat on the search screen
+    document.body.classList.toggle('search-view', this.currentRoute === 'search');
+
     // Update active nav link
     try {
       this.updateNavLinks(this.currentRoute);
@@ -691,13 +689,9 @@ export class Router {
     }
     
     // Determine tab based on sub-route or query params
-    let tab = 'dashboard';
-    if (parsed.subRoute === 'documents') {
-      tab = 'documents';
-    } else if (queryParams.tab) {
+    let tab = 'documents';
+    if (queryParams.tab) {
       tab = queryParams.tab;
-    } else if (settings.defaultViewTab) {
-      tab = settings.defaultViewTab;
     }
     
     // Common options with filters and context
@@ -743,13 +737,11 @@ export class Router {
       }
     }
 
-    // Initialize sticky header behavior
-    // Force collapsed on Documents tab to maximize space for document viewer
-    try {
-      const isDocumentsTab = filterOptions.tab === 'documents';
-      initStickyHeader({ forceCollapsed: isDocumentsTab });
-    } catch (e) {
-      console.error('Router: Error initializing sticky header:', e);
+    // Update page header slot height for fixed-position elements (chat, sidebar)
+    if (headerSlot && headerSlot.children.length > 0) {
+      document.documentElement.style.setProperty(
+        '--page-header-slot-height', headerSlot.offsetHeight + 'px'
+      );
     }
 
     // Scroll to top
@@ -794,10 +786,6 @@ export class Router {
         this.currentView = new DocumentsView(this.container, filterOptions);
         break;
         
-      case 'status':
-        window.location.hash = '#/monitors';
-        return;
-        
       default:
         // Unknown top-level route - redirect to default
         let defaultPage = settings.defaultStartPage || 'monitors';
@@ -821,12 +809,18 @@ export class Router {
     
     // Context home (monitor-001, workspace-001, project-001 without further entity)
     if (isContextHome && contextId) {
+      // Redirect single monitor view to all monitors page
+      if (contextType === 'monitor') {
+        window.location.hash = '#/monitors';
+        return;
+      }
+
       const viewConfig = ENTITY_VIEW_MAP[contextType];
       if (viewConfig) {
         this.currentView = new viewConfig.view(this.container, contextId, filterOptions);
         
-        // Auto-open chat for individual workspace, project, and monitor views
-        if (['workspace', 'project', 'monitor'].includes(contextType)) {
+        // Auto-open chat for individual workspace and project views
+        if (['workspace', 'project'].includes(contextType)) {
           window.app?.toggleChat(true);
         }
       } else {

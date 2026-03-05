@@ -6,7 +6,6 @@
 import { DetailViewBase } from './DetailViewBase.js';
 import { DataService } from '../data/DataService.js';
 import { PageHeader } from '../utils/PageHeader.js';
-import { StatCards } from '../components/StatCards.js';
 import {
   CardManager,
   NetworkGraphCard,
@@ -62,10 +61,6 @@ export class LocationView extends DetailViewBase {
       location.name
     ]);
 
-    // Build stats for the header with dropdown support
-    const contextId = this.context?.id || null;
-    const statsData = StatCards.buildEntityStatsWithItems(data, contextId);
-
     // Build page header with tabs
     const headerHtml = PageHeader.render({
       breadcrumbs,
@@ -76,9 +71,6 @@ export class LocationView extends DetailViewBase {
         ? `<a href="#" class="btn btn-small btn-secondary source-link" data-source-type="location" data-source-id="${location.id}">View source</a>` 
         : '',
       tagsContainerId: 'location-tags-container',
-      stats: statsData,
-      statsMode: 'dropdowns',
-      statsContextId: contextId,
       tabs: tabsConfig,
       activeTab: activeTab
     });
@@ -92,9 +84,6 @@ export class LocationView extends DetailViewBase {
         </div>
       </div>
     `;
-
-    // Initialize stat card dropdowns
-    this.initStatDropdowns(contextId, this.locationId);
 
     // Initialize card width toggles
     this.initCardWidthToggles('location', this.locationId);

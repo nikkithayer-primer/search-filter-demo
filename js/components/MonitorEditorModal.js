@@ -25,15 +25,6 @@ export class MonitorEditorModal extends BaseModal {
     this.scopeSelector = null;
     
     this.onSaveCallback = null;
-    this.pendingScopeParams = null;
-  }
-
-  getMonitorScopeParams(scope) {
-    return {
-      repositoryIds: scope?.repositoryIds || [],
-      classifications: scope?.classifications || [],
-      timeRange: null
-    };
   }
 
   /**
@@ -91,12 +82,6 @@ export class MonitorEditorModal extends BaseModal {
     this.scopeSelector = new ScopeSelector(container, {
       showSaveFilter: true,
       showSearchFilters: true,
-      showScopeSection: true,
-      showDateInScope: false,
-      initialScopeParams: this.getMonitorScopeParams(scope),
-      onScopeParamsChange: (params) => {
-        this.pendingScopeParams = params;
-      },
       onChange: () => {}
     });
     

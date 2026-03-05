@@ -8,16 +8,6 @@ import { DataService } from '../data/DataService.js';
 import { dataStore } from '../data/DataStore.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
 import { getEntityIcon } from '../utils/entityIcons.js';
-import { TimeRangeFilter } from './TimeRangeFilter.js';
-
-/** Classification levels for Scope section */
-const CLASSIFICATION_LEVELS = [
-  { id: 'U', name: 'Unclassified', short: 'U' },
-  { id: 'CUI', name: 'Controlled Unclassified', short: 'CUI' },
-  { id: 'C', name: 'Confidential', short: 'C' },
-  { id: 'S', name: 'Secret', short: 'S' },
-  { id: 'TS', name: 'Top Secret', short: 'TS' }
-];
 
 export class ScopeSelector {
   /**
@@ -27,11 +17,7 @@ export class ScopeSelector {
    * @param {Function} options.onChange - Callback when scope changes
    * @param {boolean} options.showSaveFilter - Whether to show the save filter button (default: true)
    * @param {boolean} options.showSearchFilters - Whether to show saved search filters accordion (default: true)
-   * @param {boolean} options.showScopeSection - Whether to show Scope block (Repositories, Classifications, optional Date) (default: false)
-   * @param {boolean} options.showDateInScope - Whether to show date range in Scope (only when showScopeSection; default: false, e.g. false for monitors)
-   * @param {Object} options.initialScopeParams - { repositoryIds: string[], classifications: string[], timeRange: { start, end } | null }
-   * @param {Function} options.onScopeParamsChange - Callback when scope params change: (params) => void
-   * @param {Function} options.getVolumeData - Optional; for date histogram when showDateInScope (() => volumeData)
+   * @param {string[]|null} options.contextDocIds - Document IDs to scope the filter catalog to (null = all)
    */
   constructor(container, options = {}) {
     this.container = container;
@@ -39,21 +25,8 @@ export class ScopeSelector {
       onChange: options.onChange || (() => {}),
       showSaveFilter: options.showSaveFilter !== false,
       showSearchFilters: options.showSearchFilters !== false,
-      showScopeSection: options.showScopeSection === true,
-      showDateInScope: options.showDateInScope === true,
-      initialScopeParams: options.initialScopeParams || { repositoryIds: [], classifications: [], timeRange: null },
-      onScopeParamsChange: options.onScopeParamsChange || (() => {}),
-      getVolumeData: options.getVolumeData || null
+      contextDocIds: options.contextDocIds || null
     };
-
-    const repos = this.options.initialScopeParams.repositoryIds || [];
-    const classifications = this.options.initialScopeParams.classifications || [];
-    this.scopeParams = {
-      repositoryIds: new Set(Array.isArray(repos) ? repos : []),
-      classifications: new Set(Array.isArray(classifications) ? classifications : []),
-      timeRange: this.options.initialScopeParams.timeRange ?? null
-    };
-    this.timeRangeFilter = null;
     
     this.scope = {
       personIds: [],
@@ -61,29 +34,13 @@ export class ScopeSelector {
       locationIds: [],
       keywords: [],
       documentTypes: [],
-      metadataFilters: {}  // { dimensionId: [selectedValues] }
+      metadataFilters: {}  // { dimensionId: { include: [], exclude: [] } }
     };
     
     this.filterText = '';
     this.expandedSections = new Set();
-    if (this.options.showScopeSection) this.expandedSections.add('scope');
     this.saveDialogOpen = false;
     this.saveFilterName = '';
-  }
-
-  getScopeParams() {
-    return {
-      repositoryIds: Array.from(this.scopeParams.repositoryIds),
-      classifications: Array.from(this.scopeParams.classifications),
-      timeRange: this.scopeParams.timeRange
-    };
-  }
-
-  setScopeParams(params) {
-    if (params.repositoryIds != null) this.scopeParams.repositoryIds = new Set(params.repositoryIds);
-    if (params.classifications != null) this.scopeParams.classifications = new Set(params.classifications);
-    if (params.timeRange !== undefined) this.scopeParams.timeRange = params.timeRange;
-    this.options.onScopeParamsChange(this.getScopeParams());
   }
 
   /**
@@ -113,9 +70,7 @@ export class ScopeSelector {
       };
     }
     
-    // Expand sections that have items (for simple mode)
     this.expandedSections = new Set();
-    if (this.options.showScopeSection) this.expandedSections.add('scope');
     if (this.scope.personIds.length > 0) this.expandedSections.add('persons');
     if (this.scope.organizationIds.length > 0) this.expandedSections.add('organizations');
     if (this.scope.locationIds.length > 0) this.expandedSections.add('locations');
@@ -175,15 +130,18 @@ export class ScopeSelector {
     
     // Merge metadata filters from saved filter
     const filterMetadataFilters = filterScope.metadataFilters || {};
-    for (const [dimId, vals] of Object.entries(filterMetadataFilters)) {
-      if (!this.scope.metadataFilters[dimId]) {
-        this.scope.metadataFilters[dimId] = [];
-      }
-      (vals || []).forEach(v => {
-        if (!this.scope.metadataFilters[dimId].includes(v)) {
-          this.scope.metadataFilters[dimId].push(v);
-        }
+    for (const [dimId, filterVal] of Object.entries(filterMetadataFilters)) {
+      const target = this.getDimFilter(dimId);
+      // Normalize saved filter (may be old array format)
+      const srcInclude = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
+      const srcExclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
+      srcInclude.forEach(v => {
+        if (!target.include.includes(v) && !target.exclude.includes(v)) target.include.push(v);
       });
+      srcExclude.forEach(v => {
+        if (!target.include.includes(v) && !target.exclude.includes(v)) target.exclude.push(v);
+      });
+      if (target.include.length === 0 && target.exclude.length === 0) delete this.scope.metadataFilters[dimId];
     }
     
     // Update expanded sections
@@ -191,8 +149,8 @@ export class ScopeSelector {
     if (this.scope.organizationIds.length > 0) this.expandedSections.add('organizations');
     if (this.scope.locationIds.length > 0) this.expandedSections.add('locations');
     if (this.scope.documentTypes.length > 0) this.expandedSections.add('documentTypes');
-    for (const [dimId, vals] of Object.entries(this.scope.metadataFilters)) {
-      if (vals?.length > 0) this.expandedSections.add('catalog_' + dimId);
+    for (const [dimId] of Object.entries(this.scope.metadataFilters)) {
+      if (this.dimHasSelections(dimId)) this.expandedSections.add('catalog_' + dimId);
     }
     
     this.render();
@@ -212,7 +170,6 @@ export class ScopeSelector {
       metadataFilters: {}
     };
     this.expandedSections = new Set();
-    if (this.options.showScopeSection) this.expandedSections.add('scope');
     this.render();
     this.notifyChange();
   }
@@ -224,10 +181,62 @@ export class ScopeSelector {
     return Object.keys(this.scope)
       .some(k => {
         if (k === 'metadataFilters') {
-          return Object.values(this.scope.metadataFilters || {}).some(v => v?.length > 0);
+          return Object.values(this.scope.metadataFilters || {}).some(v => {
+            if (Array.isArray(v)) return v.length > 0;
+            return (v?.include?.length > 0) || (v?.exclude?.length > 0);
+          });
         }
         return Array.isArray(this.scope[k]) && this.scope[k].length > 0;
       });
+  }
+
+  /** Get the { include, exclude } entry for a dimension, creating if needed */
+  getDimFilter(dimId) {
+    if (!this.scope.metadataFilters[dimId]) {
+      this.scope.metadataFilters[dimId] = { include: [], exclude: [] };
+    }
+    const entry = this.scope.metadataFilters[dimId];
+    // Normalize legacy array format
+    if (Array.isArray(entry)) {
+      this.scope.metadataFilters[dimId] = { include: entry, exclude: [] };
+      return this.scope.metadataFilters[dimId];
+    }
+    if (!entry.include) entry.include = [];
+    if (!entry.exclude) entry.exclude = [];
+    return entry;
+  }
+
+  /** Check if a value is already selected (include or exclude) for a dimension */
+  isDimValueSelected(dimId, val) {
+    const f = this.scope.metadataFilters[dimId];
+    if (!f) return false;
+    if (Array.isArray(f)) return f.includes(val);
+    return f.include?.includes(val) || f.exclude?.includes(val);
+  }
+
+  /** Get the filter catalog, scoped to context documents if provided */
+  getCatalog() {
+    return this.options.contextDocIds
+      ? DataService.getFilterCatalogForDocuments(this.options.contextDocIds)
+      : DataService.getFilterCatalog();
+  }
+
+  /** Count total metadata filter selections */
+  countMetadataSelections(filters) {
+    let count = 0;
+    for (const v of Object.values(filters || {})) {
+      if (Array.isArray(v)) { count += v.length; continue; }
+      count += (v?.include?.length || 0) + (v?.exclude?.length || 0);
+    }
+    return count;
+  }
+
+  /** Check if a dimension has any selections */
+  dimHasSelections(dimId) {
+    const f = this.scope.metadataFilters[dimId];
+    if (!f) return false;
+    if (Array.isArray(f)) return f.length > 0;
+    return (f.include?.length > 0) || (f.exclude?.length > 0);
   }
 
   /**
@@ -268,100 +277,6 @@ export class ScopeSelector {
   }
 
   /**
-   * Render the Scope section (Repositories, Classifications, optional Date range)
-   */
-  renderScopeSection() {
-    const repos = DataService.getRepositories();
-    const repoIds = Array.from(this.scopeParams.repositoryIds);
-    const allReposSelected = repos.length === 0 || repoIds.length === repos.length;
-    const classIds = Array.from(this.scopeParams.classifications);
-    const allClassSelected = classIds.length === 0 || classIds.length === CLASSIFICATION_LEVELS.length;
-    const isExpanded = this.expandedSections.has('scope');
-
-    const repoOptions = (repos || []).map(repo => {
-      const checked = allReposSelected || this.scopeParams.repositoryIds.has(repo.id);
-      return `
-        <label class="dropdown-option scope-scope-option">
-          <input type="checkbox" name="scope-repo" value="${this.escapeHtml(repo.id)}" ${checked ? 'checked' : ''} />
-          <span class="dropdown-option-name">${this.escapeHtml(repo.name)}</span>
-        </label>`;
-    }).join('');
-
-    const classOptions = CLASSIFICATION_LEVELS.map(level => {
-      const checked = allClassSelected || this.scopeParams.classifications.has(level.id);
-      return `
-        <label class="dropdown-option scope-scope-option">
-          <input type="checkbox" name="scope-classification" value="${this.escapeHtml(level.id)}" ${checked ? 'checked' : ''} />
-          <span class="dropdown-option-name">${this.escapeHtml(level.name)}</span>
-        </label>`;
-    }).join('');
-
-    const dateBlock = this.options.showDateInScope ? `
-      <div class="scope-scope-date">
-        <div class="scope-scope-date-header">
-          <span class="scope-scope-date-label">Date range</span>
-          <span class="scope-scope-date-value" id="scope-time-range-label">${this.scopeParams.timeRange ? this.formatScopeDate(this.scopeParams.timeRange.start) + ' – ' + this.formatScopeDate(this.scopeParams.timeRange.end) : 'All time'}</span>
-          <button type="button" class="btn-link text-sm scope-scope-date-clear ${this.scopeParams.timeRange ? '' : 'hidden'}" id="scope-time-range-clear">Clear</button>
-        </div>
-        <div id="scope-time-range-filter" class="scope-time-range-filter"></div>
-      </div>
-    ` : '';
-
-    return `
-      <div class="scope-entity-group scope-scope-group ${isExpanded ? 'expanded' : ''}" data-type="scope">
-        <button class="scope-entity-group-header" data-type="scope">
-          <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 6l4 4 4-4"/>
-          </svg>
-          <span class="scope-group-label">Scope</span>
-        </button>
-        <div class="scope-entity-group-items">
-          <div class="scope-scope-repos">
-            <div class="scope-scope-sublabel">Repositories</div>
-            <label class="dropdown-option scope-scope-option scope-scope-select-all">
-              <input type="checkbox" id="scope-repo-select-all" ${allReposSelected ? 'checked' : ''} />
-              <span>All repositories</span>
-            </label>
-            <div class="scope-scope-options">${repoOptions || '<div class="scope-scope-empty">No repositories</div>'}</div>
-          </div>
-          <div class="scope-scope-classifications">
-            <div class="scope-scope-sublabel">Classifications</div>
-            <label class="dropdown-option scope-scope-option scope-scope-select-all">
-              <input type="checkbox" id="scope-classification-select-all" ${allClassSelected ? 'checked' : ''} />
-              <span>All classifications</span>
-            </label>
-            <div class="scope-scope-options">${classOptions}</div>
-          </div>
-          ${dateBlock}
-        </div>
-      </div>
-    `;
-  }
-
-  formatScopeDate(dateStr) {
-    if (!dateStr) return '';
-    try {
-      const d = new Date(dateStr);
-      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return dateStr;
-    }
-  }
-
-  updateScopeTimeRangeLabel() {
-    const label = this.container.querySelector('#scope-time-range-label');
-    const clearBtn = this.container.querySelector('#scope-time-range-clear');
-    if (label) {
-      label.textContent = this.scopeParams.timeRange
-        ? this.formatScopeDate(this.scopeParams.timeRange.start) + ' – ' + this.formatScopeDate(this.scopeParams.timeRange.end)
-        : 'All time';
-    }
-    if (clearBtn) {
-      clearBtn.classList.toggle('hidden', !this.scopeParams.timeRange);
-    }
-  }
-
-  /**
    * Render the component
    */
   render() {
@@ -373,16 +288,21 @@ export class ScopeSelector {
     this.container.innerHTML = `
       <div class="scope-selector">
         <div class="scope-mode-panel active" data-panel="simple">
-          ${this.options.showScopeSection ? this.renderScopeSection() : ''}
           <!-- Search Input -->
           <div class="scope-search-wrapper">
+            <svg class="scope-search-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="6.5" cy="6.5" r="5"/>
+              <path d="M10.5 10.5L14 14" stroke-linecap="round"/>
+            </svg>
             <input 
               type="text" 
               class="form-input scope-search-input" 
-              placeholder="Search entities or add keyword..."
+              placeholder="Search for keys or values..."
               value="${this.escapeHtml(this.filterText)}"
             />
+            <button class="scope-search-clear ${this.filterText ? '' : 'hidden'}" aria-label="Clear search">&times;</button>
           </div>
+          <p class="scope-search-hint">Type to filter entities or press Enter to add as keyword</p>
           
           <!-- Selected Items (chips) with save button -->
           <div class="scope-chips-container">
@@ -424,13 +344,13 @@ export class ScopeSelector {
     const allEntities = this.getAllEntities();
     
     // Render entity chips
-    for (const [type, { scopeKey, entities }] of Object.entries(allEntities)) {
+    for (const [type, { label: typeLabel, scopeKey, entities }] of Object.entries(allEntities)) {
       const selectedIds = this.scope[scopeKey] || [];
       for (const id of selectedIds) {
         const entity = entities.find(e => e.id === id);
         if (entity) {
           chips.push(`
-            <span class="scope-chip" data-id="${id}" data-scope-key="${scopeKey}" data-type="${type}">
+            <span class="scope-chip" data-id="${id}" data-scope-key="${scopeKey}" data-type="${type}" data-tooltip="${this.escapeHtml(typeLabel)}">
               <span class="scope-chip-icon">${getEntityIcon(type, 12)}</span>
               <span class="scope-chip-label">${this.escapeHtml(this.getEntityText(entity))}</span>
               <button class="chip-remove" aria-label="Remove">&times;</button>
@@ -443,7 +363,7 @@ export class ScopeSelector {
     // Render keyword chips (with quotes)
     for (const keyword of this.scope.keywords || []) {
       chips.push(`
-        <span class="scope-chip scope-chip-keyword" data-keyword="${this.escapeHtml(keyword)}">
+        <span class="scope-chip scope-chip-keyword" data-keyword="${this.escapeHtml(keyword)}" data-tooltip="Keyword">
           <span class="scope-chip-label">"${this.escapeHtml(keyword)}"</span>
           <button class="chip-remove" aria-label="Remove">&times;</button>
         </span>
@@ -456,7 +376,7 @@ export class ScopeSelector {
       const docType = documentTypes.find(dt => dt.id === docTypeId);
       if (docType) {
         chips.push(`
-          <span class="scope-chip scope-chip-docattr" data-id="${docTypeId}" data-scope-key="documentTypes" data-type="documentType">
+          <span class="scope-chip scope-chip-docattr" data-id="${docTypeId}" data-scope-key="documentTypes" data-type="documentType" data-tooltip="Document Type">
             <span class="scope-chip-icon">
               <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
@@ -472,18 +392,34 @@ export class ScopeSelector {
     
     // Render filter catalog chips (metadataFilters)
     const catalog = DataService.getFilterCatalog();
-    for (const [dimId, selectedValues] of Object.entries(this.scope.metadataFilters || {})) {
+    for (const [dimId, filterVal] of Object.entries(this.scope.metadataFilters || {})) {
       const dimension = catalog.find(d => d.id === dimId);
       const dimName = dimension?.name || dimId;
-      for (const val of selectedValues) {
+      // Normalize legacy array format
+      const include = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
+      const exclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
+      for (const val of include) {
         chips.push(`
-          <span class="scope-chip scope-chip-catalog" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}">
+          <span class="scope-chip scope-chip-catalog" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="include" data-tooltip="${this.escapeHtml(dimName)}">
             <span class="scope-chip-icon">
               <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
               </svg>
             </span>
-            <span class="scope-chip-label">${this.escapeHtml(dimName)}: ${this.escapeHtml(val)}</span>
+            <span class="scope-chip-label">${this.escapeHtml(val)}</span>
+            <button class="chip-remove" aria-label="Remove">&times;</button>
+          </span>
+        `);
+      }
+      for (const val of exclude) {
+        chips.push(`
+          <span class="scope-chip scope-chip-catalog scope-chip-excluded" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="exclude" data-tooltip="Exclude: ${this.escapeHtml(dimName)}">
+            <span class="scope-chip-icon">
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 8h10"/>
+              </svg>
+            </span>
+            <span class="scope-chip-label">${this.escapeHtml(val)}</span>
             <button class="chip-remove" aria-label="Remove">&times;</button>
           </span>
         `);
@@ -513,7 +449,7 @@ export class ScopeSelector {
       // Check if anything matched
       const hasContent = searchFiltersHtml.includes('scope-entity-item') || 
                          searchFiltersHtml.includes('scope-filter-item') ||
-                         searchFiltersHtml.includes('scope-catalog-item');
+                         searchFiltersHtml.includes('scope-catalog-row');
       if (!hasContent) {
         return searchFiltersHtml + `<div class="scope-entity-list-hint">No matches found. Press Enter to add "${this.escapeHtml(this.filterText)}" as a keyword.</div>`;
       }
@@ -563,25 +499,27 @@ export class ScopeSelector {
     const VISIBLE_LIMIT = 20;
     const dimId = dimension.id;
     const accordionKey = 'catalog_' + dimId;
-    const selectedValues = this.scope.metadataFilters?.[dimId] || [];
     const allOptions = dimension.options || [];
 
-    // Filter options: exclude selected, apply search text
+    const nameMatches = filterLower && displayName.toLowerCase().includes(filterLower);
+
     const filteredOptions = allOptions.filter(opt => {
-      if (selectedValues.includes(opt)) return false;
-      if (!filterLower) return true;
+      if (this.isDimValueSelected(dimId, opt)) return false;
+      if (!filterLower || nameMatches) return true;
       return opt.toLowerCase().includes(filterLower);
     });
 
     const totalFiltered = filteredOptions.length;
-    if (totalFiltered === 0 && selectedValues.length === 0) return null;
+    if (totalFiltered === 0 && !nameMatches && !this.dimHasSelections(dimId)) return null;
 
     const isTruncated = totalFiltered > VISIBLE_LIMIT;
     const visibleOptions = isTruncated ? filteredOptions.slice(0, VISIBLE_LIMIT) : filteredOptions;
-    const isExpanded = this.expandedSections.has(accordionKey);
+    const hasValueMatches = filterLower && !nameMatches && totalFiltered > 0;
+    const isExpanded = this.expandedSections.has(accordionKey) || hasValueMatches;
 
     return {
       sortName: displayName,
+      totalOptions: allOptions.length,
       html: `
         <div class="scope-entity-group scope-nested-group ${isExpanded ? 'expanded' : ''}" data-type="${accordionKey}">
           <button class="scope-entity-group-header" data-type="${accordionKey}">
@@ -589,21 +527,19 @@ export class ScopeSelector {
               <path d="M4 6l4 4 4-4"/>
             </svg>
             <span class="scope-group-label">${this.escapeHtml(displayName)}</span>
-            <span class="scope-group-count">${totalFiltered}${filterLower ? ' match' + (totalFiltered !== 1 ? 'es' : '') : ''}</span>
+            <span class="scope-group-count" title="${allOptions.length} attribute${allOptions.length !== 1 ? 's' : ''} indexing ${dimension.documentCount || 0} document${(dimension.documentCount || 0) !== 1 ? 's' : ''}">${allOptions.length} value${allOptions.length !== 1 ? 's' : ''}</span>
           </button>
           <div class="scope-entity-group-items">
             ${visibleOptions.length > 0 ? visibleOptions.map(opt => `
-              <button class="scope-entity-item scope-catalog-item"
-                      data-dimension-id="${this.escapeHtml(dimId)}"
-                      data-value="${this.escapeHtml(opt)}"
-                      data-type="${accordionKey}">
-                <span class="scope-entity-item-icon">
-                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
-                  </svg>
+              <div class="scope-catalog-row"
+                   data-dimension-id="${this.escapeHtml(dimId)}"
+                   data-value="${this.escapeHtml(opt)}">
+                <span class="scope-catalog-row-label">${this.escapeHtml(opt)}</span>
+                <span class="scope-catalog-row-actions">
+                  <button class="scope-catalog-or scope-filter-apply" title="Include (OR)" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg> Add</button>
+                  <button class="scope-catalog-not scope-filter-apply scope-filter-exclude" title="Exclude (NOT)" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.97853 13.2672C0.746592 11.86 0 10.0172 0 8C0 3.58172 3.58172 0 8 0C10.0172 0 11.86 0.746592 13.2672 1.97853L13.2797 1.96602L14.034 2.72026L14.0215 2.73277C15.2534 4.13997 16 5.9828 16 8C16 12.4183 12.4183 16 8 16C5.9828 16 4.13997 15.2534 2.73277 14.0215L2.72027 14.034L2.34925 13.6629C2.34518 13.6589 2.34111 13.6548 2.33705 13.6508L1.96602 13.2797L1.97853 13.2672ZM3.48895 13.2653C4.7015 14.3051 6.27739 14.9333 8 14.9333C11.8292 14.9333 14.9333 11.8292 14.9333 8C14.9333 6.27739 14.3051 4.7015 13.2653 3.48895L3.48895 13.2653ZM12.511 2.7347L2.7347 12.511C1.69488 11.2985 1.06667 9.72261 1.06667 8C1.06667 4.17083 4.17083 1.06667 8 1.06667C9.72261 1.06667 11.2985 1.69488 12.511 2.7347Z" fill="currentColor"/></svg> Exclude</button>
                 </span>
-                <span class="scope-entity-item-name">${this.escapeHtml(opt)}</span>
-              </button>
+              </div>
             `).join('') : `<div class="scope-entity-group-empty">No matching options</div>`}
             ${isTruncated ? `<div class="scope-entity-group-hint">Showing ${VISIBLE_LIMIT} of ${totalFiltered} — type to narrow results</div>` : ''}
           </div>
@@ -627,7 +563,8 @@ export class ScopeSelector {
     const matchedSavedFilters = allSavedFilters.filter(f => this.filterMatchesSearch(f, this.filterText));
 
     if (allSavedFilters.length > 0) {
-      const isExpanded = this.expandedSections.has('searchFilters');
+      const hasSearchMatches = filterLower && matchedSavedFilters.length > 0;
+      const isExpanded = this.expandedSections.has('searchFilters') || hasSearchMatches;
       const sortedFilters = [...matchedSavedFilters].sort((a, b) => a.name.localeCompare(b.name));
 
       const savedContent = sortedFilters.length > 0
@@ -655,9 +592,7 @@ export class ScopeSelector {
           }).join('')
         : `<div class="scope-entity-group-empty">No matching filters</div>`;
 
-      const countText = this.filterText
-        ? `${matchedSavedFilters.length} match${matchedSavedFilters.length !== 1 ? 'es' : ''}`
-        : `${allSavedFilters.length} saved`;
+      const countText = `${allSavedFilters.length} saved filter${allSavedFilters.length !== 1 ? 's' : ''}`;
 
       html += `
         <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="searchFilters">
@@ -676,11 +611,13 @@ export class ScopeSelector {
     }
 
     // ── 2 & 3. Extractions and Metadata from filterCatalog ─────────
-    const catalog = DataService.getFilterCatalog();
+    const catalog = this.getCatalog();
     if (!catalog || catalog.length === 0) return html;
 
     const extractionItems = [];
     const metadataItems = [];
+    let extractionTotalValues = 0;
+    let extractionTotalDocs = 0;
 
     for (const dimension of catalog) {
       const isExtraction = dimension.name.toLowerCase().startsWith('extracted');
@@ -688,6 +625,11 @@ export class ScopeSelector {
       const displayName = isExtraction
         ? dimension.name.replace(/^Extracted\s+/i, '')
         : dimension.name;
+
+      if (isExtraction) {
+        extractionTotalValues += (dimension.options || []).length;
+        extractionTotalDocs += (dimension.documentCount || 0);
+      }
 
       const item = this.renderCatalogDimensionAccordion(dimension, displayName, filterLower);
       if (!item) continue;
@@ -720,7 +662,7 @@ export class ScopeSelector {
                 <path d="M4 6l4 4 4-4"/>
               </svg>
               <span class="scope-group-label">Document Types</span>
-              <span class="scope-group-count">${filteredDocTypes.length}</span>
+              <span class="scope-group-count">${documentTypes.length} value${documentTypes.length !== 1 ? 's' : ''}</span>
               ${filteredDocTypes.length >= 1 ? `<span class="scope-add-all" data-scope-key="documentTypes" data-ids="${filteredDocTypeIds.join(',')}">${filteredDocTypes.length === 1 ? 'Add' : 'Add all'}</span>` : ''}
             </button>
             <div class="scope-entity-group-items">
@@ -750,7 +692,8 @@ export class ScopeSelector {
 
     // Render Extractions accordion
     if (extractionItems.length > 0) {
-      const isExpanded = this.expandedSections.has('extractionFilters');
+      const hasChildValueMatches = filterLower && extractionItems.some(item => item.html.includes('class="scope-entity-group scope-nested-group expanded"'));
+      const isExpanded = this.expandedSections.has('extractionFilters') || hasChildValueMatches;
       html += `
         <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="extractionFilters">
           <button class="scope-entity-group-header" data-type="extractionFilters">
@@ -758,7 +701,7 @@ export class ScopeSelector {
               <path d="M4 6l4 4 4-4"/>
             </svg>
             <span class="scope-group-label">Extractions</span>
-            <span class="scope-group-count">${extractionItems.length}</span>
+            <span class="scope-group-count" title="${extractionTotalValues} attribute${extractionTotalValues !== 1 ? 's' : ''} indexing ${extractionTotalDocs} document${extractionTotalDocs !== 1 ? 's' : ''}">${extractionTotalValues} value${extractionTotalValues !== 1 ? 's' : ''}</span>
           </button>
           <div class="scope-entity-group-items">
             ${extractionItems.map(item => item.html).join('')}
@@ -767,23 +710,9 @@ export class ScopeSelector {
       `;
     }
 
-    // Render Metadata accordion
+    // Render Metadata items directly at top level (no parent wrapper)
     if (metadataItems.length > 0) {
-      const isExpanded = this.expandedSections.has('metadataFilters');
-      html += `
-        <div class="scope-entity-group scope-filter-group ${isExpanded ? 'expanded' : ''}" data-type="metadataFilters">
-          <button class="scope-entity-group-header" data-type="metadataFilters">
-            <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6l4 4 4-4"/>
-            </svg>
-            <span class="scope-group-label">Metadata</span>
-            <span class="scope-group-count">${metadataItems.length}</span>
-          </button>
-          <div class="scope-entity-group-items">
-            ${metadataItems.map(item => item.html).join('')}
-          </div>
-        </div>
-      `;
+      html += metadataItems.map(item => item.html).join('');
     }
 
     return html;
@@ -799,9 +728,7 @@ export class ScopeSelector {
            (scope.locationIds?.length || 0) +
            (scope.keywords?.length || 0) +
            (scope.documentTypes?.length || 0);
-    for (const vals of Object.values(scope.metadataFilters || {})) {
-      count += (vals?.length || 0);
-    }
+    count += this.countMetadataSelections(scope.metadataFilters);
     return count;
   }
 
@@ -852,14 +779,16 @@ export class ScopeSelector {
 
     // Add metadata filter dimensions
     const catalog = DataService.getFilterCatalog();
-    for (const [dimId, vals] of Object.entries(scope.metadataFilters || {})) {
-      if (vals && vals.length > 0) {
-        const dimension = catalog.find(d => d.id === dimId);
-        const dimName = dimension?.name || dimId;
-        contents.push({
-          label: dimName,
-          items: [...vals]
-        });
+    for (const [dimId, filterVal] of Object.entries(scope.metadataFilters || {})) {
+      const include = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
+      const exclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
+      const dimension = catalog.find(d => d.id === dimId);
+      const dimName = dimension?.name || dimId;
+      if (include.length > 0) {
+        contents.push({ label: dimName, items: [...include] });
+      }
+      if (exclude.length > 0) {
+        contents.push({ label: `NOT ${dimName}`, items: [...exclude] });
       }
     }
     
@@ -948,10 +877,7 @@ export class ScopeSelector {
            (this.scope.locationIds?.length || 0) +
            (this.scope.keywords?.length || 0) +
            (this.scope.documentTypes?.length || 0);
-    // Count metadata filter selections
-    for (const vals of Object.values(this.scope.metadataFilters || {})) {
-      count += (vals?.length || 0);
-    }
+    count += this.countMetadataSelections(this.scope.metadataFilters);
     return count;
   }
 
@@ -1057,94 +983,20 @@ export class ScopeSelector {
    * Attach event listeners
    */
   attachEventListeners() {
-    // Scope section (Repositories, Classifications, Date)
-    if (this.options.showScopeSection) {
-      const repos = DataService.getRepositories();
-      const repoSelectAll = this.container.querySelector('#scope-repo-select-all');
-      if (repoSelectAll) {
-        repoSelectAll.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            this.scopeParams.repositoryIds = new Set(repos.map(r => r.id));
-          } else {
-            this.scopeParams.repositoryIds = new Set();
-          }
-          this.container.querySelectorAll('input[name="scope-repo"]').forEach(cb => { cb.checked = e.target.checked; });
-          this.options.onScopeParamsChange(this.getScopeParams());
-        });
-      }
-      this.container.querySelectorAll('input[name="scope-repo"]').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-          const id = e.target.value;
-          if (e.target.checked) this.scopeParams.repositoryIds.add(id);
-          else this.scopeParams.repositoryIds.delete(id);
-          if (repoSelectAll) {
-            repoSelectAll.checked = this.scopeParams.repositoryIds.size === repos.length;
-            repoSelectAll.indeterminate = this.scopeParams.repositoryIds.size > 0 && this.scopeParams.repositoryIds.size < repos.length;
-          }
-          this.options.onScopeParamsChange(this.getScopeParams());
-        });
-      });
-
-      const classSelectAll = this.container.querySelector('#scope-classification-select-all');
-      if (classSelectAll) {
-        classSelectAll.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            this.scopeParams.classifications = new Set(CLASSIFICATION_LEVELS.map(l => l.id));
-          } else {
-            this.scopeParams.classifications = new Set();
-          }
-          this.container.querySelectorAll('input[name="scope-classification"]').forEach(cb => { cb.checked = e.target.checked; });
-          this.options.onScopeParamsChange(this.getScopeParams());
-        });
-      }
-      this.container.querySelectorAll('input[name="scope-classification"]').forEach(cb => {
-        cb.addEventListener('change', (e) => {
-          const id = e.target.value;
-          if (e.target.checked) this.scopeParams.classifications.add(id);
-          else this.scopeParams.classifications.delete(id);
-          if (classSelectAll) {
-            classSelectAll.checked = this.scopeParams.classifications.size === CLASSIFICATION_LEVELS.length;
-            classSelectAll.indeterminate = this.scopeParams.classifications.size > 0 && this.scopeParams.classifications.size < CLASSIFICATION_LEVELS.length;
-          }
-          this.options.onScopeParamsChange(this.getScopeParams());
-        });
-      });
-
-      const scopeTimeClear = this.container.querySelector('#scope-time-range-clear');
-      if (scopeTimeClear) {
-        scopeTimeClear.addEventListener('click', () => {
-          this.scopeParams.timeRange = null;
-          if (this.timeRangeFilter) this.timeRangeFilter.clearSelection();
-          this.updateScopeTimeRangeLabel();
-          this.options.onScopeParamsChange(this.getScopeParams());
-        });
-      }
-
-      if (this.options.showDateInScope && this.options.getVolumeData) {
-        const volumeData = this.options.getVolumeData();
-        const timeContainer = this.container.querySelector('#scope-time-range-filter');
-        if (timeContainer && volumeData?.dates?.length) {
-          this.timeRangeFilter = new TimeRangeFilter('scope-time-range-filter', {
-            height: 60,
-            onChange: (range) => {
-              this.scopeParams.timeRange = range;
-              this.updateScopeTimeRangeLabel();
-              this.options.onScopeParamsChange(this.getScopeParams());
-            }
-          });
-          this.timeRangeFilter.update(volumeData);
-          if (this.scopeParams.timeRange) {
-            this.timeRangeFilter.setSelection(this.scopeParams.timeRange.start, this.scopeParams.timeRange.end);
-          }
-        }
-      }
-    }
-
     // Search input
     const searchInput = this.container.querySelector('.scope-search-input');
     if (searchInput) {
+      const clearBtn = this.container.querySelector('.scope-search-clear');
       searchInput.addEventListener('input', (e) => {
         this.filterText = e.target.value;
+        clearBtn?.classList.toggle('hidden', !this.filterText);
+        this.refreshEntityList();
+      });
+      clearBtn?.addEventListener('click', () => {
+        this.filterText = '';
+        searchInput.value = '';
+        clearBtn.classList.add('hidden');
+        searchInput.focus();
         this.refreshEntityList();
       });
       
@@ -1181,13 +1033,17 @@ export class ScopeSelector {
           if (chip.dataset.keyword !== undefined) {
             this.scope.keywords = this.scope.keywords.filter(k => k !== chip.dataset.keyword);
           } else if (chip.dataset.dimensionId !== undefined) {
-            // Catalog filter chip removal
             const dimId = chip.dataset.dimensionId;
             const val = chip.dataset.value;
-            if (this.scope.metadataFilters[dimId]) {
-              this.scope.metadataFilters[dimId] = this.scope.metadataFilters[dimId].filter(v => v !== val);
-              if (this.scope.metadataFilters[dimId].length === 0) {
-                delete this.scope.metadataFilters[dimId];
+            const entry = this.scope.metadataFilters[dimId];
+            if (entry) {
+              if (Array.isArray(entry)) {
+                this.scope.metadataFilters[dimId] = entry.filter(v => v !== val);
+                if (this.scope.metadataFilters[dimId].length === 0) delete this.scope.metadataFilters[dimId];
+              } else {
+                entry.include = (entry.include || []).filter(v => v !== val);
+                entry.exclude = (entry.exclude || []).filter(v => v !== val);
+                if (entry.include.length === 0 && entry.exclude.length === 0) delete this.scope.metadataFilters[dimId];
               }
             }
           } else if (chip.dataset.id && chip.dataset.scopeKey) {
@@ -1275,28 +1131,40 @@ export class ScopeSelector {
         return;
       }
       
-      // Handle catalog filter item click
-      const catalogItem = e.target.closest('.scope-catalog-item');
-      if (catalogItem) {
+      // Handle catalog OR (include) button click
+      const orBtn = e.target.closest('.scope-catalog-or');
+      if (orBtn) {
         e.preventDefault();
-        const dimId = catalogItem.dataset.dimensionId;
-        const val = catalogItem.dataset.value;
-        if (dimId && val) {
-          if (!this.scope.metadataFilters[dimId]) {
-            this.scope.metadataFilters[dimId] = [];
-          }
-          if (!this.scope.metadataFilters[dimId].includes(val)) {
-            this.scope.metadataFilters[dimId].push(val);
-            this.refreshChips();
-            this.refreshEntityList();
-            this.notifyChange();
-          }
+        e.stopPropagation();
+        const dimId = orBtn.dataset.dimensionId;
+        const val = orBtn.dataset.value;
+        if (dimId && val && !this.isDimValueSelected(dimId, val)) {
+          this.getDimFilter(dimId).include.push(val);
+          this.refreshChips();
+          this.refreshEntityList();
+          this.notifyChange();
+        }
+        return;
+      }
+
+      // Handle catalog NOT (exclude) button click
+      const notBtn = e.target.closest('.scope-catalog-not');
+      if (notBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dimId = notBtn.dataset.dimensionId;
+        const val = notBtn.dataset.value;
+        if (dimId && val && !this.isDimValueSelected(dimId, val)) {
+          this.getDimFilter(dimId).exclude.push(val);
+          this.refreshChips();
+          this.refreshEntityList();
+          this.notifyChange();
         }
         return;
       }
       
-      // Handle entity item click (not filter items, not catalog items)
-      const item = e.target.closest('.scope-entity-item:not(.scope-filter-item):not(.scope-catalog-item)');
+      // Handle entity item click (not filter items, not catalog rows)
+      const item = e.target.closest('.scope-entity-item:not(.scope-filter-item)');
       if (item) {
         e.preventDefault();
         const { id, scopeKey } = item.dataset;
@@ -1358,10 +1226,6 @@ export class ScopeSelector {
    * Destroy the component and clean up
    */
   destroy() {
-    if (this.timeRangeFilter) {
-      this.timeRangeFilter.destroy?.();
-      this.timeRangeFilter = null;
-    }
     if (this.container) {
       this.container.innerHTML = '';
     }

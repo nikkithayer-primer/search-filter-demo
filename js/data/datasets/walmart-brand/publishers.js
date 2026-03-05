@@ -37,11 +37,3 @@ export const publishers = [
   { id: 'pub-analyst', name: 'Analyst Input', type: 'internal', color: null }
 ];
 
-export const publisherCategories = [
-  { id: 'consumer_review', name: 'Consumer Reviews', color: '#59A14F' },
-  { id: 'news', name: 'News', color: '#E15759' },
-  { id: 'business_news', name: 'Business News', color: '#76B7B2' },
-  { id: 'social', name: 'Social Media', color: '#B07AA1' },
-  { id: 'regulatory', name: 'Regulatory Filings', color: '#8B5CF6' },
-  { id: 'internal', name: 'Internal', color: '#6B7280' }
-];

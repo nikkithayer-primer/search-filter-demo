@@ -15,24 +15,20 @@ export class SearchScopeModal extends BaseModal {
   }
 
   /**
-   * Open the modal with the given scope and scope params.
+   * Open the modal with the given scope.
    * @param {Object} opts
    * @param {Object} opts.scope - Current filter scope (entities, keywords, metadata)
-   * @param {Object} opts.scopeParams - { repositoryIds, classifications, timeRange }
-   * @param {Function} opts.getVolumeData - Returns volume data for date histogram
-   * @param {Function} opts.onApply - (scope, scopeParams) => void
+   * @param {Function} opts.onApply - (scope) => void
+   * @param {string[]|null} opts.contextDocIds - Document IDs to scope the filter catalog to
    */
   open(opts = {}) {
     this.onApplyCallback = opts.onApply || (() => {});
     this._initialScope = opts.scope || {};
-    this._initialScopeParams = opts.scopeParams || { repositoryIds: [], classifications: [], timeRange: null };
-    this._getVolumeData = opts.getVolumeData || null;
+    this._contextDocIds = opts.contextDocIds || null;
 
     this.renderModal();
     this.attachListeners();
     this.show();
-    // Defer ScopeSelector init so the modal container has real dimensions
-    // (needed for the D3 TimeRangeFilter histogram to measure its width)
     requestAnimationFrame(() => this.initScopeSelector());
   }
 
@@ -43,11 +39,7 @@ export class SearchScopeModal extends BaseModal {
     this.scopeSelector = new ScopeSelector(container, {
       showSaveFilter: true,
       showSearchFilters: true,
-      showScopeSection: true,
-      showDateInScope: true,
-      initialScopeParams: this._initialScopeParams,
-      onScopeParamsChange: () => {},
-      getVolumeData: this._getVolumeData,
+      contextDocIds: this._contextDocIds,
       onChange: () => {}
     });
     this.scopeSelector.setScope(this._initialScope);
@@ -59,29 +51,33 @@ export class SearchScopeModal extends BaseModal {
       <div class="modal-body monitor-editor-body">
         <div class="monitor-editor-form">
           <div class="form-group">
-            <p class="form-help-text">Type to filter entities or press Enter to add as keyword</p>
             <div id="scope-selector-container"></div>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="scope-modal-cancel">Cancel</button>
-        <button class="btn btn-primary" id="scope-modal-apply">Apply</button>
+      <div class="modal-footer scope-modal-footer">
+        <button class="btn btn-ghost btn-lg" id="scope-modal-reset">Reset</button>
+        <button class="btn btn-primary btn-lg" id="scope-modal-apply">Apply</button>
       </div>
     `;
   }
 
   attachListeners() {
     this.attachCloseListener();
-    this.modalContent?.querySelector('#scope-modal-cancel')?.addEventListener('click', () => this.close());
+    this.modalContent?.querySelector('#scope-modal-reset')?.addEventListener('click', () => this.handleReset());
     this.modalContent?.querySelector('#scope-modal-apply')?.addEventListener('click', () => this.handleApply());
+  }
+
+  handleReset() {
+    if (this.scopeSelector) {
+      this.scopeSelector.clearScope();
+    }
   }
 
   handleApply() {
     if (this.scopeSelector && this.onApplyCallback) {
       const scope = this.scopeSelector.getScope();
-      const scopeParams = this.scopeSelector.getScopeParams();
-      this.onApplyCallback(scope, scopeParams);
+      this.onApplyCallback(scope);
     }
     this.close();
   }

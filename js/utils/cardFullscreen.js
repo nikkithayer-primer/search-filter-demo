@@ -43,7 +43,7 @@ function enterFullscreen(card) {
 /**
  * Exit fullscreen mode
  */
-export function exitFullscreen() {
+function exitFullscreen() {
   if (currentFullscreenCard) {
     currentFullscreenCard.classList.remove('card-fullscreen');
     currentFullscreenCard = null;
@@ -63,28 +63,12 @@ export function exitFullscreen() {
  * Toggle fullscreen mode for a card
  * @param {HTMLElement} card - The card element
  */
-export function toggleFullscreen(card) {
+function toggleFullscreen(card) {
   if (card.classList.contains('card-fullscreen')) {
     exitFullscreen();
   } else {
     enterFullscreen(card);
   }
-}
-
-/**
- * Check if any card is currently fullscreen
- * @returns {boolean}
- */
-export function isFullscreen() {
-  return currentFullscreenCard !== null;
-}
-
-/**
- * Get the currently fullscreen card
- * @returns {HTMLElement|null}
- */
-export function getFullscreenCard() {
-  return currentFullscreenCard;
 }
 
 /**
@@ -101,31 +85,9 @@ export function initFullscreenToggle(card) {
   }
 }
 
-/**
- * Initialize fullscreen toggles for all cards in a container
- * @param {HTMLElement} container - The container element
- */
-export function initAllFullscreenToggles(container) {
-  if (!container) return;
-  
-  const cards = container.querySelectorAll('.card');
-  cards.forEach(card => {
-    initFullscreenToggle(card);
-  });
-}
-
 // Handle Escape key to exit fullscreen
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && currentFullscreenCard) {
     exitFullscreen();
   }
 });
-
-export default {
-  toggleFullscreen,
-  exitFullscreen,
-  isFullscreen,
-  getFullscreenCard,
-  initFullscreenToggle,
-  initAllFullscreenToggles
-};

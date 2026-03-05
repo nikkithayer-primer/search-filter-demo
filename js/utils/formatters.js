@@ -103,16 +103,6 @@ export function formatDate(date) {
 }
 
 /**
- * Format date with year (medium: "Jan 15, 2024")
- * @param {string|Date} date - Date to format
- * @returns {string} Formatted date string with year
- */
-export function formatDateWithYear(date) {
-  const d = new Date(date);
-  return d3.timeFormat('%b %d, %Y')(d);
-}
-
-/**
  * Format date long (full month: "January 15, 2024")
  * @param {string|Date} date - Date to format
  * @returns {string} Formatted date string with full month and year
@@ -140,23 +130,6 @@ export function formatDateTime(date) {
 export function formatDateTimeLong(date) {
   const d = new Date(date);
   return d3.timeFormat('%B %d, %Y %H:%M')(d);
-}
-
-/**
- * Format date with full details (uses native JS for localized output)
- * @param {string|Date} date - Date to format
- * @returns {string} Formatted date string with time
- */
-export function formatDateFull(date) {
-  const d = new Date(date);
-  return d.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
 }
 
 /**

@@ -121,26 +121,6 @@ export function getClassificationLevel(code) {
 }
 
 /**
- * Get classification color by code
- * @param {string} code - Classification code
- * @returns {string} Color hex value
- */
-export function getClassificationColor(code) {
-  const level = CLASSIFICATION_LEVELS[code];
-  return level ? level.color : '#6b7280';
-}
-
-/**
- * Get classification background color by code
- * @param {string} code - Classification code
- * @returns {string} Background color hex value
- */
-export function getClassificationBgColor(code) {
-  const level = CLASSIFICATION_LEVELS[code];
-  return level ? level.bgColor : '#6b7280';
-}
-
-/**
  * Format a portion mark for display
  * @param {string} classification - Classification code (U, CUI, C, S, TS)
  * @param {string} handling - Handling instructions (e.g., "FOUO", "NOFORN", "REL TO USA")
@@ -170,33 +150,6 @@ export function parsePortionMark(portionMark) {
     classification: match[1],
     handling: match[2] || null
   };
-}
-
-/**
- * Calculate the highest classification level from an array of portion marks
- * @param {Array} portionMarks - Array of { classification, handling } objects or strings
- * @returns {string} Highest classification code
- */
-export function calculateDocumentClassification(portionMarks) {
-  if (!portionMarks || !portionMarks.length) return 'U';
-  
-  let highestOrder = -1;
-  let highestCode = 'U';
-  
-  portionMarks.forEach(mark => {
-    // Handle both object and string formats
-    const code = typeof mark === 'string' 
-      ? parsePortionMark(mark).classification 
-      : mark.classification;
-    
-    const level = CLASSIFICATION_LEVELS[code];
-    if (level && level.order > highestOrder) {
-      highestOrder = level.order;
-      highestCode = code;
-    }
-  });
-  
-  return highestCode;
 }
 
 /**
@@ -235,37 +188,15 @@ export function getDocumentTypeInfo(documentType) {
   };
 }
 
-/**
- * Determine document type from publisher type
- * @param {string} publisherType - Publisher type (social, national_news, international_news, internal)
- * @returns {string} Document type
- */
-export function getDocumentTypeFromPublisher(publisherType) {
-  if (publisherType === 'internal') {
-    return DOCUMENT_TYPES.INTERNAL;
-  }
-  if (publisherType === 'social') {
-    return DOCUMENT_TYPES.SOCIAL_POST;
-  }
-  if (publisherType === 'national_news' || publisherType === 'international_news') {
-    return DOCUMENT_TYPES.NEWS_ARTICLE;
-  }
-  return DOCUMENT_TYPES.NEWS_ARTICLE; // Default
-}
-
 export default {
   CLASSIFICATION_LEVELS,
   DOCUMENT_TYPES,
   DOCUMENT_TYPE_INFO,
   PLACEHOLDERS,
   getClassificationLevel,
-  getClassificationColor,
-  getClassificationBgColor,
   formatPortionMark,
   parsePortionMark,
-  calculateDocumentClassification,
   isSocialMedia,
   hasTitle,
-  getDocumentTypeInfo,
-  getDocumentTypeFromPublisher
+  getDocumentTypeInfo
 };

@@ -224,40 +224,45 @@ const matchDocumentToScope = (doc, scope) => {
   }
   
   // Check metadata filter matches (from filter catalog)
+  let hasExcludeOnly = false;
   if (scope.metadataFilters && typeof scope.metadataFilters === 'object') {
     const catalog = dataStore.data?.filterCatalog || [];
-    for (const [dimensionId, selectedValues] of Object.entries(scope.metadataFilters)) {
-      if (!selectedValues || selectedValues.length === 0) continue;
-      
-      // Find the catalog entry for this dimension
+    for (const [dimensionId, filterVal] of Object.entries(scope.metadataFilters)) {
+      if (!filterVal) continue;
+
+      const includeVals = Array.isArray(filterVal) ? filterVal : (filterVal.include || []);
+      const excludeVals = Array.isArray(filterVal) ? [] : (filterVal.exclude || []);
+      if (includeVals.length === 0 && excludeVals.length === 0) continue;
+
       const dimension = catalog.find(d => d.id === dimensionId);
       if (!dimension) continue;
-      
-      let match = false;
-      
-      if (dimension.type === 'mapped' && dimension.docMapping) {
-        // Catalog-only dimension: check if this doc is in any selected value's mapping
-        match = selectedValues.some(val => {
+
+      const docMatchesValue = (val) => {
+        if (dimension.type === 'mapped' && dimension.docMapping) {
           const mappedDocs = dimension.docMapping[val];
           return mappedDocs && mappedDocs.includes(doc.id);
-        });
-      } else if (dimension.metadataKey) {
-        // Metadata-based dimension: check doc.metadata
-        const docValue = doc.metadata?.[dimension.metadataKey];
-        if (Array.isArray(docValue)) {
-          // Multi-value: doc has ['value1', 'value2', ...], user selected ['value1']
-          match = selectedValues.some(v => docValue.includes(v));
-        } else if (docValue !== undefined && docValue !== null) {
-          // Single-value: doc has 'value', user selected ['value']
-          match = selectedValues.includes(String(docValue));
+        } else if (dimension.metadataKey) {
+          const docValue = doc.metadata?.[dimension.metadataKey];
+          if (Array.isArray(docValue)) return docValue.includes(val);
+          if (docValue !== undefined && docValue !== null) return String(docValue) === val;
         }
+        return false;
+      };
+
+      if (excludeVals.length > 0 && excludeVals.some(v => docMatchesValue(v))) {
+        return false;
       }
-      
-      matchResults.push(match);
+
+      if (includeVals.length > 0) {
+        matchResults.push(includeVals.some(v => docMatchesValue(v)));
+      } else if (excludeVals.length > 0) {
+        hasExcludeOnly = true;
+      }
     }
   }
   
-  // If no criteria set, no match
+  // If only exclude filters were set and the doc survived, count as a match
+  if (matchResults.length === 0 && hasExcludeOnly) return true;
   if (matchResults.length === 0) return false;
   
   // Apply logic
@@ -317,7 +322,10 @@ const getDocumentsForScope = (scope, options = {}) => {
     scope.documentTypes?.length > 0 ||
     scope.publisherIds?.length > 0 ||
     scope.authors?.length > 0 ||
-    (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => v?.length > 0))
+    (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => {
+      if (Array.isArray(v)) return v.length > 0;
+      return (v?.include?.length > 0) || (v?.exclude?.length > 0);
+    }))
   );
   
   // If we have scope criteria, match documents against it
@@ -342,22 +350,6 @@ const getDocumentsForScope = (scope, options = {}) => {
 
 export const DataService = {
   // ============================================
-  // Dataset Information
-  // ============================================
-
-  /**
-   * Get the current dataset name
-   * @returns {string} Display name of the current dataset
-   */
-  getCurrentDatasetName: () => dataStore.getCurrentDatasetName(),
-
-  /**
-   * Get the current dataset ID
-   * @returns {string} ID of the current dataset
-   */
-  getCurrentDatasetId: () => dataStore.getCurrentDataset(),
-
-  // ============================================
   // Time Range Filtering Utilities
   // ============================================
 
@@ -371,17 +363,6 @@ export const DataService = {
     if (!timeRange || !timeRange.start || !timeRange.end) return true;
     const d = new Date(date);
     return d >= timeRange.start && d <= timeRange.end;
-  },
-
-  /**
-   * Filter volumeOverTime array by time range
-   * @param {Array} volumeOverTime - Array of { date, publisherVolumes }
-   * @param {Object|null} timeRange - { start: Date, end: Date } or null
-   * @returns {Array} Filtered array
-   */
-  filterVolumeByTimeRange: (volumeOverTime, timeRange) => {
-    if (!volumeOverTime || !timeRange) return volumeOverTime || [];
-    return volumeOverTime.filter(entry => DataService.isDateInRange(entry.date, timeRange));
   },
 
   /**
@@ -404,30 +385,6 @@ export const DataService = {
   // ============================================
   // Unified Document Scope Methods
   // ============================================
-
-  /**
-   * Get documents matching a scope definition with optional manual overrides.
-   * This is the unified method for both Monitors and Workspaces.
-   * 
-   * @param {Object} scope - Scope definition
-   * @param {string[]} scope.personIds - Person IDs to match
-   * @param {string[]} scope.organizationIds - Organization IDs to match
-   * @param {string[]} scope.locationIds - Location IDs to match
-   * @param {string[]} scope.eventIds - Event IDs to match
-   * @param {string[]} scope.narrativeIds - Narrative IDs to match
-   * @param {string[]} scope.themeIds - Theme IDs to match
-   * @param {string[]} scope.keywords - Keywords to search in text
-   * @param {string} scope.logic - 'AND' | 'OR' (default: 'OR')
-   * @param {Object} options - Additional options
-   * @param {string[]} options.includedDocIds - Document IDs to always include (manual additions)
-   * @param {string[]} options.excludedDocIds - Document IDs to always exclude (manual removals)
-   * @param {Object} options.timeRange - { start: Date, end: Date } to filter by date
-   * @param {string[]} options.repositoryIds - Filter to specific repositories
-   * @returns {Object[]} Matching documents sorted by publishedDate (newest first)
-   */
-  getDocumentsForScope: (scope, options = {}) => {
-    return getDocumentsForScope(scope, options);
-  },
 
   /**
    * Check if a document matches a scope definition
@@ -563,91 +520,60 @@ export const DataService = {
   },
   getDocument: (id) => findById('documents', id),
   getDocumentById(id) { return this.getDocument(id); },  // Alias for getDocument
-  
-  /**
-   * Get documents filtered by document type
-   * @param {string} type - Document type (social_post, tiktok, news_article, internal)
-   * @returns {Array} Filtered documents
-   */
-  getDocumentsByType: (type) => {
-    return (dataStore.data?.documents ?? []).filter(d => d.documentType === type);
-  },
-  
-  /**
-   * Get documents filtered by classification level
-   * @param {string} classification - Classification code (U, CUI, C, S, TS)
-   * @returns {Array} Filtered documents
-   */
-  getDocumentsByClassification: (classification) => {
-    return (dataStore.data?.documents ?? []).filter(d => (d.classification || 'U') === classification);
-  },
-  
-  /**
-   * Get the effective classification of a document
-   * If document has portion marks, returns the highest classification
-   * @param {Object} doc - Document object
-   * @returns {string} Classification code
-   */
-  getDocumentClassification: (doc) => {
-    if (!doc) return 'U';
-    
-    // If document has explicit classification, use it
-    if (doc.classification) return doc.classification;
-    
-    // If document has content blocks with portion marks, calculate highest
-    if (doc.contentBlocks && doc.contentBlocks.length > 0) {
-      const classificationOrder = { 'U': 0, 'CUI': 1, 'C': 2, 'S': 3, 'TS': 4 };
-      let highest = 'U';
-      
-      doc.contentBlocks.forEach(block => {
-        if (block.portionMark && block.portionMark.classification) {
-          const current = block.portionMark.classification;
-          if (classificationOrder[current] > classificationOrder[highest]) {
-            highest = current;
-          }
-        }
-      });
-      
-      return highest;
-    }
-    
-    return 'U';
-  },
-  
-  /**
-   * Get classified documents (non-U classification)
-   * @returns {Array} Documents with classification above U
-   */
-  getClassifiedDocuments: () => {
-    return (dataStore.data?.documents ?? []).filter(d => d.classification && d.classification !== 'U');
-  },
 
   // Monitors
   getMonitors: () => dataStore.data?.monitors ?? [],
   getMonitor: (id) => findById('monitors', id),
-  getMonitorById: (id) => findById('monitors', id),
   getActiveMonitors: () => (dataStore.data?.monitors ?? []).filter(m => m.enabled),
   
   // Alerts
   getAlerts: () => dataStore.data?.alerts ?? [],
   getAlert: (id) => findById('alerts', id),
-  getAlertById: (id) => findById('alerts', id),
   getAlertsForMonitor: (monitorId) => (dataStore.data?.alerts ?? []).filter(a => a.monitorId === monitorId),
-  getUnacknowledgedAlerts: () => (dataStore.data?.alerts ?? []).filter(a => !a.acknowledged),
-  getRecentAlerts: (limit = 10) => {
-    return [...(dataStore.data?.alerts ?? [])]
-      .sort((a, b) => new Date(b.triggeredAt) - new Date(a.triggeredAt))
-      .slice(0, limit);
-  },
 
   // Search Filters
   getSearchFilters: () => dataStore.data?.searchFilters ?? [],
   getSearchFilter: (id) => findById('searchFilters', id),
-  getSearchFilterById(id) { return this.getSearchFilter(id); },  // Alias for getSearchFilter
 
   // Filter Catalog
   getFilterCatalog: () => dataStore.data?.filterCatalog ?? [],
-  getFilterCatalogDimension: (id) => (dataStore.data?.filterCatalog ?? []).find(d => d.id === id),
+
+  /**
+   * Get filter catalog scoped to a set of document IDs.
+   * Only returns dimensions/options that appear in the given documents.
+   * @param {string[]|null} docIds - Document IDs to scope to (null = all)
+   * @returns {Object[]} Filtered catalog dimensions
+   */
+  getFilterCatalogForDocuments: (docIds) => {
+    const catalog = dataStore.data?.filterCatalog ?? [];
+    if (!docIds || docIds.length === 0) return catalog;
+
+    const docIdSet = new Set(docIds);
+    const docs = docIds.map(id => findById('documents', id)).filter(Boolean);
+
+    return catalog.map(dim => {
+      let relevantOptions;
+
+      if (dim.docMapping) {
+        relevantOptions = (dim.options || []).filter(opt =>
+          (dim.docMapping[opt] || []).some(id => docIdSet.has(id))
+        );
+      } else if (dim.metadataKey) {
+        const valuesInDocs = new Set();
+        for (const doc of docs) {
+          const val = doc.metadata?.[dim.metadataKey];
+          if (Array.isArray(val)) val.forEach(v => valuesInDocs.add(v));
+          else if (val != null) valuesInDocs.add(val);
+        }
+        relevantOptions = (dim.options || []).filter(opt => valuesInDocs.has(opt));
+      } else {
+        relevantOptions = dim.options || [];
+      }
+
+      if (relevantOptions.length === 0) return null;
+      return { ...dim, options: relevantOptions };
+    }).filter(Boolean);
+  },
 
   // Topics - supports document scope filtering
   getTopics: (scopeDocIds = null) => {
@@ -680,21 +606,6 @@ export const DataService = {
       return startDate <= timeRange.end && endDate >= timeRange.start;
     });
   },
-  
-  // Get active topics (those without an end date or end date in future)
-  getActiveTopics: () => {
-    const now = new Date();
-    return (dataStore.data?.topics ?? []).filter(topic => 
-      !topic.endDate || new Date(topic.endDate) >= now
-    );
-  },
-  
-  // Get topics by document
-  getTopicsForDocument: (documentId) => {
-    return (dataStore.data?.topics ?? []).filter(topic =>
-      (topic.documentIds ?? []).includes(documentId)
-    );
-  },
 
   // Publishers
   getPublishers: () => {
@@ -705,37 +616,6 @@ export const DataService = {
     return findById('publishers', id);
   },
   
-  getPublisherCategories: () => {
-    return dataStore.data?.publisherCategories ?? [];
-  },
-  
-  getPublishersByType: (type) => {
-    const publishers = DataService.getPublishers();
-    return publishers.filter(p => p.type === type);
-  },
-  
-  getSocialPublishers: () => {
-    const publishers = DataService.getPublishers();
-    return publishers.filter(p => p.type === 'social');
-  },
-  
-  getNewsPublishers: () => {
-    const publishers = DataService.getPublishers();
-    return publishers.filter(p => 
-      p.type === 'national_news' || p.type === 'international_news' || p.type === 'news'
-    );
-  },
-  
-  getNationalNewsPublishers: () => {
-    const publishers = DataService.getPublishers();
-    return publishers.filter(p => p.type === 'national_news');
-  },
-  
-  getInternationalNewsPublishers: () => {
-    const publishers = DataService.getPublishers();
-    return publishers.filter(p => p.type === 'international_news');
-  },
-
   // Repositories
   getRepositories: () => {
     return dataStore.data?.repositories ?? [];
@@ -743,32 +623,6 @@ export const DataService = {
   
   getRepository: (id) => {
     return findById('repositories', id);
-  },
-  
-  getRepositoryByCode: (code) => {
-    const repos = dataStore.data?.repositories ?? [];
-    return repos.find(r => r.code === code);
-  },
-  
-  /**
-   * Get documents filtered by repository
-   * @param {string} repositoryId - Repository ID
-   * @returns {Array} Filtered documents
-   */
-  getDocumentsByRepository: (repositoryId) => {
-    return (dataStore.data?.documents ?? []).filter(d => d.repositoryId === repositoryId);
-  },
-  
-  /**
-   * Get documents filtered by multiple repositories
-   * @param {string[]} repositoryIds - Array of repository IDs
-   * @returns {Array} Filtered documents
-   */
-  getDocumentsByRepositories: (repositoryIds) => {
-    if (!repositoryIds || repositoryIds.length === 0) {
-      return dataStore.data?.documents ?? [];
-    }
-    return (dataStore.data?.documents ?? []).filter(d => repositoryIds.includes(d.repositoryId));
   },
 
   // ============================================
@@ -807,9 +661,6 @@ export const DataService = {
   getNarrativesForLocation: (locationId) => 
     findEntitiesReferencing('narratives', 'locationIds', locationId),
 
-  getThemesForLocation: (locationId) => 
-    findEntitiesReferencing('themes', 'locationIds', locationId),
-
   getEventsForLocation: (locationId) => 
     findEntitiesReferencing('events', 'locationId', locationId, false),
 
@@ -847,18 +698,12 @@ export const DataService = {
   getNarrativesForEvent: (eventId) => 
     findEntitiesReferencing('narratives', 'eventIds', eventId),
 
-  getThemesForEvent: (eventId) => 
-    findEntitiesReferencing('themes', 'eventIds', eventId),
-
   // ============================================
   // Person Relationships
   // ============================================
 
   getNarrativesForPerson: (personId) => 
     findEntitiesReferencing('narratives', 'personIds', personId),
-
-  getThemesForPerson: (personId) => 
-    findEntitiesReferencing('themes', 'personIds', personId),
 
   /**
    * Get related persons by finding other people who appear in the same narratives.
@@ -991,51 +836,6 @@ export const DataService = {
     return topic.volumeOverTime.filter(entry => 
       DataService.isDateInRange(entry.date, timeRange)
     );
-  },
-
-  /**
-   * Get total volume for a topic (optionally filtered by time range)
-   */
-  getTopicTotalVolume: (topicId, timeRange = null) => {
-    const volumeData = DataService.getTopicVolumeOverTime(topicId, timeRange);
-    return volumeData.reduce((sum, entry) => sum + (entry.volume || 0), 0);
-  },
-
-  /**
-   * Get topic duration in days
-   */
-  getTopicDuration: (topicId) => {
-    const topic = findById('topics', topicId);
-    if (!topic) return 0;
-    
-    const start = new Date(topic.startDate);
-    const end = topic.endDate ? new Date(topic.endDate) : new Date();
-    const diffTime = Math.abs(end - start);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  },
-
-  /**
-   * Get aggregate topic volume over time (all topics combined)
-   */
-  getAggregateTopicVolumeOverTime: (timeRange = null) => {
-    const topics = DataService.getTopicsInRange(timeRange);
-    const dateMap = new Map();
-
-    topics.forEach(topic => {
-      const volumeData = timeRange 
-        ? DataService.getTopicVolumeOverTime(topic.id, timeRange)
-        : topic.volumeOverTime || [];
-      
-      volumeData.forEach(entry => {
-        const current = dateMap.get(entry.date) || 0;
-        dateMap.set(entry.date, current + (entry.volume || 0));
-      });
-    });
-
-    const dates = [...dateMap.keys()].sort();
-    const volumes = dates.map(date => dateMap.get(date));
-
-    return { dates, volumes };
   },
 
   // ============================================
@@ -1249,19 +1049,6 @@ export const DataService = {
   // ============================================
 
   /**
-   * Get all users
-   * @returns {Array} Array of user objects
-   */
-  getUsers: () => dataStore.data.users || [],
-
-  /**
-   * Get a user by ID
-   * @param {string} userId - The user ID
-   * @returns {Object|undefined} The user object or undefined
-   */
-  getUser: (userId) => findById('users', userId),
-
-  /**
    * Get the current (logged-in) user
    * @returns {Object|undefined} The current user object
    */
@@ -1288,30 +1075,6 @@ export const DataService = {
     }));
   },
 
-  /**
-   * Get all highlights by a specific user across all documents
-   * @param {string} userId - The user ID
-   * @returns {Array} Array of highlights with document references
-   */
-  getHighlightsByUser: (userId) => {
-    const documents = dataStore.data?.documents ?? [];
-    const highlights = [];
-    
-    documents.forEach(doc => {
-      (doc.highlights || []).forEach(highlight => {
-        if (highlight.userId === userId) {
-          highlights.push({
-            ...highlight,
-            documentId: doc.id,
-            documentTitle: doc.title || doc.content?.substring(0, 50)
-          });
-        }
-      });
-    });
-    
-    return highlights.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  },
-
   // ============================================
   // Comment Methods
   // ============================================
@@ -1333,69 +1096,6 @@ export const DataService = {
         user: findById('users', reply.userId)
       }))
     }));
-  },
-
-  /**
-   * Get all comments by a specific user across all documents
-   * @param {string} userId - The user ID
-   * @returns {Array} Array of comments with document references
-   */
-  getCommentsByUser: (userId) => {
-    const documents = dataStore.data?.documents ?? [];
-    const comments = [];
-    
-    documents.forEach(doc => {
-      (doc.comments || []).forEach(comment => {
-        // Check main comment
-        if (comment.userId === userId) {
-          comments.push({
-            ...comment,
-            documentId: doc.id,
-            documentTitle: doc.title || doc.content?.substring(0, 50),
-            isReply: false
-          });
-        }
-        // Check replies
-        (comment.replies || []).forEach(reply => {
-          if (reply.userId === userId) {
-            comments.push({
-              ...reply,
-              parentCommentId: comment.id,
-              documentId: doc.id,
-              documentTitle: doc.title || doc.content?.substring(0, 50),
-              isReply: true
-            });
-          }
-        });
-      });
-    });
-    
-    return comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  },
-
-  /**
-   * Get comment count for a document
-   * @param {string} documentId - The document ID
-   * @returns {number} Total number of comments and replies
-   */
-  getCommentCountForDocument: (documentId) => {
-    const doc = findById('documents', documentId);
-    if (!doc || !doc.comments) return 0;
-    
-    return doc.comments.reduce((count, comment) => {
-      return count + 1 + (comment.replies || []).length;
-    }, 0);
-  },
-
-  /**
-   * Get highlight count for a document
-   * @param {string} documentId - The document ID
-   * @returns {number} Number of highlights
-   */
-  getHighlightCountForDocument: (documentId) => {
-    const doc = findById('documents', documentId);
-    if (!doc || !doc.highlights) return 0;
-    return doc.highlights.length;
   },
 
   /**
@@ -1639,63 +1339,6 @@ export const DataService = {
     }
   },
 
-  // ============================================
-  // Dashboard Aggregations (with time range support)
-  // ============================================
-
-  getDashboardStats: (missionId = null, timeRange = null, tagFilter = null) => {
-    let narratives = DataService.getNarratives(missionId, timeRange);
-    
-    // Apply tag filter if provided (tagFilter is an array of tag IDs)
-    if (tagFilter && tagFilter.length > 0) {
-      narratives = narratives.filter(n => 
-        n.tagIds && tagFilter.some(tagId => n.tagIds.includes(tagId))
-      );
-    }
-    
-    const themes = dataStore.data.themes.filter(s =>
-      narratives.some(n => n.id === s.parentNarrativeId)
-    );
-
-    // Calculate total volume for each narrative from documents (filtered by time range)
-    const narrativesWithVolume = narratives.map(n => {
-      const volumeOverTime = DataService.getVolumeOverTimeForNarrative(n.id, timeRange);
-      const totalVolume = volumeOverTime.reduce((sum, entry) => {
-        return sum + Object.values(entry.publisherVolumes || {}).reduce((s, v) => s + v, 0);
-      }, 0);
-      
-      return { ...n, totalVolume };
-    });
-
-    // Sort by volume
-    narrativesWithVolume.sort((a, b) => b.totalVolume - a.totalVolume);
-
-    // Filter events by time range and by tags (if tag filter is active)
-    let events = dataStore.data.events;
-    if (timeRange) {
-      events = events.filter(e => DataService.isDateInRange(e.date, timeRange));
-    }
-    if (tagFilter && tagFilter.length > 0) {
-      // Filter events that have any of the selected tags
-      events = events.filter(e => 
-        e.tagIds && tagFilter.some(tagId => e.tagIds.includes(tagId))
-      );
-    }
-
-    return {
-      totalNarratives: narratives.length,
-      totalThemes: themes.length,
-      totalLocations: dataStore.data.locations.length,
-      totalEvents: events.length,
-      totalPersons: dataStore.data.persons.length,
-      totalOrganizations: dataStore.data.organizations.length,
-      topNarratives: narrativesWithVolume.slice(0, 10),
-      recentNarratives: [...narratives]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5)
-    };
-  },
-
   // Aggregate volume over time across multiple narratives (with time range, status, and scope support)
   // Uses document-based aggregation
   getAggregateVolumeOverTime: (missionId = null, timeRange = null, statusFilter = null, scopeDocIds = null) => {
@@ -1891,67 +1534,6 @@ export const DataService = {
   },
 
   /**
-   * Get aggregate volume over time from documents across narratives.
-   * This is the document-based version of getAggregateVolumeOverTime.
-   * @param {string} missionId - Optional mission ID filter
-   * @param {Object} timeRange - Optional { start, end } date range
-   * @param {Array} statusFilter - Optional array of narrative statuses
-   * @param {string[]|null} scopeDocIds - Optional document ID scope
-   * @returns {Object} { dates, series, publishers }
-   */
-  getAggregateVolumeOverTimeFromDocs: (missionId = null, timeRange = null, statusFilter = null, scopeDocIds = null) => {
-    let narratives = DataService.getNarratives(missionId, null, scopeDocIds);
-    
-    // Apply status filter if provided
-    if (statusFilter && statusFilter.length > 0) {
-      narratives = narratives.filter(n => statusFilter.includes(n.status || 'new'));
-    }
-    
-    // Collect all document IDs from filtered narratives
-    const allDocIds = new Set();
-    narratives.forEach(n => {
-      const docIds = intersectDocumentIds(n.documentIds, scopeDocIds);
-      docIds.forEach(id => allDocIds.add(id));
-    });
-    
-    // Get documents
-    let documents = [...allDocIds]
-      .map(id => dataStore.data.documents.find(d => d.id === id))
-      .filter(Boolean);
-    
-    // Apply time range filter
-    if (timeRange) {
-      documents = documents.filter(doc => 
-        doc.publishedDate && DataService.isDateInRange(doc.publishedDate, timeRange)
-      );
-    }
-    
-    const publishers = DataService.getPublishers();
-    const dateMap = new Map();
-    
-    documents.forEach(doc => {
-      if (!doc.publishedDate) return;
-      const date = doc.publishedDate.split('T')[0];
-      
-      if (!dateMap.has(date)) {
-        dateMap.set(date, {});
-      }
-      const dayData = dateMap.get(date);
-      
-      if (doc.publisherId) {
-        dayData[doc.publisherId] = (dayData[doc.publisherId] || 0) + 1;
-      }
-    });
-    
-    const dates = [...dateMap.keys()].sort();
-    const series = publishers.map(p =>
-      dates.map(date => (dateMap.get(date) || {})[p.id] || 0)
-    );
-    
-    return { dates, series, publishers };
-  },
-
-  /**
    * UNIFIED: Get volume data for a set of documents.
    * This is the preferred method for getting volume data - works directly from documents.
    * Returns publisher breakdown in the format TimelineVolumeComposite expects.
@@ -2110,56 +1692,6 @@ export const DataService = {
     });
   },
 
-  // Get events sorted by document volume (with time range and status support)
-  getRecentEvents: (limit = 10, timeRange = null, statusFilter = null) => {
-    let events = [...dataStore.data.events];
-    
-    if (timeRange) {
-      events = events.filter(e => DataService.isDateInRange(e.date, timeRange));
-    }
-    
-    // If status filter is active, only include events linked to narratives with that status
-    if (statusFilter && statusFilter.length > 0) {
-      const narratives = dataStore.data.narratives.filter(n => statusFilter.includes(n.status || 'new'));
-      events = events.filter(e => {
-        return narratives.some(n => (n.eventIds || []).includes(e.id));
-      });
-    }
-    
-    // Calculate document volume within ±1 day for each event
-    const documents = dataStore.data?.documents ?? [];
-    const dayMs = 24 * 60 * 60 * 1000;
-    
-    const eventsWithVolume = events.map(event => {
-      const eventTime = new Date(event.date).getTime();
-      const docCount = documents.filter(doc => {
-        const docTime = new Date(doc.publishedAt).getTime();
-        return Math.abs(docTime - eventTime) <= dayMs;
-      }).length;
-      return { ...event, _docVolume: docCount };
-    });
-    
-    // Sort by document volume (descending), then by date (descending) as tiebreaker
-    const sorted = eventsWithVolume
-      .sort((a, b) => {
-        if (b._docVolume !== a._docVolume) {
-          return b._docVolume - a._docVolume;
-        }
-        return new Date(b.date) - new Date(a.date);
-      });
-    
-    // If limit is null or 0, return all events
-    return limit ? sorted.slice(0, limit) : sorted;
-  },
-
-  // Calculate total volume for a narrative from documents
-  getNarrativeTotalVolume: (narrative) => {
-    const volumeOverTime = DataService.getVolumeOverTimeForNarrative(narrative.id);
-    return volumeOverTime.reduce((sum, entry) => {
-      return sum + Object.values(entry.publisherVolumes || {}).reduce((s, v) => s + v, 0);
-    }, 0);
-  },
-
   // ============================================
   // Publisher Relationships
   // ============================================
@@ -2224,74 +1756,6 @@ export const DataService = {
       const publisher = publishers.find(p => p.id === publisherId);
       return publisher ? { publisher, ...totals } : null;
     }).filter(Boolean).sort((a, b) => b.volume - a.volume);
-  },
-
-  // Aggregate publisher volumes over time (with time range, status, and scope support)
-  // Uses document-based aggregation
-  getAggregatePublisherVolumeOverTime: (missionId = null, timeRange = null, statusFilter = null, scopeDocIds = null) => {
-    let narratives = DataService.getNarratives(missionId, null, scopeDocIds);
-    
-    // Apply status filter if provided (statusFilter is an array of statuses)
-    if (statusFilter && statusFilter.length > 0) {
-      narratives = narratives.filter(n => statusFilter.includes(n.status || 'new'));
-    }
-    
-    const publishers = dataStore.data?.publishers ?? [];
-    const dateMap = new Map();
-
-    narratives.forEach(n => {
-      // Get volume from documents linked to this narrative (scoped)
-      const volumeData = DataService.getVolumeOverTimeForNarrative(n.id, timeRange, scopeDocIds);
-      volumeData.forEach(entry => {
-        if (!dateMap.has(entry.date)) {
-          dateMap.set(entry.date, {});
-        }
-        const dayData = dateMap.get(entry.date);
-        Object.entries(entry.publisherVolumes || {}).forEach(([pId, vol]) => {
-          dayData[pId] = (dayData[pId] || 0) + vol;
-        });
-      });
-    });
-
-    const dates = [...dateMap.keys()].sort();
-    const allPublisherIds = new Set();
-    dateMap.forEach(dayData => {
-      Object.keys(dayData).forEach(id => allPublisherIds.add(id));
-    });
-    
-    const relevantPublishers = [...allPublisherIds].map(id => publishers.find(p => p.id === id)).filter(Boolean);
-    const series = relevantPublishers.map(publisher =>
-      dates.map(date => (dateMap.get(date) || {})[publisher.id] || 0)
-    );
-
-    return { dates, series, publishers: relevantPublishers };
-  },
-
-  // Get top publishers by total volume (with time range and scope support)
-  getTopPublishers: (missionId = null, limit = 5, timeRange = null, scopeDocIds = null) => {
-    const aggregated = DataService.getAggregatePublisherVolumes(missionId, timeRange, scopeDocIds);
-    return aggregated.slice(0, limit);
-  },
-
-  // Get publisher category totals (with time range and scope support)
-  getPublisherCategoryTotals: (missionId = null, timeRange = null, scopeDocIds = null) => {
-    const aggregated = DataService.getAggregatePublisherVolumes(missionId, timeRange, scopeDocIds);
-    const categories = dataStore.data.publisherCategories || [];
-    const categoryTotals = {};
-    
-    categories.forEach(cat => {
-      categoryTotals[cat.id] = { category: cat, volume: 0, publishers: [] };
-    });
-    
-    aggregated.forEach(item => {
-      const type = item.publisher.type;
-      if (categoryTotals[type]) {
-        categoryTotals[type].volume += item.volume;
-        categoryTotals[type].publishers.push(item);
-      }
-    });
-    
-    return Object.values(categoryTotals).sort((a, b) => b.volume - a.volume);
   },
 
   // ============================================
@@ -2500,19 +1964,6 @@ export const DataService = {
     });
     
     return (dataStore.data.events || []).filter(e => subEventIds.has(e.id));
-  },
-
-  /**
-   * Get all matched content for a monitor (narratives, themes, events, sub-events).
-   */
-  getMonitorMatchedContent: (monitorId) => {
-    return {
-      narratives: DataService.getNarrativesForMonitor(monitorId),
-      themes: DataService.getThemesForMonitor(monitorId),
-      events: DataService.getEventsForMonitor(monitorId),
-      subEvents: DataService.getSubEventsForMonitor(monitorId),
-      alerts: DataService.getAlertsForMonitor(monitorId)
-    };
   },
 
   /**
@@ -2732,58 +2183,6 @@ export const DataService = {
 
   getWorkspace: (id) => findById('workspaces', id),
 
-  getActiveWorkspaces: () => 
-    (dataStore.data?.workspaces ?? []).filter(w => w.status === 'active'),
-
-  getArchivedWorkspaces: () => 
-    (dataStore.data?.workspaces ?? []).filter(w => w.status === 'archived'),
-
-  /**
-   * Get all documents for a workspace.
-   * Supports both dynamic scope matching and explicit document lists.
-   * 
-   * Document resolution order:
-   * 1. If workspace has scope, match documents against scope criteria
-   * 2. Add any documents in includedDocIds (manual additions)
-   * 3. Remove any documents in excludedDocIds (manual removals)
-   * 4. For backwards compatibility, workspace.documentIds are treated as includedDocIds
-   */
-  getDocumentsForWorkspace: (workspaceId) => {
-    const workspace = findById('workspaces', workspaceId);
-    if (!workspace) return [];
-    
-    // For backwards compatibility, treat documentIds as includedDocIds if no scope
-    const hasScope = workspace.scope && (
-      workspace.scope.personIds?.length > 0 ||
-      workspace.scope.organizationIds?.length > 0 ||
-      workspace.scope.locationIds?.length > 0 ||
-      workspace.scope.eventIds?.length > 0 ||
-      workspace.scope.narrativeIds?.length > 0 ||
-      workspace.scope.themeIds?.length > 0 ||
-      workspace.scope.keywords?.length > 0
-    );
-    
-    // If no scope, use documentIds directly (original behavior)
-    if (!hasScope && !workspace.includedDocIds) {
-      return (workspace.documentIds ?? [])
-        .map(id => findById('documents', id))
-        .filter(Boolean)
-        .sort((a, b) => new Date(b.publishedDate) - new Date(a.publishedDate));
-    }
-    
-    // Use unified scope method
-    // Combine documentIds with includedDocIds for backwards compatibility
-    const allIncluded = [
-      ...(workspace.documentIds || []),
-      ...(workspace.includedDocIds || [])
-    ];
-    
-    return getDocumentsForScope(workspace.scope || {}, {
-      includedDocIds: allIncluded,
-      excludedDocIds: workspace.excludedDocIds || []
-    });
-  },
-
   // ============================================
   // Project Methods
   // ============================================
@@ -2809,24 +2208,6 @@ export const DataService = {
     (dataStore.data?.projects ?? []).filter(p => p.status !== 'archived'),
 
   /**
-   * Get archived projects
-   * @returns {Array} Archived projects
-   */
-  getArchivedProjects: () => 
-    (dataStore.data?.projects ?? []).filter(p => p.status === 'archived'),
-
-  /**
-   * Get top-level (root) projects that have no parent
-   * @param {boolean} includeArchived - Whether to include archived projects (default: false)
-   * @returns {Array} Root projects
-   */
-  getRootProjects: (includeArchived = false) => {
-    return (dataStore.data?.projects ?? []).filter(p => 
-      !p.parentProjectId && (includeArchived || p.status !== 'archived')
-    );
-  },
-
-  /**
    * Get direct child projects of a parent project
    * @param {string} projectId - Parent project ID
    * @param {boolean} includeArchived - Whether to include archived projects (default: false)
@@ -2836,236 +2217,6 @@ export const DataService = {
     return (dataStore.data?.projects ?? []).filter(p => 
       p.parentProjectId === projectId && (includeArchived || p.status !== 'archived')
     );
-  },
-
-  /**
-   * Get all descendant projects (children, grandchildren, etc.) recursively
-   * @param {string} projectId - Ancestor project ID
-   * @param {boolean} includeArchived - Whether to include archived projects (default: false)
-   * @returns {Array} All descendant projects
-   */
-  getDescendantProjects: (projectId, includeArchived = false) => {
-    const descendants = [];
-    const stack = [...DataService.getChildProjects(projectId, includeArchived)];
-    
-    while (stack.length > 0) {
-      const project = stack.pop();
-      descendants.push(project);
-      stack.push(...DataService.getChildProjects(project.id, includeArchived));
-    }
-    
-    return descendants;
-  },
-
-  /**
-   * Get the full ancestry chain for a project (parent, grandparent, etc.)
-   * Returns array from root to immediate parent (not including the project itself)
-   * @param {string} projectId - Project ID
-   * @returns {Array} Array of ancestor projects, from root to immediate parent
-   */
-  getProjectAncestry: (projectId) => {
-    return dataStore.getProjectAncestry(projectId);
-  },
-
-  /**
-   * Get the parent project of a project
-   * @param {string} projectId - Project ID
-   * @returns {Object|null} Parent project or null if top-level
-   */
-  getParentProject: (projectId) => {
-    const project = findById('projects', projectId);
-    if (!project || !project.parentProjectId) return null;
-    return findById('projects', project.parentProjectId);
-  },
-
-  /**
-   * Get sibling projects (same parent) of a project
-   * @param {string} projectId - Project ID
-   * @param {boolean} includeArchived - Whether to include archived projects (default: false)
-   * @returns {Array} Sibling projects (excluding the project itself)
-   */
-  getSiblingProjects: (projectId, includeArchived = false) => {
-    const project = findById('projects', projectId);
-    if (!project) return [];
-    
-    const parentId = project.parentProjectId;
-    return (dataStore.data?.projects ?? []).filter(p => 
-      p.id !== projectId && 
-      p.parentProjectId === parentId && 
-      (includeArchived || p.status !== 'archived')
-    );
-  },
-
-  /**
-   * Build a full path array from root to a project (including the project)
-   * Useful for breadcrumb generation
-   * @param {string} projectId - Project ID
-   * @returns {Array} Array of projects from root to this project
-   */
-  getProjectPath: (projectId) => {
-    const project = findById('projects', projectId);
-    if (!project) return [];
-    
-    const ancestry = dataStore.getProjectAncestry(projectId);
-    return [...ancestry, project];
-  },
-
-  /**
-   * Move a project to a new parent (or to top-level)
-   * @param {string} projectId - Project ID to move
-   * @param {string|null} newParentId - New parent ID, or null for top-level
-   * @returns {Object} Result with success status
-   */
-  moveProjectToParent: (projectId, newParentId) => {
-    return dataStore.moveProjectToParent(projectId, newParentId);
-  },
-
-  /**
-   * Move documents between projects
-   * @param {string} sourceProjectId - Source project ID
-   * @param {string} targetProjectId - Target project ID
-   * @param {string[]} documentIds - Document IDs to move
-   * @returns {Object} Result with counts
-   */
-  moveDocumentsBetweenProjects: (sourceProjectId, targetProjectId, documentIds) => {
-    return dataStore.moveDocumentsBetweenProjects(sourceProjectId, targetProjectId, documentIds);
-  },
-
-  /**
-   * Copy documents between projects
-   * @param {string} sourceProjectId - Source project ID
-   * @param {string} targetProjectId - Target project ID
-   * @param {string[]} documentIds - Document IDs to copy
-   * @returns {Object} Result with counts
-   */
-  copyDocumentsBetweenProjects: (sourceProjectId, targetProjectId, documentIds) => {
-    return dataStore.copyDocumentsBetweenProjects(sourceProjectId, targetProjectId, documentIds);
-  },
-
-  /**
-   * Move snippets between projects
-   * @param {string} sourceProjectId - Source project ID
-   * @param {string} targetProjectId - Target project ID
-   * @param {string[]} snippetIds - Snippet IDs to move
-   * @returns {Object} Result with counts
-   */
-  moveSnippetsBetweenProjects: (sourceProjectId, targetProjectId, snippetIds) => {
-    return dataStore.moveSnippetsBetweenProjects(sourceProjectId, targetProjectId, snippetIds);
-  },
-
-  /**
-   * Copy snippets between projects
-   * @param {string} sourceProjectId - Source project ID
-   * @param {string} targetProjectId - Target project ID
-   * @param {string[]} snippetIds - Snippet IDs to copy
-   * @returns {Object} Result with counts
-   */
-  copySnippetsBetweenProjects: (sourceProjectId, targetProjectId, snippetIds) => {
-    return dataStore.copySnippetsBetweenProjects(sourceProjectId, targetProjectId, snippetIds);
-  },
-
-  /**
-   * Get all documents for a project.
-   * Projects are purely manual - no scope matching, just explicit documentIds.
-   * @param {string} projectId - Project ID
-   * @returns {Array} Documents in the project, sorted by publishedDate
-   */
-  getDocumentsForProject: (projectId) => {
-    const project = findById('projects', projectId);
-    if (!project) return [];
-    
-    return (project.documentIds ?? [])
-      .map(id => findById('documents', id))
-      .filter(Boolean)
-      .sort((a, b) => new Date(b.publishedDate) - new Date(a.publishedDate));
-  },
-
-  /**
-   * Get entities derived from a project's documents.
-   * Returns all entities mentioned in the project's document set.
-   * @param {string} projectId - Project ID
-   * @returns {Object} Object with arrays of derived entities
-   */
-  getEntitiesForProject: (projectId) => {
-    const documents = DataService.getDocumentsForProject(projectId);
-    
-    // Collect unique entity IDs from documents
-    const personIds = new Set();
-    const organizationIds = new Set();
-    const narrativeIds = new Set();
-    const themeIds = new Set();
-    const locationIds = new Set();
-    const eventIds = new Set();
-    const topicIds = new Set();
-
-    documents.forEach(doc => {
-      (doc.personIds || []).forEach(id => personIds.add(id));
-      (doc.organizationIds || []).forEach(id => organizationIds.add(id));
-      (doc.narrativeIds || []).forEach(id => narrativeIds.add(id));
-      (doc.themeIds || []).forEach(id => themeIds.add(id));
-      (doc.locationIds || []).forEach(id => locationIds.add(id));
-      (doc.eventIds || []).forEach(id => eventIds.add(id));
-      (doc.topicIds || []).forEach(id => topicIds.add(id));
-    });
-
-    // Resolve to full entities
-    return {
-      persons: [...personIds].map(id => findById('persons', id)).filter(Boolean),
-      organizations: [...organizationIds].map(id => findById('organizations', id)).filter(Boolean),
-      narratives: [...narrativeIds].map(id => findById('narratives', id)).filter(Boolean),
-      themes: [...themeIds].map(id => findById('themes', id)).filter(Boolean),
-      locations: [...locationIds].map(id => findById('locations', id)).filter(Boolean),
-      events: [...eventIds].map(id => findById('events', id)).filter(Boolean),
-      topics: [...topicIds].map(id => findById('topics', id)).filter(Boolean)
-    };
-  },
-
-  // ============================================
-  // Project Snippets
-  // ============================================
-
-  /**
-   * Get all snippets for a project with resolved source documents
-   * @param {string} projectId - Project ID
-   * @returns {Array} Snippets with sourceDocument attached
-   */
-  getSnippetsForProject: (projectId) => {
-    const snippets = dataStore.getSnippetsForProject(projectId);
-    return snippets.map(snippet => ({
-      ...snippet,
-      sourceDocument: findById('documents', snippet.sourceDocumentId)
-    }));
-  },
-
-  /**
-   * Add a snippet to a project
-   * @param {string} projectId - Project ID
-   * @param {Object} snippetData - Snippet data
-   * @returns {Object} Result with snippetId
-   */
-  addSnippetToProject: (projectId, snippetData) => {
-    return dataStore.addSnippetToProject(projectId, snippetData);
-  },
-
-  /**
-   * Remove a snippet from a project
-   * @param {string} projectId - Project ID
-   * @param {string} snippetId - Snippet ID
-   * @returns {Object} Result
-   */
-  removeSnippetFromProject: (projectId, snippetId) => {
-    return dataStore.removeSnippetFromProject(projectId, snippetId);
-  },
-
-  /**
-   * Update a snippet note
-   * @param {string} projectId - Project ID
-   * @param {string} snippetId - Snippet ID
-   * @param {string} note - New note content
-   * @returns {boolean} Success
-   */
-  updateSnippetNote: (projectId, snippetId, note) => {
-    return dataStore.updateSnippetInProject(projectId, snippetId, { note });
   },
 
   // Search across all entities
@@ -3108,7 +2259,10 @@ export const DataService = {
       (scope.documentTypes?.length > 0) ||
       (scope.publisherIds?.length > 0) ||
       (scope.authors?.length > 0) ||
-      (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => v?.length > 0))
+      (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => {
+        if (Array.isArray(v)) return v.length > 0;
+        return (v?.include?.length > 0) || (v?.exclude?.length > 0);
+      }))
     );
     
     if (!hasQuery && !hasScope) {
@@ -3201,6 +2355,38 @@ export const DataService = {
             if (doc.author && scope.authors.some(a => a.toLowerCase() === doc.author.toLowerCase())) {
               return true;
             }
+          }
+          
+          // Check metadata filters (exclude takes priority)
+          if (scope.metadataFilters && typeof scope.metadataFilters === 'object') {
+            const catalog = dataStore.data?.filterCatalog || [];
+            let hasInclude = false;
+            let matchedInclude = false;
+            for (const [dimId, filterVal] of Object.entries(scope.metadataFilters)) {
+              if (!filterVal) continue;
+              const includeVals = Array.isArray(filterVal) ? filterVal : (filterVal.include || []);
+              const excludeVals = Array.isArray(filterVal) ? [] : (filterVal.exclude || []);
+              if (includeVals.length === 0 && excludeVals.length === 0) continue;
+              const dimension = catalog.find(d => d.id === dimId);
+              if (!dimension) continue;
+              const docMatchesVal = (val) => {
+                if (dimension.type === 'mapped' && dimension.docMapping) {
+                  return dimension.docMapping[val]?.includes(doc.id);
+                } else if (dimension.metadataKey) {
+                  const dv = doc.metadata?.[dimension.metadataKey];
+                  if (Array.isArray(dv)) return dv.includes(val);
+                  if (dv !== undefined && dv !== null) return String(dv) === val;
+                }
+                return false;
+              };
+              if (excludeVals.length > 0 && excludeVals.some(v => docMatchesVal(v))) return false;
+              if (includeVals.length > 0) {
+                hasInclude = true;
+                if (includeVals.some(v => docMatchesVal(v))) matchedInclude = true;
+              }
+            }
+            if (hasInclude && matchedInclude) return true;
+            if (!hasInclude) return true;
           }
           
           return false;
@@ -3314,50 +2500,11 @@ export const DataService = {
   },
 
   /**
-   * Check if adding a tag would violate exclusivity constraints
-   * @param {string} entityType - Entity type
-   * @param {string} entityId - Entity ID  
-   * @param {string} tagId - Tag to add
-   * @returns {Object|null} { conflictingTag, group } if conflict exists, null otherwise
-   */
-  checkTagExclusivity: (entityType, entityId, tagId) => {
-    const tag = DataService.getTag(tagId);
-    if (!tag || !tag.groupId) return null;
-    
-    const group = DataService.getTagGroup(tag.groupId);
-    if (!group || !group.exclusive) return null;
-    
-    // Get existing tags on the entity
-    const existingTags = DataService.getTagsForEntity(entityType, entityId);
-    
-    // Check if any existing tag is in the same exclusive group
-    const conflictingTag = existingTags.find(t => 
-      t.groupId === tag.groupId && t.id !== tagId
-    );
-    
-    if (conflictingTag) {
-      return { conflictingTag, group };
-    }
-    
-    return null;
-  },
-
-  /**
    * Get the "Mission" tag group (for backward compatibility with missionId)
    * @returns {Object|undefined} The Mission tag group
    */
   getMissionTagGroup: () => {
     return (dataStore.data?.tagGroups || []).find(g => g.name === 'Mission');
-  },
-
-  /**
-   * Get all mission tags (tags in the Mission group)
-   * @returns {Array} Mission tags
-   */
-  getMissionTags: () => {
-    const missionGroup = DataService.getMissionTagGroup();
-    if (!missionGroup) return [];
-    return DataService.getTagsInGroup(missionGroup.id);
   },
 
   // ============================================
@@ -3413,103 +2560,6 @@ export const DataService = {
   },
 
   /**
-   * Get all entities that have a specific tag
-   * @param {string} tagId - Tag ID
-   * @returns {Object} Object with arrays of entities by type
-   */
-  getEntitiesByTag: (tagId) => {
-    const result = {
-      narratives: [],
-      themes: [],
-      locations: [],
-      events: [],
-      persons: [],
-      organizations: [],
-      documents: [],
-      topics: [],
-      monitors: [],
-      workspaces: [],
-      projects: []
-    };
-    
-    Object.keys(result).forEach(collection => {
-      const items = dataStore.data?.[collection] || [];
-      result[collection] = items.filter(item => 
-        item && item.tagIds && item.tagIds.includes(tagId)
-      );
-    });
-    
-    return result;
-  },
-
-  /**
-   * Get entities matching multiple tags
-   * @param {Array} tagIds - Array of tag IDs
-   * @param {string} logic - 'AND' or 'OR' (default: 'OR')
-   * @returns {Object} Object with arrays of entities by type
-   */
-  getEntitiesByTags: (tagIds, logic = 'OR') => {
-    const result = {
-      narratives: [],
-      themes: [],
-      locations: [],
-      events: [],
-      persons: [],
-      organizations: [],
-      documents: [],
-      topics: [],
-      monitors: [],
-      workspaces: []
-    };
-    
-    if (!tagIds || tagIds.length === 0) return result;
-    
-    const matchFn = logic === 'AND'
-      ? (item) => item.tagIds && tagIds.every(tid => item.tagIds.includes(tid))
-      : (item) => item.tagIds && tagIds.some(tid => item.tagIds.includes(tid));
-    
-    Object.keys(result).forEach(collection => {
-      const items = dataStore.data?.[collection] || [];
-      result[collection] = items.filter(item => item && matchFn(item));
-    });
-    
-    return result;
-  },
-
-  /**
-   * Get count of entities per tag
-   * @returns {Object} Object mapping tag IDs to counts
-   */
-  getTagCounts: () => {
-    const counts = {};
-    const tags = dataStore.data?.tags || [];
-    
-    tags.forEach(tag => {
-      counts[tag.id] = 0;
-    });
-    
-    const collectionsWithTags = [
-      'narratives', 'themes', 'locations', 'events',
-      'persons', 'organizations', 'documents', 'topics', 'monitors', 'workspaces'
-    ];
-    
-    collectionsWithTags.forEach(collection => {
-      const items = dataStore.data?.[collection] || [];
-      items.forEach(item => {
-        if (item && item.tagIds) {
-          item.tagIds.forEach(tagId => {
-            if (counts[tagId] !== undefined) {
-              counts[tagId]++;
-            }
-          });
-        }
-      });
-    });
-    
-    return counts;
-  },
-
-  /**
    * Get count breakdown by entity type for a specific tag
    * @param {string} tagId - Tag ID
    * @returns {Object} Object with counts per entity type
@@ -3545,25 +2595,6 @@ export const DataService = {
    */
   createTag: (tag) => {
     return dataStore.createTag(tag);
-  },
-
-  /**
-   * Update a tag
-   * @param {string} tagId - Tag ID
-   * @param {Object} updates - Fields to update
-   * @returns {boolean} Whether update succeeded
-   */
-  updateTag: (tagId, updates) => {
-    return dataStore.updateTag(tagId, updates);
-  },
-
-  /**
-   * Delete a tag (removes from all entities)
-   * @param {string} tagId - Tag ID
-   * @returns {boolean} Whether delete succeeded
-   */
-  deleteTag: (tagId) => {
-    return dataStore.deleteTag(tagId);
   },
 
   /**

@@ -6,7 +6,6 @@
 import { DetailViewBase } from './DetailViewBase.js';
 import { DataService } from '../data/DataService.js';
 import { PageHeader } from '../utils/PageHeader.js';
-import { StatCards } from '../components/StatCards.js';
 // Source viewer handled by delegated event listener in app.js
 import {
   CardManager,
@@ -66,10 +65,6 @@ export class NarrativeView extends DetailViewBase {
       this.truncateText(narrative.text, 50)
     ]);
 
-    // Build stats for the header with dropdown support
-    const contextId = this.context?.id || null;
-    const statsData = StatCards.buildEntityStatsWithItems(data, contextId);
-
     const headerHtml = PageHeader.render({
       breadcrumbs,
       title: narrative.text,
@@ -79,9 +74,6 @@ export class NarrativeView extends DetailViewBase {
         ? `<a href="#" class="btn btn-small btn-secondary source-link" data-source-type="narrative" data-source-id="${narrative.id}">View source</a>` 
         : '',
       tagsContainerId: 'narrative-tags-container',
-      stats: statsData,
-      statsMode: 'dropdowns',
-      statsContextId: contextId,
       tabs: tabsConfig,
       activeTab: activeTab
     });
@@ -95,9 +87,6 @@ export class NarrativeView extends DetailViewBase {
         </div>
       </div>
     `;
-
-    // Initialize stat card dropdowns
-    this.initStatDropdowns(contextId, this.narrativeId);
 
     // Initialize card width toggles
     this.initCardWidthToggles('narrative', this.narrativeId);

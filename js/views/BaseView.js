@@ -12,7 +12,6 @@ import {
   truncateText
 } from '../utils/formatters.js';
 import { PageHeader } from '../utils/PageHeader.js';
-import { DragDropManager } from '../utils/DragDropManager.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
 import { dataStore } from '../data/DataStore.js';
 
@@ -195,12 +194,6 @@ export class BaseView {
       // Remove all tracked event listeners
       this.removeAllListeners();
       
-      // Destroy drag-drop manager if present
-      if (this.dragDropManager) {
-        this.dragDropManager.destroy();
-        this.dragDropManager = null;
-      }
-      
       Object.values(this.components).forEach(c => {
         try {
           if (c && c.destroy) c.destroy();
@@ -212,39 +205,6 @@ export class BaseView {
     } catch (e) {
       console.error(`${this.constructor.name}: Error during view destruction:`, e);
     }
-  }
-
-  /**
-   * Initialize drag-and-drop functionality for cards in a content grid
-   * @param {string} containerSelector - CSS selector for the content grid (default: '.content-grid')
-   */
-  initDragDrop(containerSelector = '.content-grid') {
-    // Use setTimeout to ensure DOM is ready after rendering
-    setTimeout(() => {
-      try {
-        if (!this.container) return;
-        
-        const container = this.container.querySelector(containerSelector);
-        if (container) {
-          this.dragDropManager = new DragDropManager({
-            containerSelector: containerSelector,
-            onOrderChange: (order) => {
-              // Optional callback when card order changes
-              if (this.onCardOrderChange) {
-                try {
-                  this.onCardOrderChange(order);
-                } catch (e) {
-                  console.error(`${this.constructor.name}: Error in onCardOrderChange callback:`, e);
-                }
-              }
-            }
-          });
-          this.dragDropManager.init(container);
-        }
-      } catch (e) {
-        console.error(`${this.constructor.name}: Error initializing drag-drop:`, e);
-      }
-    }, 0);
   }
 
   /**

@@ -6,8 +6,8 @@
 import { BaseView } from './BaseView.js';
 import { DataService } from '../data/DataService.js';
 import { dataStore } from '../data/DataStore.js';
-import { SearchScopeModal } from '../components/SearchScopeModal.js';
-import { formatDate } from '../utils/formatters.js';
+import { SearchInput } from '../components/SearchInput.js';
+import { formatDate, formatDateTime } from '../utils/formatters.js';
 
 export class SearchView extends BaseView {
   constructor(container, options = {}) {
@@ -15,21 +15,14 @@ export class SearchView extends BaseView {
     this.searchQuery = '';
     this.matchCount = 0;
     this.debounceTimer = null;
-    // All repositories selected by default
-    this.selectedRepositories = new Set();
-    // Time range filter
-    this.timeRange = null;
-    // Scope (entities/keywords/metadata filters)
-    this.searchScope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
-    // Modal for editing filters
-    this.filterModal = new SearchScopeModal();
+    this.searchInput = null;
     // Classification filter (set of selected classifications, empty = all)
     this.selectedClassifications = new Set();
   }
 
   /** Get the current scope */
   getScope() {
-    return this.searchScope;
+    return this.searchInput?.searchScope || { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
   }
 
   /**
@@ -46,32 +39,17 @@ export class SearchView extends BaseView {
   }
 
   /**
-   * Initialize selected repositories from data
-   */
-  initializeRepositories() {
-    const repositories = DataService.getRepositories();
-    // Select all repositories by default
-    this.selectedRepositories = new Set(repositories.map(r => r.id));
-  }
-
-  /**
    * Get the currently selected repository IDs as an array
    */
   getSelectedRepositoryIds() {
-    return Array.from(this.selectedRepositories);
+    return this.searchInput ? Array.from(this.searchInput.selectedRepositories) : [];
   }
 
   async render() {
-    // Initialize repositories if not already done
-    if (this.selectedRepositories.size === 0) {
-      this.initializeRepositories();
-    }
-
     const currentScope = this.getScope();
     const hasScope = this.hasAnyScope(currentScope);
     const hasQuery = this.searchQuery.trim().length >= 2;
     const canSearch = hasScope || hasQuery;
-    const scopeItemCount = hasScope ? this.getScopeItemCount(currentScope) : 0;
 
     const currentUser = DataService.getCurrentUser();
     const userName = currentUser?.displayName || currentUser?.name || 'User';
@@ -85,43 +63,8 @@ export class SearchView extends BaseView {
             <p class="search-welcome-subtitle">Converse naturally to search relevant documents, review cited summaries, and continue exploring.</p>
           </div>
 
-          <!-- Search Card -->
-          <div class="search-card">
-            <div class="search-card-input-area">
-              <input 
-                type="text" 
-                id="search-input"
-                class="search-card-input" 
-                placeholder='Ask a question like "What is the role of the B-52 in air operations and strategy?"'
-                value="${this.escapeHtml(this.searchQuery)}"
-              />
-              <button class="btn-icon search-clear-btn ${this.searchQuery ? '' : 'hidden'}" id="search-clear">
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M4 4l8 8M12 4l-8 8"/>
-                </svg>
-              </button>
-            </div>
-            <div class="search-card-controls">
-              <div class="search-card-buttons">
-                <!-- Filters Toggle Button -->
-                <button class="search-card-pill" id="filters-toggle">
-                  <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1.0663409,1.6418284c.1482999-.3866299.51956-.64185.93366-.64185h11.9999599c.4140997,0,.7854004.2552201.9336996.64185.1483002.3866301.0430002.8246701-.2648993,1.1016099l-4.5973005,4.1355503v7.1209898c0,.3830996-.2189398.7326002-.5636702.8998003-.3447294.1672001-.7546797.1226997-1.0555401-.1145l-2.1428494-1.6897001c-.24049-.1896-.3808303-.4790001-.3808303-.7853003v-5.4312897L1.3312209,2.7434384c-.30786-.2769399-.413191-.7149799-.2648799-1.1016099ZM6.9285708,6.4334783v5.8768001l2.1428604,1.6897001v-7.5665002L13.9999609,1.9999784H2.000001l4.9285698,4.4334998Z" stroke-width="0"/>
-                  </svg>
-                  <span>Filters</span>
-                  ${scopeItemCount > 0 ? `<span class="filters-badge">${scopeItemCount}</span>` : ''}
-                </button>
-              </div>
-              
-              <!-- Search Button -->
-              <button class="search-card-submit ${canSearch ? '' : 'disabled'}" id="search-execute">
-                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="7" cy="7" r="4.5"/>
-                  <path d="M10.5 10.5L14 14"/>
-                </svg>
-              </button>
-            </div>
-          </div>
+          <!-- Search Card (mounted by SearchInput component) -->
+          <div id="search-card-mount"></div>
 
           <!-- AI Hint -->
           <div class="search-ai-hint">
@@ -130,6 +73,8 @@ export class SearchView extends BaseView {
             </svg>
             <span>Each query is interpreted by AI, so results may vary slightly.</span>
           </div>
+
+          ${this.renderRecentWorkspaces()}
           
           <!-- Selected Filters Display -->
           <div class="search-selected-filters ${hasScope ? '' : 'hidden'}" id="selected-filters-display">
@@ -146,11 +91,80 @@ export class SearchView extends BaseView {
       </div>
     `;
 
-    this.setupEventHandlers();
+    // Mount the shared SearchInput component
+    const mount = document.getElementById('search-card-mount');
+    if (mount) {
+      if (this.searchInput) {
+        this.searchInput.destroy();
+      }
+      this.searchInput = new SearchInput({
+        container: mount,
+        variant: 'full',
+        placeholder: 'Ask a question like "What is the role of the B-52 in air operations and strategy?"',
+        multiline: false,
+        showFilters: true,
+        onSubmit: () => this.createWorkspaceFromSearch(),
+        onInput: (query) => {
+          this.searchQuery = query;
+          this.updateSearchUI();
+          this.debounceSearch();
+        },
+        onScopeChange: () => {
+          this.updateSearchUI();
+          this.updateSelectedFiltersDisplay();
+          this.updateMatchCount();
+          this.debounceSearch();
+        }
+      });
+      // Restore query if we had one
+      if (this.searchQuery) {
+        this.searchInput.setQuery(this.searchQuery);
+      }
+      this.searchInput.render();
+    }
+
+    // Attach chip remove handlers for the initially rendered chips
+    this.attachChipRemoveHandlers();
     
     // Focus the search input
-    const input = document.getElementById('search-input');
-    if (input) input.focus();
+    if (this.searchInput) this.searchInput.focus();
+  }
+
+  /**
+   * Render the recent workspaces section
+   */
+  renderRecentWorkspaces() {
+    const workspaces = DataService.getWorkspaces();
+    const recent = workspaces
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 1);
+
+    if (recent.length === 0) return '';
+
+    const items = recent.map(ws => `
+      <div class="search-recent-workspace-item">
+        <svg class="search-recent-workspace-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="6.5"/>
+          <path d="M8 4.5V8l2.5 1.5"/>
+        </svg>
+        <div class="search-recent-workspace-info">
+          <span class="search-recent-workspace-name">${this.escapeHtml(ws.name || 'Untitled')}</span>
+          <span class="search-recent-workspace-date">${ws.createdAt ? formatDateTime(ws.createdAt) : ''}</span>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="search-recent-section">
+        <h3 class="search-recent-heading">Recent Workspaces</h3>
+        <div class="search-recent-list">${items}</div>
+        <div class="search-recent-footer">
+          <a href="#/workspaces" class="search-recent-link">View Workspaces</a>
+          <span class="search-recent-arrow">&rarr;</span>
+        </div>
+      </div>
+    `;
   }
 
   /**
@@ -165,36 +179,10 @@ export class SearchView extends BaseView {
            (scope.documentTypes?.length > 0) ||
            (scope.publisherIds?.length > 0) ||
            (scope.authors?.length > 0) ||
-           (scope.metadataFilters && Object.keys(scope.metadataFilters).length > 0);
-  }
-
-  /**
-   * Open the filters modal
-   */
-  openFiltersModal() {
-    this.filterModal.open({
-      scope: { ...this.searchScope },
-      scopeParams: {
-        repositoryIds: Array.from(this.selectedRepositories),
-        classifications: Array.from(this.selectedClassifications),
-        timeRange: this.timeRange
-      },
-      getVolumeData: () => this.getDocumentVolumeData(),
-      onApply: (scope, scopeParams) => {
-        // Apply scope (entities, keywords, metadataFilters)
-        this.searchScope = scope || this.searchScope;
-        // Apply scope params (repos, classifications, timeRange)
-        if (scopeParams) {
-          this.selectedRepositories = new Set(scopeParams.repositoryIds || []);
-          this.selectedClassifications = new Set(scopeParams.classifications || []);
-          this.timeRange = scopeParams.timeRange ?? null;
-        }
-        this.updateSearchUI();
-        this.updateSelectedFiltersDisplay();
-        this.updateMatchCount();
-        this.debounceSearch();
-      }
-    });
+           (scope.metadataFilters && Object.values(scope.metadataFilters).some(v => {
+             if (Array.isArray(v)) return v.length > 0;
+             return (v?.include?.length > 0) || (v?.exclude?.length > 0);
+           }));
   }
 
   /**
@@ -205,60 +193,13 @@ export class SearchView extends BaseView {
     const hasScope = this.hasAnyScope(scope);
     const hasQuery = this.searchQuery.trim().length >= 2;
     const canSearch = hasScope || hasQuery;
-    
-    // Update search button state
-    const searchBtn = document.getElementById('search-execute');
-    if (searchBtn) {
-      searchBtn.classList.toggle('disabled', !canSearch);
-    }
 
     // Update match count visibility
     const matchCountRow = document.getElementById('match-count-row');
     if (matchCountRow) {
       matchCountRow.classList.toggle('hidden', !canSearch);
     }
-    
-    // Update filters badge
-    const filtersToggle = document.getElementById('filters-toggle');
-    if (filtersToggle) {
-      const scopeItemCount = hasScope ? this.getScopeItemCount(scope) : 0;
-      let badge = filtersToggle.querySelector('.filters-badge');
-      
-      if (scopeItemCount > 0) {
-        if (!badge) {
-          badge = document.createElement('span');
-          badge.className = 'filters-badge';
-          filtersToggle.appendChild(badge);
-        }
-        badge.textContent = scopeItemCount;
-      } else if (badge) {
-        badge.remove();
-      }
-    }
   }
-
-  /**
-   * Get document volume data for the histogram
-   */
-  getDocumentVolumeData() {
-    const documents = DataService.getDocuments();
-    if (!documents || documents.length === 0) return null;
-    
-    // Group documents by date
-    const dateMap = new Map();
-    documents.forEach(doc => {
-      if (!doc.publishedDate) return;
-      const date = doc.publishedDate.split('T')[0];
-      dateMap.set(date, (dateMap.get(date) || 0) + 1);
-    });
-    
-    // Sort dates and create arrays
-    const dates = [...dateMap.keys()].sort();
-    const volumes = dates.map(d => dateMap.get(d));
-    
-    return { dates, volumes };
-  }
-
 
   /**
    * Render the match count display
@@ -287,6 +228,7 @@ export class SearchView extends BaseView {
             type: 'person',
             id: id,
             label: person.name,
+            tooltip: 'Person',
             icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="8" cy="5" r="3"/>
               <path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
@@ -305,6 +247,7 @@ export class SearchView extends BaseView {
             type: 'organization',
             id: id,
             label: org.name,
+            tooltip: 'Organization',
             icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="2" y="4" width="12" height="10" rx="1"/>
               <path d="M5 4V2h6v2M5 8h6M5 11h6"/>
@@ -323,6 +266,7 @@ export class SearchView extends BaseView {
             type: 'location',
             id: id,
             label: location.name,
+            tooltip: 'Location',
             icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z"/>
               <circle cx="8" cy="6" r="2"/>
@@ -339,6 +283,7 @@ export class SearchView extends BaseView {
           type: 'keyword',
           id: keyword,
           label: keyword,
+          tooltip: 'Keyword',
           icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M2 5h12M2 8h8M2 11h10"/>
           </svg>`
@@ -366,6 +311,7 @@ export class SearchView extends BaseView {
           type: 'documentType',
           id: docType,
           label: docTypeLabels[docType] || docType,
+          tooltip: 'Document Type',
           icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
             <path d="M10 2v3h3"/>
@@ -383,6 +329,7 @@ export class SearchView extends BaseView {
             type: 'publisher',
             id: publisherId,
             label: publisher.name,
+            tooltip: 'Publisher',
             icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="2" y="3" width="12" height="10" rx="1"/>
               <path d="M5 6h6M5 9h4"/>
@@ -399,11 +346,28 @@ export class SearchView extends BaseView {
           type: 'author',
           id: author,
           label: author,
+          tooltip: 'Author',
           icon: `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="8" cy="5" r="3"/>
             <path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/>
           </svg>`
         });
+      });
+    }
+
+    // Metadata filters (include + exclude)
+    const catalog = DataService.getFilterCatalog();
+    for (const [dimId, filterVal] of Object.entries(scope.metadataFilters || {})) {
+      const dimension = catalog.find(d => d.id === dimId);
+      const dimName = dimension?.name || dimId;
+      const include = Array.isArray(filterVal) ? filterVal : (filterVal?.include || []);
+      const exclude = Array.isArray(filterVal) ? [] : (filterVal?.exclude || []);
+      const filterIcon = `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/></svg>`;
+      include.forEach(val => {
+        chips.push({ type: 'metadata', id: `${dimId}::${val}`, label: val, tooltip: dimName, icon: filterIcon, mode: 'include' });
+      });
+      exclude.forEach(val => {
+        chips.push({ type: 'metadata', id: `${dimId}::${val}`, label: val, tooltip: `Exclude: ${dimName}`, icon: filterIcon, mode: 'exclude' });
       });
     }
     
@@ -412,7 +376,7 @@ export class SearchView extends BaseView {
     return `
       <div class="selected-scope-chips">
         ${chips.map(chip => `
-          <span class="scope-chip scope-chip-${chip.type}" data-type="${chip.type}" data-id="${this.escapeHtml(chip.id)}">
+          <span class="scope-chip scope-chip-${chip.type}${chip.mode === 'exclude' ? ' scope-chip-excluded' : ''}" data-type="${chip.type}" data-id="${this.escapeHtml(chip.id)}"${chip.tooltip ? ` data-tooltip="${this.escapeHtml(chip.tooltip)}"` : ''}>
             ${chip.icon}
             <span class="chip-label">${this.escapeHtml(chip.label)}</span>
             <button class="chip-remove" data-type="${chip.type}" data-id="${this.escapeHtml(chip.id)}" title="Remove">
@@ -465,7 +429,8 @@ export class SearchView extends BaseView {
    * Remove an item from the scope
    */
   removeFromScope(type, id) {
-    const scope = this.searchScope;
+    const scope = this.searchInput?.searchScope;
+    if (!scope) return;
     
     switch (type) {
       case 'person':
@@ -489,67 +454,37 @@ export class SearchView extends BaseView {
       case 'author':
         scope.authors = (scope.authors || []).filter(a => a !== id);
         break;
+      case 'metadata': {
+        // id format: "dimId::value"
+        const sep = id.indexOf('::');
+        if (sep > 0) {
+          const dimId = id.substring(0, sep);
+          const val = id.substring(sep + 2);
+          const entry = scope.metadataFilters?.[dimId];
+          if (entry) {
+            if (Array.isArray(entry)) {
+              scope.metadataFilters[dimId] = entry.filter(v => v !== val);
+              if (scope.metadataFilters[dimId].length === 0) delete scope.metadataFilters[dimId];
+            } else {
+              entry.include = (entry.include || []).filter(v => v !== val);
+              entry.exclude = (entry.exclude || []).filter(v => v !== val);
+              if (entry.include.length === 0 && entry.exclude.length === 0) delete scope.metadataFilters[dimId];
+            }
+          }
+        }
+        break;
+      }
     }
     
-    // Update UI
+    // Update UI (sync the component's badge, then update external elements)
+    if (this.searchInput) this.searchInput._updateFiltersBadge();
     this.updateSearchUI();
     this.updateSelectedFiltersDisplay();
     this.updateMatchCount();
   }
 
-  /**
-   * Set up event handlers
-   */
-  setupEventHandlers() {
-    const input = document.getElementById('search-input');
-    const clearBtn = document.getElementById('search-clear');
-    const searchBtn = document.getElementById('search-execute');
-
-    // Text input handlers
-    if (input) {
-      this.addListener(input, 'input', (e) => {
-        this.searchQuery = e.target.value;
-        this.updateClearButton();
-        this.updateSearchUI();
-        this.debounceSearch();
-      });
-
-      this.addListener(input, 'keydown', (e) => {
-        if (e.key === 'Escape') {
-          this.clearSearch();
-        } else if (e.key === 'Enter') {
-          // Immediately create workspace and navigate
-          if (this.debounceTimer) {
-            clearTimeout(this.debounceTimer);
-          }
-          this.createWorkspaceFromSearch();
-        }
-      });
-    }
-
-    // Clear text button
-    if (clearBtn) {
-      this.addListener(clearBtn, 'click', () => {
-        this.clearSearch();
-      });
-    }
-    
-    // Search/Create Workspace button
-    if (searchBtn) {
-      this.addListener(searchBtn, 'click', () => {
-        this.createWorkspaceFromSearch();
-      });
-    }
-    
-    // Filters toggle button opens the modal
-    const filtersToggle = document.getElementById('filters-toggle');
-    if (filtersToggle) {
-      this.addListener(filtersToggle, 'click', () => {
-        this.openFiltersModal();
-      });
-    }
-
-  }
+  // Event handlers are managed by the SearchInput component.
+  // Chip remove handlers are attached in attachChipRemoveHandlers().
 
   /**
    * Debounce search for updating match count
@@ -581,9 +516,10 @@ export class SearchView extends BaseView {
       return;
     }
 
+    const timeRange = this.searchInput?.timeRange || null;
     const results = DataService.search(hasQuery ? query : '', {
       repositoryIds: this.getSelectedRepositoryIds(),
-      timeRange: this.timeRange,
+      timeRange,
       scope: hasScope ? scope : null
     });
     
@@ -617,9 +553,10 @@ export class SearchView extends BaseView {
     if (!hasQuery && !hasScope) return;
 
     const repositoryIds = this.getSelectedRepositoryIds();
+    const timeRange = this.searchInput?.timeRange || null;
     const results = DataService.search(hasQuery ? query : '', { 
       repositoryIds, 
-      timeRange: this.timeRange,
+      timeRange,
       scope: hasScope ? scope : null
     });
     
@@ -668,8 +605,8 @@ export class SearchView extends BaseView {
         description += `, ${selectedLevels.map(l => l.short).join('/')} classifications`;
       }
     }
-    if (this.timeRange) {
-      description += ` (${formatDate(this.timeRange.start)} - ${formatDate(this.timeRange.end)})`;
+    if (timeRange) {
+      description += ` (${formatDate(timeRange.start)} - ${formatDate(timeRange.end)})`;
     }
 
     // Create the workspace (even if no documents match)
@@ -680,7 +617,7 @@ export class SearchView extends BaseView {
       documentIds: documentIds,
       filters: { 
         repositoryIds, 
-        timeRange: this.timeRange,
+        timeRange,
         scope: hasScope ? scope : null,
         classifications: this.selectedClassifications.size > 0 ? Array.from(this.selectedClassifications) : null
       },
@@ -696,13 +633,18 @@ export class SearchView extends BaseView {
    */
   getScopeItemCount(scope) {
     if (!scope) return 0;
-    return (scope.personIds?.length || 0) +
+    let count = (scope.personIds?.length || 0) +
            (scope.organizationIds?.length || 0) +
            (scope.locationIds?.length || 0) +
            (scope.keywords?.length || 0) +
            (scope.documentTypes?.length || 0) +
            (scope.publisherIds?.length || 0) +
            (scope.authors?.length || 0);
+    for (const v of Object.values(scope.metadataFilters || {})) {
+      if (Array.isArray(v)) { count += v.length; continue; }
+      count += (v?.include?.length || 0) + (v?.exclude?.length || 0);
+    }
+    return count;
   }
 
   /**
@@ -711,34 +653,20 @@ export class SearchView extends BaseView {
   clearSearch() {
     this.searchQuery = '';
     this.matchCount = 0;
-    
-    const input = document.getElementById('search-input');
-    if (input) {
-      input.value = '';
-      input.focus();
+    if (this.searchInput) {
+      this.searchInput.clearQuery();
     }
-    
-    this.updateClearButton();
     this.updateSearchUI();
     this.updateMatchCount();
-  }
-
-  /**
-   * Update clear button visibility
-   */
-  updateClearButton() {
-    const clearBtn = document.getElementById('search-clear');
-    if (clearBtn) {
-      clearBtn.classList.toggle('hidden', !this.searchQuery);
-    }
   }
 
   /**
    * Clean up resources when view is destroyed
    */
   destroy() {
-    if (this.filterModal) {
-      this.filterModal.close();
+    if (this.searchInput) {
+      this.searchInput.destroy();
+      this.searchInput = null;
     }
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);

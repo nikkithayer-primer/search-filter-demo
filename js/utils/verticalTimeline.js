@@ -1,7 +1,7 @@
 /**
  * verticalTimeline.js
  * Shared utility for rendering vertical event timelines
- * Used across DashboardView and ListView
+ * Shared utility for rendering vertical event timelines
  */
 
 import { DataService } from '../data/DataService.js';

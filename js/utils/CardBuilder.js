@@ -19,6 +19,7 @@ export const CardBuilder = {
    * @param {string} [options.subtitle] - Optional subtitle text (e.g., "Triggered 6 days ago")
    * @param {string} [options.content] - Optional HTML content to insert into card body
    * @param {boolean} [options.noFullscreen] - Disable fullscreen toggle button
+   * @param {string} [options.prefixHtml] - HTML to render before the title in the header
    * @returns {string} Card HTML string
    */
   create(title, containerId, options = {}) {
@@ -38,6 +39,7 @@ export const CardBuilder = {
     
     const subtitleHtml = options.subtitle ? `<span class="card-subtitle">${options.subtitle}</span>` : '';
     const bodyContent = options.content || '';
+    const prefixHtml = options.prefixHtml || '';
     
     // Build actions: custom actions + fullscreen toggle + action menu (at far right)
     const fullscreenToggleHtml = options.noFullscreen ? '' : this.fullscreenToggle(containerId);
@@ -47,7 +49,7 @@ export const CardBuilder = {
     return `
       <div class="${cardClasses}" data-card-id="${containerId}">
         <div class="card-header">
-          <h2 class="card-title">${title}${countLabel}</h2>
+          ${prefixHtml}<h2 class="card-title">${title}${countLabel}</h2>
           ${subtitleHtml}
           <div class="card-header-actions">${allActions}</div>
         </div>

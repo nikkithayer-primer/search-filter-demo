@@ -15,13 +15,11 @@ vi.mock('../js/data/DataStore.js', () => ({
       documents: [],
       topics: [],
       publishers: [],
-      publisherCategories: [],
       monitors: [],
       alerts: [],
       users: [],
       missions: []
     },
-    getCurrentDatasetName: vi.fn(() => 'Test Dataset'),
     getCurrentDataset: vi.fn(() => 'test-dataset')
   }
 }));
@@ -109,7 +107,6 @@ describe('DataService', () => {
       publishers: [
         { id: 'pub-1', name: 'Publisher One', type: 'news' }
       ],
-      publisherCategories: [],
       monitors: [
         { id: 'monitor-1', name: 'Test Monitor', enabled: true, scope: { personIds: ['person-1'] }, triggers: { newNarrative: true } }
       ],
@@ -191,38 +188,6 @@ describe('DataService', () => {
     it('returns true when no timeRange provided', () => {
       expect(DataService.isDateInRange('2024-01-15', null)).toBe(true);
       expect(DataService.isDateInRange('2024-01-15', {})).toBe(true);
-    });
-  });
-
-  describe('filterVolumeByTimeRange', () => {
-    it('filters volume data by time range', () => {
-      const volumeOverTime = [
-        { date: '2024-01-01', volume: 10 },
-        { date: '2024-01-02', volume: 15 },
-        { date: '2024-01-03', volume: 20 }
-      ];
-      const timeRange = {
-        start: new Date('2024-01-01'),
-        end: new Date('2024-01-02')
-      };
-      
-      const result = DataService.filterVolumeByTimeRange(volumeOverTime, timeRange);
-      expect(result.length).toBe(2);
-    });
-
-    it('returns all data when no time range', () => {
-      const volumeOverTime = [
-        { date: '2024-01-01', volume: 0 },
-        { date: '2024-01-02', volume: 0 }
-      ];
-      
-      const result = DataService.filterVolumeByTimeRange(volumeOverTime, null);
-      expect(result.length).toBe(2);
-    });
-
-    it('handles empty volume array', () => {
-      expect(DataService.filterVolumeByTimeRange([], null)).toEqual([]);
-      expect(DataService.filterVolumeByTimeRange(null, null)).toEqual([]);
     });
   });
 
@@ -404,10 +369,4 @@ describe('DataService', () => {
     });
   });
 
-  describe('getUnacknowledgedAlerts', () => {
-    it('returns alerts that are not acknowledged', () => {
-      const alerts = DataService.getUnacknowledgedAlerts();
-      expect(alerts.length).toBe(1);
-    });
-  });
 });

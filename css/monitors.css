@@ -3,66 +3,6 @@
  * Styles for the Monitors view
  */
 
-/* Header Actions with Dropdowns */
-.view-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Monitor Dropdown Menu Styles */
-.monitor-dropdown-menu {
-  min-width: 240px;
-  padding: var(--space-sm) 0;
-}
-
-.dropdown-item-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-lg);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
-.dropdown-item-row:hover {
-  background: var(--bg-hover);
-}
-
-.dropdown-item-row > *:first-child {
-  flex-shrink: 0;
-}
-
-.dropdown-item-row > *:last-child {
-  text-align: right;
-  margin-left: auto;
-}
-
-.dropdown-item-row .data-label {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* Monitors Section */
-.monitors-section {
-  margin-bottom: var(--space-lg);
-}
-
-.monitors-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-md);
-}
-
-.monitors-section-header .section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
 /* Archived Section Styling */
 .archived-section {
   margin-top: var(--space-xl);
@@ -311,72 +251,6 @@
 .scope-entity-icon {
   color: var(--text-secondary);
   flex-shrink: 0;
-}
-
-/* Scope Types Reference List */
-.scope-type-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.scope-type-icon {
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.scope-type-label {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.monitor-triggers {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.trigger-tag {
-  font-size: 12px;
-  padding: 3px 8px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-}
-
-.monitor-meta {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.meta-item.meta-paused {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Alerts Table */
-.alerts-table {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: var(--border-subtle);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.alert-row {
-  display: grid;
-  grid-template-columns: 100px 180px 140px 1fr 80px;
-  gap: 16px;
-  padding: 12px 16px;
-  background: var(--bg-secondary);
-  align-items: center;
-  font-size: 13px;
-}
-
-.alert-row:hover {
-  background: var(--bg-tertiary);
 }
 
 .alert-time {

@@ -3,7 +3,7 @@
  * Assembles all entity files and exports the complete mockData object
  */
 
-import { publishers, publisherCategories } from './publishers.js';
+import { publishers } from './publishers.js';
 import { repositories } from './repositories.js';
 import { users } from './users.js';
 import { missions } from './missions.js';
@@ -100,7 +100,6 @@ export const defaultSettings = {
 
 export const mockData = {
   publishers,
-  publisherCategories,
   repositories,
   users,
   missions,

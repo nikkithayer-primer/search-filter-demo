@@ -18,7 +18,7 @@ import { MapView } from '../components/MapView.js';
 import { CardBuilder } from '../utils/CardBuilder.js';
 import { initAllCardToggles } from '../utils/cardWidthToggle.js';
 import { getMonitorEditor } from '../components/MonitorEditorModal.js';
-import { formatAlertDescriptionWithLinks } from './MonitorView.js';
+import { formatAlertDescriptionWithLinks } from '../utils/formatAlertDescription.js';
 import { PageHeader } from '../utils/PageHeader.js';
 import { Dropdown } from '../components/Dropdown.js';
 
@@ -411,10 +411,10 @@ export class MonitorsView extends BaseView {
         actionMenuHtml: actionMenuHtml
       });
       
-      // Wrap the title with tooltip container
+      // Wrap the title with tooltip container (no link - monitor detail view removed)
       cardHtml = cardHtml.replace(
         `<h2 class="card-title">${monitor.name}</h2>`,
-        `<h2 class="card-title"><span class="card-title-with-tooltip"><a href="#/${monitor.id}/" class="card-title-link">${monitor.name}</a>${tooltipHtml}</span></h2>`
+        `<h2 class="card-title"><span class="card-title-with-tooltip">${monitor.name}${tooltipHtml}</span></h2>`
       );
       
       // Insert the card body content into the generated card

@@ -7,7 +7,6 @@
 import { DetailViewBase } from './DetailViewBase.js';
 import { DataService } from '../data/DataService.js';
 import { PageHeader } from '../utils/PageHeader.js';
-import { StatCards } from '../components/StatCards.js';
 import {
   CardManager,
   NetworkGraphCard,
@@ -76,10 +75,6 @@ export class EntityDetailView extends DetailViewBase {
         </div>
       </div>
     `;
-
-    // Initialize stat card dropdowns
-    const contextId = this.context?.id || null;
-    this.initStatDropdowns(contextId, this.entityId);
 
     // Initialize card width toggles - first 4 cards default to half-width (dashboard only)
     const defaults = this.isDocumentsTab() ? {} : { 0: 'half', 1: 'half', 2: 'half', 3: 'half' };
@@ -321,10 +316,6 @@ export class EntityDetailView extends DetailViewBase {
       entity.name
     ]);
 
-    // Build stats for the header with dropdown support
-    const contextId = this.context?.id || null;
-    const statsData = StatCards.buildEntityStatsWithItems(data, contextId);
-
     return PageHeader.render({
       breadcrumbs,
       title: entity.name,
@@ -337,9 +328,6 @@ export class EntityDetailView extends DetailViewBase {
         ? `<a href="#" class="btn btn-small btn-secondary source-link" data-source-type="${this.entityType}" data-source-id="${entity.id}">View source</a>` 
         : '',
       tagsContainerId: 'entity-tags-container',
-      stats: statsData,
-      statsMode: 'dropdowns',
-      statsContextId: contextId,
       tabs: tabsConfig,
       activeTab: activeTab
     });

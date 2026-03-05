@@ -58,22 +58,6 @@ const STAT_ICONS = {
 };
 
 /**
- * Default routes for each stat type
- */
-const STAT_ROUTES = {
-  narratives: '#/narratives',
-  themes: '#/themes',
-  topics: '#/topics',
-  locations: '#/locations',
-  events: '#/events',
-  entities: '#/entities',
-  documents: '#/documents',
-  persons: '#/entities',
-  organizations: '#/entities',
-  activity: '#/activity'
-};
-
-/**
  * Display labels for each stat type (singular)
  */
 const STAT_LABELS = {
@@ -107,15 +91,6 @@ export const StatCards = {
    */
   getIcon(type) {
     return STAT_ICONS[type] || STAT_ICONS.entities;
-  },
-
-  /**
-   * Get the default route for a stat type
-   * @param {string} type - Stat type
-   * @returns {string} Hash route
-   */
-  getRoute(type) {
-    return STAT_ROUTES[type] || '#/dashboard';
   },
 
   /**

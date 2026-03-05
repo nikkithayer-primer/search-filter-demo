@@ -11,10 +11,10 @@ import { getSearchFilterEditor } from './components/SearchFilterEditorModal.js';
 import { mockData as walmartBrandData, datasetId as walmartBrandId, datasetName as walmartBrandName, defaultSettings as walmartBrandSettings } from './data/datasets/walmart-brand/index.js';
 import { Router } from './router.js';
 import { getSourceViewer } from './components/SourceViewerModal.js';
-import { getEntityCardModal } from './components/EntityCardModal.js';
 import { getTextSelectionPopover } from './components/TextSelectionPopover.js';
 import { escapeHtml } from './utils/htmlUtils.js';
 import { ChatService } from './services/ChatService.js';
+import { SearchInput } from './components/SearchInput.js';
 
 // Dataset registry (Walmart only)
 const DATASETS = {
@@ -123,14 +123,6 @@ class App {
   }
 
   /**
-   * Get available datasets
-   * @returns {Array} Array of dataset objects
-   */
-  getDatasets() {
-    return Object.values(DATASETS);
-  }
-
-  /**
    * Show toast notification
    */
   showToast(message, type = 'info') {
@@ -222,12 +214,20 @@ class App {
    * Initialize settings modal trigger
    */
   initSettingsModal() {
+    // Navbar gear icon
     const settingsBtn = document.getElementById('open-settings');
     if (settingsBtn) {
       settingsBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        // Close the avatar dropdown
-        const dropdown = settingsBtn.closest('.nav-dropdown');
+        this.showSettingsModal();
+      });
+    }
+    // Settings link inside avatar dropdown
+    const settingsBtnAvatar = document.getElementById('open-settings-avatar');
+    if (settingsBtnAvatar) {
+      settingsBtnAvatar.addEventListener('click', (e) => {
+        e.preventDefault();
+        const dropdown = settingsBtnAvatar.closest('.nav-dropdown');
         if (dropdown) dropdown.classList.remove('open');
         this.showSettingsModal();
       });
@@ -444,8 +444,6 @@ class App {
   initChat() {
     const chatToggle = document.getElementById('chat-toggle');
     const chatClose = document.getElementById('chat-close');
-    const chatInput = document.getElementById('chat-input');
-    const chatSend = document.getElementById('chat-send');
 
     if (chatToggle) {
       chatToggle.addEventListener('click', () => this.toggleChat());
@@ -455,24 +453,20 @@ class App {
       chatClose.addEventListener('click', () => this.toggleChat(false));
     }
 
-    if (chatInput) {
-      // Auto-resize textarea
-      chatInput.addEventListener('input', () => {
-        chatInput.style.height = 'auto';
-        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
-      });
-
-      // Send on Enter (without Shift)
-      chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          this.sendChatMessage();
+    // Mount shared SearchInput component into the chat panel
+    const chatInputMount = document.getElementById('chat-search-input');
+    if (chatInputMount) {
+      this.chatSearchInput = new SearchInput({
+        container: chatInputMount,
+        variant: 'sidebar',
+        placeholder: 'Ask a question...',
+        multiline: true,
+        showFilters: true,
+        onSubmit: (query) => {
+          this.sendChatMessage(query);
         }
       });
-    }
-
-    if (chatSend) {
-      chatSend.addEventListener('click', () => this.sendChatMessage());
+      this.chatSearchInput.render();
     }
 
     // Initialize chat panel resize functionality
@@ -879,14 +873,6 @@ class App {
   }
 
   /**
-   * Get the current theme
-   * @returns {string} 'light' or 'dark'
-   */
-  getTheme() {
-    return document.documentElement.getAttribute('data-theme') || 'light';
-  }
-
-  /**
    * Toggle chat panel open/closed
    */
   toggleChat(forceState) {
@@ -902,7 +888,7 @@ class App {
       
       // Focus input when opening
       setTimeout(() => {
-        document.getElementById('chat-input')?.focus();
+        if (this.chatSearchInput) this.chatSearchInput.focus();
       }, 250);
     } else {
       chatPanel?.classList.remove('open');
@@ -1080,6 +1066,12 @@ class App {
    */
   updatePageSummary() {
     if (!this.router) return;
+
+    const { route } = this.router.getCurrentRoute();
+    if (route === 'search') {
+      if (this.chatOpen) this.toggleChat(false);
+      return;
+    }
     
     const newContextKey = this.getChatContextKey();
     const contextChanged = this.currentChatContext !== newContextKey;
@@ -1093,7 +1085,7 @@ class App {
     // Update current context
     this.currentChatContext = newContextKey;
     
-    const { route, id } = this.router.getCurrentRoute();
+    const { id } = this.router.getCurrentRoute();
     const settings = this.dataStore.getSettings();
     
     if (contextChanged) {
@@ -1499,10 +1491,9 @@ class App {
     }
     
     // Put the question in the input and send it
-    const chatInput = document.getElementById('chat-input');
-    if (chatInput) {
-      chatInput.value = question;
-      this.sendChatMessage();
+    if (this.chatSearchInput) {
+      this.chatSearchInput.setQuery(question);
+      this.sendChatMessage(question);
     }
   }
 
@@ -1827,14 +1818,13 @@ class App {
 
   /**
    * Send a chat message
+   * @param {string} [messageText] - Message text (if omitted, reads from SearchInput component)
    */
-  async sendChatMessage() {
-    const chatInput = document.getElementById('chat-input');
+  async sendChatMessage(messageText) {
     const chatMessages = document.getElementById('chat-messages');
-    
-    if (!chatInput || !chatMessages) return;
+    if (!chatMessages) return;
 
-    const message = chatInput.value.trim();
+    const message = (messageText || this.chatSearchInput?.getQuery() || '').trim();
     if (!message) return;
 
     // Add user message
@@ -1843,9 +1833,10 @@ class App {
     userMsg.innerHTML = `<div class="chat-message-content">${this.escapeHtml(message)}</div>`;
     chatMessages.appendChild(userMsg);
 
-    // Clear input
-    chatInput.value = '';
-    chatInput.style.height = 'auto';
+    // Clear input via the component
+    if (this.chatSearchInput) {
+      this.chatSearchInput.clearQuery();
+    }
 
     // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -2022,5 +2013,4 @@ document.addEventListener('DOMContentLoaded', () => {
   app.init();
 });
 
-export { getEntityCardModal };
 export default app;
