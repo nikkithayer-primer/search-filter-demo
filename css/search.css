@@ -485,9 +485,17 @@ body.search-view #si-mode-btn {
   align-items: center;
   gap: var(--space-md);
   padding: 14px 20px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
   border-radius: 14px;
+}
+
+.search-recent-workspace-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-color);
 }
 
 .search-recent-workspace-icon {
@@ -612,7 +620,13 @@ body.search-view #si-mode-btn {
 .selected-scope-chips {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-xs);
+}
+
+.scope-clear-all-inline {
+  white-space: nowrap;
+  margin-left: var(--space-sm);
 }
 
 .selected-scope-chips .scope-chip {
@@ -623,7 +637,7 @@ body.search-view #si-mode-btn {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-primary);
   position: relative;
 }
@@ -632,8 +646,7 @@ body.search-view #si-mode-btn {
   content: attr(data-tooltip);
   position: absolute;
   bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   padding: 4px 8px;
   background: var(--bg-primary, #1a1a2e);
   color: var(--text-primary, #e0e0e0);
@@ -641,6 +654,9 @@ body.search-view #si-mode-btn {
   border-radius: var(--radius-sm, 4px);
   font-size: 11px;
   white-space: nowrap;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   z-index: 1000;
   pointer-events: none;
 }

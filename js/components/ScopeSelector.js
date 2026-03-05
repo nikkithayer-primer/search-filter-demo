@@ -10,7 +10,7 @@ import { escapeHtml } from '../utils/htmlUtils.js';
 import { getEntityIcon, getExtractionIcon, getExtractionColorClass } from '../utils/entityIcons.js';
 import { formatDate } from '../utils/formatters.js';
 import { TimeRangeFilter } from './TimeRangeFilter.js';
-import { countMetadataSelections, getScopeItemCount as _getScopeItemCount } from '../utils/scopeUtils.js';
+import { hasAnyScope, countMetadataSelections, getScopeItemCount as _getScopeItemCount } from '../utils/scopeUtils.js';
 
 export class ScopeSelector {
   /**
@@ -45,6 +45,7 @@ export class ScopeSelector {
     this.expandedSections = new Set();
     this.saveDialogOpen = false;
     this.saveFilterName = '';
+    this.saveFilterDescription = '';
     this.dateHistogramInstances = {};
   }
 
@@ -186,21 +187,8 @@ export class ScopeSelector {
     this.notifyChange();
   }
 
-  /**
-   * Check if the scope has any items
-   */
   hasScope() {
-    return Object.keys(this.scope)
-      .some(k => {
-        if (k === 'metadataFilters') {
-          return Object.values(this.scope.metadataFilters || {}).some(v => {
-            if (v?.dateRange?.start && v?.dateRange?.end) return true;
-            if (Array.isArray(v)) return v.length > 0;
-            return (v?.include?.length > 0) || (v?.exclude?.length > 0);
-          });
-        }
-        return Array.isArray(this.scope[k]) && this.scope[k].length > 0;
-      });
+    return hasAnyScope(this.scope);
   }
 
   /** Get the { include, exclude } entry for a dimension, creating if needed */
@@ -323,14 +311,15 @@ export class ScopeSelector {
               <button class="scope-logic-btn ${this.scope.logic === 'AND' ? 'active' : ''}" data-logic="AND">AND</button>
             </div>
           </div>
-          ${this.options.showSaveFilter ? `
-            <div class="scope-save-filter-row">
+          <div class="scope-actions-row ${this.hasScope() ? '' : 'hidden'}">
+            <button class="btn btn-ghost btn-small scope-clear-all-btn">Clear all</button>
+            ${this.options.showSaveFilter ? `
               <button 
                 class="btn btn-ghost btn-small scope-save-filter-btn" 
                 ${this.hasScope() ? '' : 'disabled'}
               >Save Filter</button>
-            </div>
-          ` : ''}
+            ` : ''}
+          </div>
           
           <!-- Entity List -->
           <div class="scope-entity-list">
@@ -386,12 +375,7 @@ export class ScopeSelector {
       if (docType) {
         chips.push(`
           <span class="scope-chip scope-chip-docattr" data-id="${docTypeId}" data-scope-key="documentTypes" data-type="documentType" data-tooltip="Document Type">
-            <span class="scope-chip-icon">
-              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
-                <path d="M10 2v3h3"/>
-              </svg>
-            </span>
+            <span class="scope-chip-icon">${getEntityIcon('documentType', 12)}</span>
             <span class="scope-chip-label">${this.escapeHtml(docType.name)}</span>
             <button class="chip-remove" aria-label="Remove">&times;</button>
           </span>
@@ -411,12 +395,7 @@ export class ScopeSelector {
         const rangeText = `${formatDate(filterVal.dateRange.start)} – ${formatDate(filterVal.dateRange.end)}`;
         chips.push(`
           <span class="scope-chip scope-chip-catalog scope-chip-date" data-dimension-id="${this.escapeHtml(dimId)}" data-filter-mode="dateRange" data-tooltip="${this.escapeHtml(dimName)}">
-            <span class="scope-chip-icon">
-              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="2" y="2.5" width="12" height="11.5" rx="1"/>
-                <path d="M2 6h12M5 0.5v3M11 0.5v3"/>
-              </svg>
-            </span>
+            <span class="scope-chip-icon">${getEntityIcon('calendar', 12)}</span>
             <span class="scope-chip-label">${this.escapeHtml(rangeText)}</span>
             <button class="chip-remove" aria-label="Remove">&times;</button>
           </span>
@@ -440,11 +419,7 @@ export class ScopeSelector {
         } else {
           chips.push(`
             <span class="scope-chip scope-chip-catalog" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="include" data-tooltip="${this.escapeHtml(dimName)}">
-              <span class="scope-chip-icon">
-                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
-                </svg>
-              </span>
+              <span class="scope-chip-icon">${getEntityIcon('filter', 12)}</span>
               <span class="scope-chip-label">${this.escapeHtml(val)}</span>
               <button class="chip-remove" aria-label="Remove">&times;</button>
             </span>
@@ -464,11 +439,7 @@ export class ScopeSelector {
         } else {
           chips.push(`
             <span class="scope-chip scope-chip-catalog scope-chip-excluded" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(val)}" data-filter-mode="exclude" data-tooltip="Exclude: ${this.escapeHtml(dimName)}">
-              <span class="scope-chip-icon">
-                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M3 8h10"/>
-                </svg>
-              </span>
+              <span class="scope-chip-icon">${getEntityIcon('exclude', 12)}</span>
               <span class="scope-chip-label">${this.escapeHtml(val)}</span>
               <button class="chip-remove" aria-label="Remove">&times;</button>
             </span>
@@ -547,7 +518,7 @@ export class ScopeSelector {
    * @returns {{ sortName: string, html: string } | null}
    */
   renderCatalogDimensionAccordion(dimension, displayName, filterLower) {
-    const VISIBLE_LIMIT = 20;
+    const VISIBLE_LIMIT = 100;
     const dimId = dimension.id;
     const accordionKey = 'catalog_' + dimId;
     const allOptions = dimension.options || [];
@@ -595,12 +566,16 @@ export class ScopeSelector {
     }
 
     const totalCount = allOptions.length;
+    const displayTotal = totalCount > VISIBLE_LIMIT ? `${VISIBLE_LIMIT}+` : `${totalCount}`;
+    const displayFiltered = totalFiltered > VISIBLE_LIMIT ? `${VISIBLE_LIMIT}+` : `${totalFiltered}`;
     const countLabel = isFiltering
-      ? `${totalFiltered} of ${totalCount} value${totalCount !== 1 ? 's' : ''}`
-      : `${totalCount} value${totalCount !== 1 ? 's' : ''}`;
+      ? `${displayFiltered} value${totalFiltered !== 1 ? 's' : ''}`
+      : `${displayTotal} value${totalCount !== 1 ? 's' : ''}`;
     const tooltipText = isFiltering
       ? `${totalFiltered} matching value${totalFiltered !== 1 ? 's' : ''} of ${totalCount} total · ${filteredDocCount} document${filteredDocCount !== 1 ? 's' : ''}`
-      : `${totalCount} filterable value${totalCount !== 1 ? 's' : ''} indexing ${dimension.documentCount || 0} document${(dimension.documentCount || 0) !== 1 ? 's' : ''}`;
+      : totalCount > VISIBLE_LIMIT
+        ? `Search for a value to retrieve additional values that match your parameters. ${totalCount} total values indexing ${dimension.documentCount || 0} document${(dimension.documentCount || 0) !== 1 ? 's' : ''}.`
+        : `${totalCount} filterable value${totalCount !== 1 ? 's' : ''} indexing ${dimension.documentCount || 0} document${(dimension.documentCount || 0) !== 1 ? 's' : ''}`;
 
     return {
       sortName: displayName,
@@ -628,7 +603,7 @@ export class ScopeSelector {
                 </span>
               </div>
             `).join('') : `<div class="scope-entity-group-empty">No matching options</div>`}
-            ${isTruncated ? `<div class="scope-entity-group-hint">Showing ${VISIBLE_LIMIT} of ${totalFiltered} — type to narrow results</div>` : ''}
+            ${isTruncated ? `<div class="scope-entity-group-hint" title="Search for a value to retrieve additional values that match your parameters.">${VISIBLE_LIMIT}+ values — search to find more</div>` : ''}
           </div>
         </div>
       `
@@ -706,11 +681,7 @@ export class ScopeSelector {
             return `
               <div class="scope-filter-item-wrapper">
                 <button class="scope-entity-item scope-filter-item" data-filter-id="${filter.id}">
-                  <span class="scope-filter-icon">
-                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
-                    </svg>
-                  </span>
+                  <span class="scope-filter-icon">${getEntityIcon('filter', 14)}</span>
                   <span class="scope-entity-item-name">${this.escapeHtml(filter.name)}</span>
                   <span class="scope-filter-count">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
                   <span class="scope-filter-apply">Add</span>
@@ -733,6 +704,9 @@ export class ScopeSelector {
           <button class="scope-entity-group-header" data-type="searchFilters">
             <svg class="scope-group-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 6l4 4 4-4"/>
+            </svg>
+            <svg class="scope-group-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M1.5 2h13M3.5 5.5h9M5.5 9h5M7 12.5h2"/>
             </svg>
             <span class="scope-group-label">Saved Filters</span>
             <span class="scope-group-count">${countText}</span>
@@ -817,12 +791,7 @@ export class ScopeSelector {
                         data-id="${dt.id}"
                         data-scope-key="documentTypes"
                         data-type="documentType">
-                  <span class="scope-entity-item-icon">
-                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
-                      <path d="M10 2v3h3"/>
-                    </svg>
-                  </span>
+                  <span class="scope-entity-item-icon">${getEntityIcon('documentType', 14)}</span>
                   <span class="scope-entity-item-name">${this.escapeHtml(dt.name)}</span>
                 </button>
               `).join('') : `<div class="scope-entity-group-empty">No matching document types</div>`}
@@ -990,7 +959,7 @@ export class ScopeSelector {
       <div class="scope-save-dialog-overlay">
         <div class="scope-save-dialog">
           <div class="scope-save-dialog-header">
-            <h4>Save Search Filter</h4>
+            <h4>Save Filter</h4>
             <button class="scope-save-dialog-close" aria-label="Close">&times;</button>
           </div>
           <div class="scope-save-dialog-body">
@@ -1010,6 +979,16 @@ export class ScopeSelector {
                 placeholder="e.g., Key Executives, China Tech Orgs..."
                 value="${this.escapeHtml(this.saveFilterName)}"
                 autofocus
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="filter-description">Description <span class="text-muted">(optional)</span></label>
+              <input 
+                type="text" 
+                id="filter-description" 
+                class="form-input" 
+                placeholder="Brief description of this filter..."
+                value="${this.escapeHtml(this.saveFilterDescription)}"
               />
             </div>
           </div>
@@ -1228,6 +1207,7 @@ export class ScopeSelector {
   openSaveDialog() {
     this.saveDialogOpen = true;
     this.saveFilterName = '';
+    this.saveFilterDescription = '';
     this.render();
     
     // Focus the name input
@@ -1243,6 +1223,7 @@ export class ScopeSelector {
   closeSaveDialog() {
     this.saveDialogOpen = false;
     this.saveFilterName = '';
+    this.saveFilterDescription = '';
     this.render();
   }
 
@@ -1264,6 +1245,7 @@ export class ScopeSelector {
     
     dataStore.createSearchFilter({
       name,
+      description: this.saveFilterDescription.trim() || undefined,
       scope: {
         mode: 'simple',
         personIds: [...this.scope.personIds],
@@ -1317,6 +1299,11 @@ export class ScopeSelector {
     }
     
     // Save filter button
+    const clearAllBtn = this.container.querySelector('.scope-clear-all-btn');
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener('click', () => this.clearScope());
+    }
+
     const saveBtn = this.container.querySelector('.scope-save-filter-btn');
     if (saveBtn) {
       saveBtn.addEventListener('click', () => this.openSaveDialog());
@@ -1534,6 +1521,7 @@ export class ScopeSelector {
       const cancelBtn = this.container.querySelector('.scope-save-dialog-cancel');
       const confirmBtn = this.container.querySelector('.scope-save-dialog-confirm');
       const nameInput = this.container.querySelector('#filter-name');
+      const descInput = this.container.querySelector('#filter-description');
       
       overlay?.addEventListener('click', (e) => {
         if (e.target === overlay) this.closeSaveDialog();
@@ -1545,6 +1533,10 @@ export class ScopeSelector {
       
       nameInput?.addEventListener('input', (e) => {
         this.saveFilterName = e.target.value;
+      });
+      
+      descInput?.addEventListener('input', (e) => {
+        this.saveFilterDescription = e.target.value;
       });
       
       nameInput?.addEventListener('keydown', (e) => {

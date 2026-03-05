@@ -39,7 +39,7 @@ export class SearchFilterEditorModal extends BaseModal {
       name: '',
       description: ''
     };
-    this.render('Create Search Filter');
+    this.render('Create Saved Filter');
     this.attachFormListeners();
     this.show();
     
@@ -61,7 +61,7 @@ export class SearchFilterEditorModal extends BaseModal {
       description: filter.description || ''
     };
     
-    this.render('Edit Search Filter');
+    this.render('Edit Saved Filter');
     this.attachFormListeners();
     this.show();
     

@@ -7,7 +7,7 @@
 import { SearchScopeModal } from './SearchScopeModal.js';
 import { DataService } from '../data/DataService.js';
 import { escapeHtml } from '../utils/htmlUtils.js';
-import { hasAnyScope, getScopeItemCount } from '../utils/scopeUtils.js';
+import { hasAnyScope, getScopeItemCount, mergeScopeFrom } from '../utils/scopeUtils.js';
 
 export class SearchInput {
   /**
@@ -41,11 +41,21 @@ export class SearchInput {
     this._listeners = [];
 
     this.initializeRepositories();
+    this._applyDefaultFilters();
   }
 
   initializeRepositories() {
     const repositories = DataService.getRepositories();
     this.selectedRepositories = new Set(repositories.map(r => r.id));
+  }
+
+  _applyDefaultFilters() {
+    const filters = DataService.getSearchFilters();
+    filters.forEach(f => {
+      if (f.onByDefault && f.scope) {
+        mergeScopeFrom(this.searchScope, f.scope);
+      }
+    });
   }
 
   /** Total count of active scope filter items */

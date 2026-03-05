@@ -282,6 +282,14 @@ export class WorkspaceView extends DetailViewBase {
     displayContainer.classList.toggle('hidden', !visible);
     displayContainer.innerHTML = renderScopeChips(this.searchScope);
     attachScopeChipHandlers(this.container, '#workspace-selected-filters', (type, id) => this.removeFromScope(type, id), (el, evt, fn) => this.addListener(el, evt, fn));
+
+    const clearBtn = displayContainer.querySelector('.scope-clear-all-inline');
+    if (clearBtn) {
+      this.addListener(clearBtn, 'click', () => {
+        this.searchScope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
+        this.applyFilters();
+      });
+    }
   }
 
   /**

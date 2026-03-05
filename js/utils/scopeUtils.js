@@ -80,6 +80,46 @@ export function countMetadataSelections(filters) {
  *                        'documentType', 'publisher', 'author', 'metadata'
  * @param {string} id - Item ID. For metadata, encoded as "dimId::value".
  */
+/**
+ * Merge items from a source scope into a target scope (mutates target).
+ * Avoids duplicates for all array fields.
+ * @param {Object} target - Scope to merge into
+ * @param {Object} source - Scope to merge from
+ */
+export function mergeScopeFrom(target, source) {
+  if (!source) return;
+  ['personIds', 'organizationIds', 'locationIds', 'keywords', 'documentTypes', 'publisherIds', 'authors'].forEach(key => {
+    const items = source[key] || [];
+    if (!target[key]) target[key] = [];
+    items.forEach(item => {
+      if (!target[key].includes(item)) target[key].push(item);
+    });
+  });
+
+  const srcMeta = source.metadataFilters || {};
+  if (!target.metadataFilters) target.metadataFilters = {};
+  for (const [dimId, val] of Object.entries(srcMeta)) {
+    if (val?.dateRange) {
+      target.metadataFilters[dimId] = { dateRange: { ...val.dateRange } };
+      continue;
+    }
+    const srcInclude = Array.isArray(val) ? val : (val?.include || []);
+    const srcExclude = Array.isArray(val) ? [] : (val?.exclude || []);
+    if (!target.metadataFilters[dimId]) {
+      target.metadataFilters[dimId] = { include: [], exclude: [] };
+    }
+    const tgt = target.metadataFilters[dimId];
+    if (Array.isArray(tgt)) {
+      target.metadataFilters[dimId] = { include: [...tgt], exclude: [] };
+    }
+    const tgtEntry = target.metadataFilters[dimId];
+    if (!tgtEntry.include) tgtEntry.include = [];
+    if (!tgtEntry.exclude) tgtEntry.exclude = [];
+    srcInclude.forEach(v => { if (!tgtEntry.include.includes(v)) tgtEntry.include.push(v); });
+    srcExclude.forEach(v => { if (!tgtEntry.exclude.includes(v)) tgtEntry.exclude.push(v); });
+  }
+}
+
 export function removeFromScope(scope, type, id) {
   if (!scope) return;
   switch (type) {

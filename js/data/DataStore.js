@@ -1002,6 +1002,7 @@ class DataStore {
     return this.createEntity('searchFilters', 'filter', {
       name: filter.name,
       description: filter.description || '',
+      onByDefault: filter.onByDefault ?? false,
       scope: {
         mode: 'simple',
         personIds: scope.personIds || [],

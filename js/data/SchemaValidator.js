@@ -276,10 +276,11 @@ const SCHEMAS = {
   searchFilters: {
     idPrefix: 'filter-',
     required: ['id', 'name', 'scope'],
-    optional: ['description', 'createdAt', 'updatedAt'],
+    optional: ['description', 'onByDefault', 'createdAt', 'updatedAt'],
     types: {
       name: 'string',
-      scope: 'object'
+      scope: 'object',
+      onByDefault: 'boolean'
     }
   },
 

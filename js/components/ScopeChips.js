@@ -11,26 +11,7 @@ import { DOC_TYPE_LABELS } from '../utils/scopeUtils.js';
 
 const ICON_SIZE = 12;
 
-const CHIP_ICONS = {
-  keyword: `<svg viewBox="0 0 16 16" width="${ICON_SIZE}" height="${ICON_SIZE}" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h12M2 8h8M2 11h10"/></svg>`,
-  documentType: `<svg viewBox="0 0 16 16" width="${ICON_SIZE}" height="${ICON_SIZE}" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v3h3"/></svg>`,
-  publisher: `<svg viewBox="0 0 16 16" width="${ICON_SIZE}" height="${ICON_SIZE}" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 6h6M5 9h4"/></svg>`,
-  author: `<svg viewBox="0 0 16 16" width="${ICON_SIZE}" height="${ICON_SIZE}" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/></svg>`,
-  metadata: `<svg viewBox="0 0 16 16" width="${ICON_SIZE}" height="${ICON_SIZE}" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/></svg>`,
-};
-
 const REMOVE_ICON = `<svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
-
-/**
- * Get the icon HTML for a chip type. Entity types use getEntityIcon;
- * everything else uses the static CHIP_ICONS map.
- */
-function getChipIcon(type) {
-  if (type === 'person' || type === 'organization' || type === 'location') {
-    return getEntityIcon(type, ICON_SIZE);
-  }
-  return CHIP_ICONS[type] || CHIP_ICONS.metadata;
-}
 
 /**
  * Build an array of chip data objects from a scope.
@@ -139,7 +120,7 @@ export function renderScopeChips(scope) {
   if (chips.length === 0) return '';
 
   const chipHtml = chips.map(chip => {
-    const icon = chip.icon || getChipIcon(chip.type);
+    const icon = chip.icon || getEntityIcon(chip.type, ICON_SIZE);
     const excludedClass = chip.mode === 'exclude' ? ' scope-chip-excluded' : '';
     const extraClasses = chip.extractionClasses ? ` ${chip.extractionClasses}` : '';
     const tooltipAttr = chip.tooltip ? ` data-tooltip="${escapeHtml(chip.tooltip)}"` : '';
@@ -154,7 +135,7 @@ export function renderScopeChips(scope) {
       </span>`;
   }).join('');
 
-  return `<div class="selected-scope-chips">${chipHtml}</div>`;
+  return `<div class="selected-scope-chips">${chipHtml}<button class="btn btn-ghost btn-small scope-clear-all-inline">Clear all</button></div>`;
 }
 
 /**

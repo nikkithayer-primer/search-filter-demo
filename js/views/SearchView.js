@@ -127,7 +127,20 @@ export class SearchView extends BaseView {
 
     // Attach chip remove handlers for the initially rendered chips
     attachScopeChipHandlers(this.container, '.selected-scope-chips', (type, id) => this.removeFromScope(type, id), (el, evt, fn) => this.addListener(el, evt, fn));
-    
+
+    const initialClearBtn = this.container.querySelector('.scope-clear-all-inline');
+    if (initialClearBtn) {
+      this.addListener(initialClearBtn, 'click', () => {
+        if (this.searchInput) {
+          this.searchInput.searchScope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
+          this.searchInput._updateFiltersBadge();
+        }
+        this.updateSearchUI();
+        this.updateSelectedFiltersDisplay();
+        this.updateMatchCount();
+      });
+    }
+
     // Focus the search input
     if (this.searchInput) this.searchInput.focus();
   }
@@ -145,7 +158,7 @@ export class SearchView extends BaseView {
     if (recent.length === 0) return '';
 
     const items = recent.map(ws => `
-      <div class="search-recent-workspace-item">
+      <a href="#/${ws.id}/" class="search-recent-workspace-item">
         <svg class="search-recent-workspace-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="8" cy="8" r="6.5"/>
           <path d="M8 4.5V8l2.5 1.5"/>
@@ -154,7 +167,7 @@ export class SearchView extends BaseView {
           <span class="search-recent-workspace-name">${this.escapeHtml(ws.name || 'Untitled')}</span>
           <span class="search-recent-workspace-date">${ws.createdAt ? formatDateTime(ws.createdAt) : ''}</span>
         </div>
-      </div>
+      </a>
     `).join('');
 
     return `
@@ -208,6 +221,19 @@ export class SearchView extends BaseView {
     displayContainer.classList.toggle('hidden', !active);
     displayContainer.innerHTML = renderScopeChips(scope);
     attachScopeChipHandlers(this.container, '.selected-scope-chips', (type, id) => this.removeFromScope(type, id), (el, evt, fn) => this.addListener(el, evt, fn));
+
+    const clearBtn = displayContainer.querySelector('.scope-clear-all-inline');
+    if (clearBtn) {
+      this.addListener(clearBtn, 'click', () => {
+        if (this.searchInput) {
+          this.searchInput.searchScope = { personIds: [], organizationIds: [], locationIds: [], keywords: [], documentTypes: [], metadataFilters: {} };
+          this.searchInput._updateFiltersBadge();
+        }
+        this.updateSearchUI();
+        this.updateSelectedFiltersDisplay();
+        this.updateMatchCount();
+      });
+    }
   }
 
   /**

@@ -34,9 +34,7 @@ export class WorkspacesView extends BaseView {
       ${headerHtml}
       
       <div class="content-area">
-        <div class="card">
-          <div class="card-body no-padding" id="workspaces-list-container"></div>
-        </div>
+        <div id="workspaces-list-container"></div>
       </div>
     `;
 

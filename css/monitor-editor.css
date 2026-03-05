@@ -32,8 +32,8 @@
 
 .form-label {
   font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-strong);
 }
 
 .form-help-text {
@@ -45,23 +45,25 @@
 
 .form-input {
   width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--text-sm);
+  padding: 10px 14px;
+  font-size: var(--text-base);
   color: var(--text-primary);
   background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
   transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: var(--font-sans);
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
 .form-input::placeholder {
   color: var(--text-muted);
+  font-style: italic;
 }
 
 /* Scope Logic Toggle */
@@ -119,10 +121,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
-  min-height: 32px;
-  margin-top: var(--space-sm);
-  margin-bottom: var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
+  min-height: 40px;
+  padding: var(--space-sm) var(--space-md);
   background: var(--bg-secondary);
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-md);
@@ -157,8 +157,7 @@
   content: attr(data-tooltip);
   position: absolute;
   bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   padding: 4px 8px;
   background: var(--bg-primary, #1a1a2e);
   color: var(--text-primary, #e0e0e0);
@@ -166,6 +165,9 @@
   border-radius: var(--radius-sm, 4px);
   font-size: 11px;
   white-space: nowrap;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   z-index: 1000;
   pointer-events: none;
 }
@@ -183,6 +185,9 @@
   border-radius: var(--radius-sm, 4px);
   font-size: 11px;
   white-space: nowrap;
+  max-width: calc(100vw - 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
   z-index: 10000;
   pointer-events: none;
 }
@@ -236,7 +241,7 @@
 .scope-catalog-row {
   display: flex;
   align-items: center;
-  padding: 4px 8px 4px 12px;
+  padding: 4px 8px 4px 0;
   border-bottom: 1px solid var(--border-subtle);
   font-size: var(--text-xs);
   gap: 6px;
@@ -245,7 +250,7 @@
   border-bottom: none;
 }
 .scope-catalog-row:hover {
-  background: var(--bg-hover);
+  background: rgba(59, 130, 246, 0.08);
 }
 .scope-catalog-row-label {
   flex: 1;
@@ -412,6 +417,11 @@ input.form-input.scope-search-input:focus {
   transform: rotate(-90deg);
 }
 
+.scope-group-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
 .scope-group-label {
   flex: 1;
   font-weight: 500;
@@ -454,6 +464,14 @@ input.form-input.scope-search-input:focus {
   font-size: var(--text-xs);
   color: var(--text-muted);
   font-style: italic;
+}
+
+.scope-entity-group-hint {
+  padding: 4px var(--space-md);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  background: var(--bg-tertiary);
 }
 
 /* Dimension accordion overrides (nested/promoted metadata accordions) */
@@ -616,7 +634,7 @@ input.form-input.scope-search-input:focus {
   display: flex;
   gap: var(--space-sm);
   align-items: stretch;
-  padding-bottom: var(--space-sm);
+  padding: var(--space-sm) 0;
 }
 
 .scope-chips-container .scope-chips {
@@ -637,44 +655,26 @@ input.form-input.scope-search-input:focus {
   align-items: center;
 }
 
-/* Save filter row (below chips) */
-.scope-save-filter-row {
+/* Actions row (clear all + save filter) below chips */
+.scope-actions-row {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--space-sm);
+}
+
+.scope-actions-row.hidden {
+  display: none;
 }
 
 /* Save filter button */
 .scope-save-filter-btn {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.scope-save-filter-btn:hover:not(:disabled) {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: white;
+  white-space: nowrap;
 }
 
 .scope-save-filter-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.scope-save-filter-btn svg {
-  width: 16px;
-  height: 16px;
 }
 
 /* Search Filters / Extractions accordion group — match nested-group style */
@@ -701,6 +701,11 @@ input.form-input.scope-search-input:focus {
   padding-left: var(--space-xl);
   margin-left: var(--space-xl);
   border-left: 4px solid var(--border-subtle);
+}
+
+.scope-nested-group > .scope-entity-group-items > .scope-catalog-row {
+  margin-left: calc(-1 * var(--space-xl));
+  padding-left: var(--space-xl);
 }
 
 /* Filter item wrapper for tooltip positioning */

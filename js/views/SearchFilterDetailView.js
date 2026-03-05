@@ -38,7 +38,7 @@ export class SearchFilterDetailView extends BaseView {
     } else {
       this.filter = DataService.getSearchFilter(this.filterId);
       if (!this.filter) {
-        this.renderNotFound('Search Filter');
+        this.renderNotFound('Saved Filter');
         return;
       }
       this.formState = {
@@ -47,19 +47,18 @@ export class SearchFilterDetailView extends BaseView {
       };
     }
 
-    const title = this.isNewFilter ? 'New Search Filter' : this.filter.name;
+    const title = this.isNewFilter ? 'New Saved Filter' : this.filter.name;
     const breadcrumbs = [
-      { label: 'Search Filters', href: '#/search-filters' },
-      this.isNewFilter ? 'New Filter' : this.filter.name
+      { label: '← All Filters', href: '#/search-filters' }
     ];
 
     const actionsHtml = `
       <div class="search-filter-detail-actions">
         ${!this.isNewFilter ? `
-          <button class="btn btn-danger btn-small" id="filter-delete-btn">Delete</button>
+          <button class="btn btn-danger" id="filter-delete-btn">Delete</button>
         ` : ''}
-        <a href="#/search-filters" class="btn btn-secondary btn-small">Cancel</a>
-        <button class="btn btn-primary btn-small" id="filter-save-btn">
+        <a href="#/search-filters" class="btn btn-secondary">Cancel</a>
+        <button class="btn btn-primary" id="filter-save-btn">
           ${this.isNewFilter ? 'Create Filter' : 'Save'}
         </button>
       </div>
@@ -99,9 +98,11 @@ export class SearchFilterDetailView extends BaseView {
           </div>
 
           <div class="form-group">
-            <label class="form-label">Filter Contents</label>
-            <p class="form-help-text">Type to filter entities or press Enter to add as keyword</p>
-            <div id="scope-selector-container"></div>
+            <div class="scope-selector-bordered">
+              <label class="form-label">Filter Contents</label>
+              <p class="form-help-text">Type to filter entities or press Enter to add as keyword</p>
+              <div id="scope-selector-container"></div>
+            </div>
           </div>
         </div>
       </div>

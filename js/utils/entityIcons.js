@@ -110,6 +110,33 @@ export function getEntityIcon(type, size = 16) {
     </svg>`,
     project: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="currentColor">
       <path fill-rule="evenodd" clip-rule="evenodd" d="M2 1C1.44771 1 1 1.44772 1 2V14C1 14.5523 1.44771 15 2 15H14C14.5523 15 15 14.5523 15 14V3.5C15 2.94772 14.5523 2.5 14 2.5H8.26759L7.56446 1.4453C7.37899 1.1671 7.06676 1 6.73241 1H2ZM2 2H6.73241L7.43554 3.0547C7.62101 3.3329 7.93324 3.5 8.26759 3.5H14V4.5H2V2ZM2 5.5V14H14V5.5H2Z"/>
+    </svg>`,
+    keyword: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M2 5h12M2 8h8M2 11h10"/>
+    </svg>`,
+    documentType: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v3h3"/>
+    </svg>`,
+    document_type: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v3h3"/>
+    </svg>`,
+    publisher: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 6h6M5 9h4"/>
+    </svg>`,
+    author: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="8" cy="5" r="3"/><path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/>
+    </svg>`,
+    filter: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
+    </svg>`,
+    metadata: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M1 2h14l-5 6v5l-4 2V8L1 2z"/>
+    </svg>`,
+    calendar: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="2" y="2.5" width="12" height="11.5" rx="1"/><path d="M2 6h12M5 0.5v3M11 0.5v3"/>
+    </svg>`,
+    exclude: `<svg class="entity-icon" viewBox="0 0 16 16" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M3 8h10"/>
     </svg>`
   };
   return icons[type] || icons.narratives;
