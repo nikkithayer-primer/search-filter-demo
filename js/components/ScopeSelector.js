@@ -305,21 +305,21 @@ export class ScopeSelector {
           <div class="scope-chips-container">
             <div class="scope-chips">
               ${this.renderSelectedChips()}
+              ${this.hasScope() ? '<button class="btn btn-ghost btn-small scope-clear-all-btn">Clear all</button>' : ''}
             </div>
             <div class="scope-logic-segmented ${this.getScopeItemCount() > 1 ? '' : 'hidden'}" id="scope-logic-toggle">
               <button class="scope-logic-btn ${(this.scope.logic || 'OR') === 'OR' ? 'active' : ''}" data-logic="OR">OR</button>
               <button class="scope-logic-btn ${this.scope.logic === 'AND' ? 'active' : ''}" data-logic="AND">AND</button>
             </div>
           </div>
-          <div class="scope-actions-row ${this.hasScope() ? '' : 'hidden'}">
-            <button class="btn btn-ghost btn-small scope-clear-all-btn">Clear all</button>
-            ${this.options.showSaveFilter ? `
+          ${this.options.showSaveFilter ? `
+            <div class="scope-actions-row ${this.hasScope() ? '' : 'hidden'}">
               <button 
                 class="btn btn-ghost btn-small scope-save-filter-btn" 
                 ${this.hasScope() ? '' : 'disabled'}
               >Save Filter</button>
-            ` : ''}
-          </div>
+            </div>
+          ` : ''}
           
           <!-- Entity List -->
           <div class="scope-entity-list">
@@ -596,10 +596,12 @@ export class ScopeSelector {
               <div class="scope-catalog-row"
                    data-dimension-id="${this.escapeHtml(dimId)}"
                    data-value="${this.escapeHtml(opt)}">
-                ${renderRowLabel(opt)}
+                <label class="scope-catalog-checkbox-label">
+                  <input type="checkbox" class="scope-catalog-checkbox" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}" title="Include">
+                  ${renderRowLabel(opt)}
+                </label>
                 <span class="scope-catalog-row-actions">
-                  <button class="scope-catalog-or scope-filter-apply" title="Include (OR)" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg> Add</button>
-                  <button class="scope-catalog-not scope-filter-apply scope-filter-exclude" title="Exclude (NOT)" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.97853 13.2672C0.746592 11.86 0 10.0172 0 8C0 3.58172 3.58172 0 8 0C10.0172 0 11.86 0.746592 13.2672 1.97853L13.2797 1.96602L14.034 2.72026L14.0215 2.73277C15.2534 4.13997 16 5.9828 16 8C16 12.4183 12.4183 16 8 16C5.9828 16 4.13997 15.2534 2.73277 14.0215L2.72027 14.034L2.34925 13.6629C2.34518 13.6589 2.34111 13.6548 2.33705 13.6508L1.96602 13.2797L1.97853 13.2672ZM3.48895 13.2653C4.7015 14.3051 6.27739 14.9333 8 14.9333C11.8292 14.9333 14.9333 11.8292 14.9333 8C14.9333 6.27739 14.3051 4.7015 13.2653 3.48895L3.48895 13.2653ZM12.511 2.7347L2.7347 12.511C1.69488 11.2985 1.06667 9.72261 1.06667 8C1.06667 4.17083 4.17083 1.06667 8 1.06667C9.72261 1.06667 11.2985 1.69488 12.511 2.7347Z" fill="currentColor"/></svg> Exclude</button>
+                  <button class="scope-catalog-not scope-filter-apply scope-filter-exclude" title="Exclude (NOT)" data-dimension-id="${this.escapeHtml(dimId)}" data-value="${this.escapeHtml(opt)}"><svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.97853 13.2672C0.746592 11.86 0 10.0172 0 8C0 3.58172 3.58172 0 8 0C10.0172 0 11.86 0.746592 13.2672 1.97853L13.2797 1.96602L14.034 2.72026L14.0215 2.73277C15.2534 4.13997 16 5.9828 16 8C16 12.4183 12.4183 16 8 16C5.9828 16 4.13997 15.2534 2.73277 14.0215L2.72027 14.034L2.34925 13.6629C2.34518 13.6589 2.34111 13.6548 2.33705 13.6508L1.96602 13.2797L1.97853 13.2672ZM3.48895 13.2653C4.7015 14.3051 6.27739 14.9333 8 14.9333C11.8292 14.9333 14.9333 11.8292 14.9333 8C14.9333 6.27739 14.3051 4.7015 13.2653 3.48895L3.48895 13.2653ZM12.511 2.7347L2.7347 12.511C1.69488 11.2985 1.06667 9.72261 1.06667 8C1.06667 4.17083 4.17083 1.06667 8 1.06667C9.72261 1.06667 11.2985 1.69488 12.511 2.7347Z" fill="currentColor"/></svg></button>
                 </span>
               </div>
             `).join('') : `<div class="scope-entity-group-empty">No matching options</div>`}
@@ -1462,13 +1464,12 @@ export class ScopeSelector {
         return;
       }
       
-      // Handle catalog OR (include) button click
-      const orBtn = e.target.closest('.scope-catalog-or');
-      if (orBtn) {
-        e.preventDefault();
+      // Handle catalog checkbox (include) click
+      const checkbox = e.target.closest('.scope-catalog-checkbox');
+      if (checkbox) {
         e.stopPropagation();
-        const dimId = orBtn.dataset.dimensionId;
-        const val = orBtn.dataset.value;
+        const dimId = checkbox.dataset.dimensionId;
+        const val = checkbox.dataset.value;
         if (dimId && val && !this.isDimValueSelected(dimId, val)) {
           this.getDimFilter(dimId).include.push(val);
           this.refreshChips();

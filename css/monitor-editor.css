@@ -241,7 +241,7 @@
 .scope-catalog-row {
   display: flex;
   align-items: center;
-  padding: 4px 8px 4px 0;
+  padding: 4px 8px 4px calc(var(--space-xl) + 12px + var(--space-sm));
   border-bottom: 1px solid var(--border-subtle);
   font-size: var(--text-xs);
   gap: 6px;
@@ -249,8 +249,20 @@
 .scope-catalog-row:last-child {
   border-bottom: none;
 }
-.scope-catalog-row:hover {
-  background: rgba(59, 130, 246, 0.08);
+.scope-catalog-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.scope-catalog-checkbox {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
 }
 .scope-catalog-row-label {
   flex: 1;
@@ -259,7 +271,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-base);
-  margin-left: 20px;
 }
 .scope-catalog-row-label--extraction {
   margin-left: 0;
@@ -655,16 +666,22 @@ input.form-input.scope-search-input:focus {
   align-items: center;
 }
 
-/* Actions row (clear all + save filter) below chips */
+/* Actions row (save filter) below chips */
 .scope-actions-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: var(--space-sm);
 }
 
 .scope-actions-row.hidden {
   display: none;
+}
+
+/* Clear all button inside chips box */
+.scope-chips .scope-clear-all-btn {
+  white-space: nowrap;
+  margin-left: auto;
 }
 
 /* Save filter button */
@@ -700,13 +717,8 @@ input.form-input.scope-search-input:focus {
 .scope-filter-group > .scope-entity-group-items > .scope-nested-group {
   padding-left: var(--space-xl);
   margin-left: var(--space-xl);
-  border-left: 4px solid var(--border-subtle);
 }
 
-.scope-nested-group > .scope-entity-group-items > .scope-catalog-row {
-  margin-left: calc(-1 * var(--space-xl));
-  padding-left: var(--space-xl);
-}
 
 /* Filter item wrapper for tooltip positioning */
 .scope-filter-item-wrapper {
@@ -761,20 +773,11 @@ input.form-input.scope-search-input:focus {
 }
 
 .scope-filter-item:hover .scope-filter-apply,
-.scope-catalog-row:hover .scope-filter-apply {
-  background: var(--accent-primary);
-  color: white;
-}
 
 .scope-filter-exclude {
-  color: var(--text-secondary);
-  background: rgba(107, 114, 128, 0.1);
-}
-
-.scope-filter-item:hover .scope-filter-exclude,
-.scope-catalog-row:hover .scope-filter-exclude {
-  background: var(--text-secondary);
-  color: white;
+  color: var(--accent-danger);
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px;
 }
 
 /* Filter Tooltip */

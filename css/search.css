@@ -626,7 +626,7 @@ body.search-view #si-mode-btn {
 
 .scope-clear-all-inline {
   white-space: nowrap;
-  margin-left: var(--space-sm);
+  margin-left: auto;
 }
 
 .selected-scope-chips .scope-chip {
