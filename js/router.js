@@ -167,9 +167,9 @@ export class Router {
     try {
       // Get default page from settings
       const settings = dataStore.getSettings();
-      let defaultPage = settings.defaultStartPage || 'monitors';
-      if (defaultPage === 'cop') defaultPage = 'monitors';
-      
+      let defaultPage = settings.defaultStartPage || 'search';
+      if (defaultPage === 'cop') defaultPage = 'search';
+
       // Navigate to current hash or default based on settings
       if (!window.location.hash || window.location.hash === '#/') {
         window.location.hash = `#/${defaultPage}`;
@@ -636,8 +636,8 @@ export class Router {
 
     // No hash or empty path: redirect to dataset's default start page
     if (!rawHash || rawHash === '/') {
-      let defaultPage = settings.defaultStartPage || 'monitors';
-      if (defaultPage === 'cop') defaultPage = 'monitors';
+      let defaultPage = settings.defaultStartPage || 'search';
+      if (defaultPage === 'cop') defaultPage = 'search';
       window.location.hash = `#/${defaultPage}`;
       return;
     }
@@ -724,8 +724,8 @@ export class Router {
       isCopHome = parsed.isCopHome;
     } else {
       // No recognized route - redirect to default
-      let defaultPage = settings.defaultStartPage || 'monitors';
-      if (defaultPage === 'cop') defaultPage = 'monitors';
+      let defaultPage = settings.defaultStartPage || 'search';
+      if (defaultPage === 'cop') defaultPage = 'search';
       window.location.hash = `#/${defaultPage}`;
       return;
     }
@@ -808,8 +808,8 @@ export class Router {
         
       default:
         // Unknown top-level route - redirect to default
-        let defaultPage = settings.defaultStartPage || 'monitors';
-        if (defaultPage === 'cop') defaultPage = 'monitors';
+        let defaultPage = settings.defaultStartPage || 'search';
+        if (defaultPage === 'cop') defaultPage = 'search';
         window.location.hash = `#/${defaultPage}`;
     }
   }

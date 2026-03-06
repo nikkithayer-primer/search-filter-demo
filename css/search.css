@@ -485,17 +485,11 @@ body.search-view #si-mode-btn {
   align-items: center;
   gap: var(--space-md);
   padding: 14px 20px;
-  background: var(--bg-secondary);
-  border: 1px solid transparent;
+  background: var(--bg-tertiary);
+  border: none;
   text-decoration: none;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  cursor: default;
   border-radius: 14px;
-}
-
-.search-recent-workspace-item:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-color);
 }
 
 .search-recent-workspace-icon {
